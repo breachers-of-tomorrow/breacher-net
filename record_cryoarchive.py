@@ -93,10 +93,13 @@ def git_push():
 
 
 def get_next_update_time(stab_data):
-    """Read nextStabilizationAt from the first camera and return seconds until then."""
+    """Read nextStabilizationAt from the first camera with a non-null value."""
     try:
-        first_cam = next(iter(stab_data.values()))
-        next_time_str = first_cam.get("nextStabilizationAt")
+        next_time_str = next(
+            (cam.get("nextStabilizationAt") for cam in stab_data.values()
+             if cam.get("nextStabilizationAt") is not None),
+            None
+        )
         if not next_time_str:
             return FALLBACK_INTERVAL
         next_time = datetime.fromisoformat(next_time_str.replace("Z", "+00:00"))

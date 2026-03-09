@@ -599,38 +599,43 @@
       stateData = parseCSV(stateText);
 
       // Fetch nextStabilizationAt live from the API so it's always current
+      let gotLiveTime = false;
       try {
         const liveRes = await fetch('https://cryoarchive.systems/api/public/cctv-cameras/stabilization?t=' + Date.now());
         if (liveRes.ok) {
           const liveData = await liveRes.json();
-          const nextStr = liveData?.stabilization?.cargo?.nextStabilizationAt;
+          const nextStr = Object.values(liveData?.stabilization || {})
+            .map(c => c?.nextStabilizationAt)
+            .find(v => v != null);
           if (nextStr) {
             const newNext = new Date(nextStr);
-            // Recalculate intervalTotal based on gap between now and next update
-            const secsUntil = (newNext - new Date()) / 1000;
-            if (secsUntil > 0 && secsUntil < 7200) {
+            if (newNext > new Date()) {
+              const secsUntil = (newNext - new Date()) / 1000;
               intervalTotal = secsUntil;
-            } else {
-              intervalTotal = 15 * 60;
+              nextStabilizationAt = newNext;
+              document.getElementById('next-update-time').textContent = toESTTimeOnly(nextStabilizationAt);
+              gotLiveTime = true;
             }
-            nextStabilizationAt = newNext;
-            document.getElementById('next-update-time').textContent =
-              toESTTimeOnly(nextStabilizationAt);
           }
         }
-      } catch (e) {
-        // Fall back to CSV value if API call fails
-        if (stabData.length) {
-          const latest = stabData[stabData.length - 1];
-          const nextStr = latest['cargo_nextStabilizationAt'];
-          if (nextStr) {
-            const newNext = new Date(nextStr);
-            const secsUntil = (newNext - new Date()) / 1000;
-            intervalTotal = (secsUntil > 0 && secsUntil < 7200) ? secsUntil : 15 * 60;
-            nextStabilizationAt = newNext;
-            document.getElementById('next-update-time').textContent =
-              toESTTimeOnly(nextStabilizationAt);
+      } catch (e) { /* CORS or network failure, fall through */ }
+
+      if (!gotLiveTime && stabData.length) {
+        // CSV value is likely stale — project forward from the latest timestamp in 15-min steps
+        const latest = stabData[stabData.length - 1];
+        const nextStr = CAMERAS
+          .map(cam => latest[`${cam}_nextStabilizationAt`])
+          .find(v => v && v !== 'N/A' && v !== 'null' && v !== '');
+        if (nextStr) {
+          let candidate = new Date(nextStr);
+          const now = new Date();
+          // Advance in 15-min increments until we find the next future time
+          while (candidate <= now) {
+            candidate = new Date(candidate.getTime() + 15 * 60 * 1000);
           }
+          intervalTotal = (candidate - now) / 1000;
+          nextStabilizationAt = candidate;
+          document.getElementById('next-update-time').textContent = toESTTimeOnly(nextStabilizationAt);
         }
       }
 
