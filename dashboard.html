@@ -550,18 +550,18 @@
       document.getElementById('next-update-countdown').textContent =
         secsLeft > 0 ? `IN ${mins}m ${secs}s` : `UPDATING...`;
 
-      // Progress bar — how far through the 15min window are we
+      // Progress bar — how far through the interval are we (fills left to right as time passes)
       const elapsed = intervalTotal - secsLeft;
       const pct = Math.min(100, Math.max(0, (elapsed / intervalTotal) * 100));
       document.getElementById('progress-fill').style.width = pct + '%';
 
-      // Schedule a refresh 5s after the next stabilization time
+      // Schedule a refresh 10s after the next stabilization time
       if (secsLeft <= 5 && !refreshScheduled) {
         refreshScheduled = true;
         setTimeout(() => {
           fetchAndRender();
           refreshScheduled = false;
-        }, (secsLeft + 5) * 1000);
+        }, 10000);
       }
     }
   }, 1000);
@@ -605,7 +605,15 @@
           const liveData = await liveRes.json();
           const nextStr = liveData?.stabilization?.cargo?.nextStabilizationAt;
           if (nextStr) {
-            nextStabilizationAt = new Date(nextStr);
+            const newNext = new Date(nextStr);
+            // Recalculate intervalTotal based on gap between now and next update
+            const secsUntil = (newNext - new Date()) / 1000;
+            if (secsUntil > 0 && secsUntil < 7200) {
+              intervalTotal = secsUntil;
+            } else {
+              intervalTotal = 15 * 60;
+            }
+            nextStabilizationAt = newNext;
             document.getElementById('next-update-time').textContent =
               toESTTimeOnly(nextStabilizationAt);
           }
@@ -616,7 +624,10 @@
           const latest = stabData[stabData.length - 1];
           const nextStr = latest['cargo_nextStabilizationAt'];
           if (nextStr) {
-            nextStabilizationAt = new Date(nextStr);
+            const newNext = new Date(nextStr);
+            const secsUntil = (newNext - new Date()) / 1000;
+            intervalTotal = (secsUntil > 0 && secsUntil < 7200) ? secsUntil : 15 * 60;
+            nextStabilizationAt = newNext;
             document.getElementById('next-update-time').textContent =
               toESTTimeOnly(nextStabilizationAt);
           }
