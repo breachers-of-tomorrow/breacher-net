@@ -31,14 +31,7 @@
     overflow-x: hidden;
   }
 
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,20,30,0.3) 2px, rgba(0,20,30,0.3) 4px);
-    pointer-events: none;
-    z-index: 1000;
-  }
+  
 
   header {
     border-bottom: 1px solid var(--border);
@@ -157,7 +150,7 @@
     border: 1px solid var(--border);
     padding: 18px;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     transition: border-color 0.3s;
   }
 
@@ -170,33 +163,19 @@
 
   .card:hover { border-color: var(--accent); }
 
-  .card .tooltip {
-    display: none;
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
+  #bar-tooltip {
+    position: fixed;
     background: #0a1a24;
     border: 1px solid var(--accent);
-    padding: 8px 12px;
+    padding: 6px 10px;
     font-size: 0.7rem;
     color: var(--text);
     white-space: nowrap;
-    z-index: 100;
+    z-index: 9000;
     pointer-events: none;
-    margin-bottom: 6px;
+    display: none;
+    line-height: 1.6;
   }
-
-  .card .tooltip::after {
-    content: '';
-    position: absolute;
-    top: 100%; left: 50%;
-    transform: translateX(-50%);
-    border: 5px solid transparent;
-    border-top-color: var(--accent);
-  }
-
-  .card:hover .tooltip { display: block; }
 
   .card-name {
     font-family: 'Orbitron', monospace;
@@ -223,7 +202,23 @@
 
   .mini-chart { margin-top: 12px; height: 40px; display: flex; align-items: flex-end; gap: 2px; }
 
-  .mini-bar { flex: 1; background: var(--border); min-height: 2px; }
+  .mini-bar {
+    flex: 1;
+    height: 100%;
+    position: relative;
+    cursor: crosshair;
+  }
+
+  .mini-bar-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    min-height: 2px;
+    transition: opacity 0.2s;
+  }
+
+  .mini-bar:hover .mini-bar-fill { opacity: 0.7; }
 
   .state-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 30px; }
 
@@ -326,6 +321,8 @@
   <div class="logo">CRYO<span>ARCHIVE</span></div>
   <div class="loading-text">CONNECTING TO DATA FEED...</div>
 </div>
+
+<div id="bar-tooltip"></div>
 
 <div id="flash">// DATA REFRESHED</div>
 
@@ -461,11 +458,20 @@
     });
   }
 
+  // Auto-detect whether running locally or on GitHub Pages
+  const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  const GITHUB_RAW = 'https://raw.githubusercontent.com/CrowdTypical/Marathon-arg/main/';
+
+  function csvUrl(filename) {
+    if (isLocal) return filename + '?t=' + Date.now();
+    return GITHUB_RAW + filename + '?t=' + Date.now();
+  }
+
   async function fetchAndRender() {
     try {
       const [stabRes, stateRes] = await Promise.all([
-        fetch('stabilization_log.csv?t=' + Date.now()),
-        fetch('state_log.csv?t=' + Date.now())
+        fetch(csvUrl('stabilization_log.csv')),
+        fetch(csvUrl('state_log.csv'))
       ]);
       if (!stabRes.ok || !stateRes.ok) throw new Error('CSV files not found');
       const [stabText, stateText] = await Promise.all([stabRes.text(), stateRes.text()]);
@@ -518,7 +524,7 @@
     } catch (err) {
       document.getElementById('status-dot').classList.add('error');
       document.getElementById('error-box').innerHTML =
-        `<div class="error-msg">// ERROR: ${err.message} — make sure server.py is running in your Marathon_ARG folder</div>`;
+        `<div class="error-msg">// ERROR: ${err.message} — ${isLocal ? 'make sure server.py is running in your Marathon_ARG folder' : 'make sure the CSV files have been pushed to GitHub'}</div>`;
       document.getElementById('error-box').style.display = 'block';
       if (firstLoad) {
         document.getElementById('loading').style.opacity = '0';
@@ -572,19 +578,15 @@
       const next = latest[`${cam}_nextStabilizationAt`] || '--';
       const history = stabData.slice(-20).map(r => parseInt(r[`${cam}_stabilizationLevel`]) || 0);
       const timestamps = stabData.slice(-20).map(r => r.timestamp ? toESTTimeOnly(new Date(r.timestamp.replace(' UTC',''))) : '');
-      const maxVal = Math.max(...history, 1);
       const levelClass = level === 0 ? 'level-0' : level === 1 ? 'level-1' : level === 2 ? 'level-2' : 'level-high';
       const bars = history.map((v, i) => {
-        const pct = Math.round((v / maxVal) * 100);
+        const pct = Math.round((v / 100) * 100);
         const color = v === 0 ? 'var(--accent2)' : v === 1 ? 'var(--accent)' : v === 2 ? 'var(--warn)' : 'var(--danger)';
-        return `<div class="mini-bar" style="height:${Math.max(pct,4)}%;background:${color}" title="${timestamps[i]}: Level ${v}"></div>`;
+        return `<div class="mini-bar" data-tip="${timestamps[i]}: ${v}%">
+          <div class="mini-bar-fill" style="height:${Math.max(pct,4)}%;background:${color}"></div>
+        </div>`;
       }).join('');
-      const tooltipRows = history.slice(-5).map((v, i) => {
-        const ts = timestamps[timestamps.length - 5 + i] || '';
-        return `${ts}: Level ${v}`;
-      }).join('<br>');
       return `<div class="card">
-        <div class="tooltip">LAST 5 READINGS<br><br>${tooltipRows}</div>
         <div class="card-name">${cam}</div>
         <div class="card-value ${levelClass}">${level}</div>
         <div class="card-sub">NEXT: ${next !== '--' ? toEST(next) : '--'}</div>
@@ -660,7 +662,7 @@
         },
         scales: {
           x: { ticks: { color: '#2a5a6a', font: { size: 9 } }, grid: { color: '#0a3a4a' } },
-          y: { ticks: { color: '#2a5a6a', font: { size: 9 } }, grid: { color: '#0a3a4a' }, beginAtZero: true }
+          y: { ticks: { color: '#2a5a6a', font: { size: 9 } }, grid: { color: '#0a3a4a' }, beginAtZero: true, max: 100 }
         }
       }
     });
@@ -706,6 +708,26 @@
       }
     });
   }
+
+  // Floating bar tooltip
+  const barTip = document.getElementById('bar-tooltip');
+  document.addEventListener('mouseover', e => {
+    if (e.target.classList.contains('mini-bar') && e.target.dataset.tip) {
+      barTip.innerHTML = e.target.dataset.tip;
+      barTip.style.display = 'block';
+    }
+  });
+  document.addEventListener('mouseout', e => {
+    if (e.target.classList.contains('mini-bar')) {
+      barTip.style.display = 'none';
+    }
+  });
+  document.addEventListener('mousemove', e => {
+    if (barTip.style.display === 'block') {
+      barTip.style.left = (e.clientX + 12) + 'px';
+      barTip.style.top = (e.clientY - 30) + 'px';
+    }
+  });
 
   fetchAndRender();
 </script>

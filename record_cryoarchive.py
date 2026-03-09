@@ -2,13 +2,13 @@ import requests
 import csv
 import os
 import time
+import subprocess
 from datetime import datetime, timezone
 
 # --- Configuration ---
 STABILIZATION_URL = "https://cryoarchive.systems/api/public/cctv-cameras/stabilization"
 STATE_URL = "https://cryoarchive.systems/api/public/state"
 
-# Save CSVs in the same folder as this script
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STABILIZATION_FILE = os.path.join(BASE_DIR, "stabilization_log.csv")
 STATE_FILE = os.path.join(BASE_DIR, "state_log.csv")
@@ -16,7 +16,7 @@ STATE_FILE = os.path.join(BASE_DIR, "state_log.csv")
 CAMERAS = ["cargo", "index", "revival", "biostock", "steerage", "preservation", "cryoHub", "camera06", "camera09"]
 PAGES = ["cargo", "index", "revival", "biostock", "steerage", "preservation", "cryoHub"]
 
-FALLBACK_INTERVAL = 15 * 60  # 15 minutes fallback if API doesn't return a next time
+FALLBACK_INTERVAL = 15 * 60  # 15 minutes fallback
 
 
 def get_timestamp():
@@ -32,7 +32,6 @@ def fetch(url):
 def log_stabilization(data):
     timestamp = get_timestamp()
     file_exists = os.path.isfile(STABILIZATION_FILE)
-
     with open(STABILIZATION_FILE, mode="a", newline="") as file:
         writer = csv.writer(file)
         if not file_exists:
@@ -41,21 +40,18 @@ def log_stabilization(data):
                 header.append(f"{cam}_stabilizationLevel")
                 header.append(f"{cam}_nextStabilizationAt")
             writer.writerow(header)
-
         row = [timestamp]
         for cam in CAMERAS:
             cam_data = data.get(cam, {})
             row.append(cam_data.get("stabilizationLevel", "N/A"))
             row.append(cam_data.get("nextStabilizationAt", "N/A"))
         writer.writerow(row)
-
     print(f"[{timestamp}] Stabilization data recorded.")
 
 
 def log_state(data):
     timestamp = get_timestamp()
     file_exists = os.path.isfile(STATE_FILE)
-
     with open(STATE_FILE, mode="a", newline="") as file:
         writer = csv.writer(file)
         if not file_exists:
@@ -65,7 +61,6 @@ def log_state(data):
                 header.append(f"{page}_unlocked")
                 header.append(f"{page}_completed")
             writer.writerow(header)
-
         pages = data.get("pages", {})
         row = [
             timestamp,
@@ -80,8 +75,21 @@ def log_state(data):
             row.append(page_data.get("unlocked", "N/A"))
             row.append(page_data.get("completed", "N/A"))
         writer.writerow(row)
-
     print(f"[{timestamp}] State data recorded.")
+
+
+def git_push():
+    """Commit and push updated CSVs to GitHub."""
+    try:
+        subprocess.run(["git", "add", "stabilization_log.csv", "state_log.csv"], cwd=BASE_DIR, check=True)
+        result = subprocess.run(["git", "commit", "-m", f"Data update {get_timestamp()}"], cwd=BASE_DIR, capture_output=True, text=True)
+        if "nothing to commit" in result.stdout:
+            print("  No changes to push.")
+            return
+        subprocess.run(["git", "push"], cwd=BASE_DIR, check=True)
+        print("  GitHub updated successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"[WARN] Git push failed: {e}")
 
 
 def get_next_update_time(stab_data):
@@ -91,17 +99,13 @@ def get_next_update_time(stab_data):
         next_time_str = first_cam.get("nextStabilizationAt")
         if not next_time_str:
             return FALLBACK_INTERVAL
-
         next_time = datetime.fromisoformat(next_time_str.replace("Z", "+00:00"))
         now = datetime.now(timezone.utc)
         seconds_until = (next_time - now).total_seconds()
-
-        # Wait 2 minutes after nextStabilizationAt to make sure the API has updated
-        seconds_until += 120
-
+        # Wait 3 minutes after nextStabilizationAt to make sure the API has updated
+        seconds_until += 180
         if seconds_until < 10:
             return FALLBACK_INTERVAL
-
         return seconds_until
     except Exception as e:
         print(f"[WARN] Could not parse next update time: {e}")
@@ -130,6 +134,8 @@ def run():
             log_state(state_data)
         except Exception as e:
             print(f"[ERROR] State: {e}")
+
+        git_push()
 
         wait = get_next_update_time(stab_data) if stab_data else FALLBACK_INTERVAL
         next_run = datetime.fromtimestamp(
