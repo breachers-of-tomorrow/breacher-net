@@ -619,6 +619,7 @@
   }
 
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -814,7 +815,13 @@
       <span style="margin-left:auto;font-size:0.65rem;color:var(--dim)" id="dire-marsh-progress">LOADING...</span>
       <span class="alert-banner-dot" style="background:var(--warn);box-shadow:0 0 6px var(--warn);animation:none"></span>
     </div>
-    <div class="section-title" style="margin-top:24px">DIRE MARSH // TERMINAL MAP</div>
+
+    <div class="section-title" style="margin-top:24px">DIRE MARSH // STABILIZATION LEVELS</div>
+    <div style="background:var(--panel);border:1px solid var(--border);padding:20px;height:220px;margin-bottom:24px">
+      <canvas id="dm-stab-chart"></canvas>
+    </div>
+
+    <div class="section-title">DIRE MARSH // TERMINAL MAP</div>
     <div class="map-wrapper">
 
       <div class="map-container">
@@ -1095,6 +1102,90 @@
 
   fetchStabTime();
   setInterval(fetchStabTime, 60 * 1000);
+
+  // Dire Marsh stabilization chart
+  const DM_CAMERAS = ['biostock', 'steerage', 'camera09'];
+  const DM_COLORS  = ['#c084fc', '#fbbf24', '#60a5fa'];
+  let dmChart = null;
+  let dmStabData = [];
+
+  function parseCSV(text) {
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) return [];
+    const headers = lines[0].split(',').map(h => h.trim());
+    return lines.slice(1).map(line => {
+      const vals = line.split(',');
+      const obj = {};
+      headers.forEach((h, i) => obj[h] = (vals[i] || '').trim());
+      return obj;
+    });
+  }
+
+  function csvUrl(filename) {
+    const isLoc = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    const base = isLoc ? '' : 'https://raw.githubusercontent.com/CrowdTypical/Marathon-arg/main/';
+    return base + filename + '?t=' + Date.now();
+  }
+
+  function renderDmChart() {
+    if (!dmStabData.length) return;
+    const recent = dmStabData.slice(-96);
+    const labels = recent.map(r => {
+      if (!r.timestamp) return '';
+      const d = new Date(r.timestamp.replace(' UTC','') + 'Z');
+      return d.toLocaleString('en-US', {
+        timeZone: 'America/New_York',
+        month: 'short', day: 'numeric',
+        hour: 'numeric', minute: '2-digit',
+        hour12: true
+      }) + ' ET';
+    });
+    const ctx = document.getElementById('dm-stab-chart').getContext('2d');
+    if (dmChart) dmChart.destroy();
+    dmChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: DM_CAMERAS.map((cam, i) => ({
+          label: cam,
+          data: recent.map(r => parseInt(r[`${cam}_stabilizationLevel`]) || 0),
+          borderColor: DM_COLORS[i],
+          backgroundColor: 'transparent',
+          borderWidth: 1.5, pointRadius: 2, tension: 0.3,
+        }))
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { labels: { color: '#2a5a6a', font: { family: 'Share Tech Mono', size: 10 }, boxWidth: 12 } },
+          tooltip: {
+            backgroundColor: '#0a1a24', borderColor: '#0a3a4a', borderWidth: 1,
+            titleColor: '#00d4ff', bodyColor: '#7ecfdf',
+            titleFont: { family: 'Share Tech Mono', size: 11 },
+            bodyFont:  { family: 'Share Tech Mono', size: 10 },
+            padding: 10,
+          }
+        },
+        scales: {
+          x: { ticks: { color: '#2a5a6a', font: { size: 9 }, maxRotation: 30, autoSkip: true, maxTicksLimit: 12 }, grid: { color: '#0a3a4a' } },
+          y: { ticks: { color: '#2a5a6a', font: { size: 9 } }, grid: { color: '#0a3a4a' }, beginAtZero: true, max: 100 }
+        }
+      }
+    });
+  }
+
+  async function fetchDmChart() {
+    try {
+      const res = await fetch(csvUrl('stabilization_log.csv'));
+      if (!res.ok) return;
+      dmStabData = parseCSV(await res.text());
+      renderDmChart();
+    } catch (e) {}
+  }
+
+  fetchDmChart();
+  setInterval(fetchDmChart, 15 * 60 * 1000);
 
   // Sub-tab switching with URL hash
   function activateTab(tabId) {
