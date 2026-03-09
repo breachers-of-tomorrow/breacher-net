@@ -467,7 +467,7 @@
       <div class="chart-container" style="height:260px"><canvas id="stab-chart"></canvas></div>
       <div class="chart-controls">
         <label>TIME WINDOW</label>
-        <input type="range" id="stab-slider" min="1" max="192" value="96" step="1">
+        <input type="range" id="stab-slider" min="1" max="192" value="20" step="1">
         <span id="stab-slider-label">LAST 24H</span>
         <span id="stab-slider-range" style="font-size:0.65rem;color:var(--dim);min-width:200px;text-align:right"></span>
       </div>
@@ -655,7 +655,7 @@
           if (slider) {
             slider.max = Math.max(totalIntervals, 96);
             // Only reset to 96 on first load, not on refresh
-            if (firstLoad) slider.value = Math.min(96, slider.max);
+            if (firstLoad) slider.value = Math.min(20, slider.max);
           }
         }
       }

@@ -685,7 +685,30 @@
       PERIMETER TERMINALS COMPLETE
       <span class="alert-banner-dot"></span>
     </div>
-    <div class="section-title" style="margin-top:24px">PERIMETER // TERMINAL MAP</div>
+
+    <div class="section-title" style="margin-top:24px">PERIMETER // STABILIZATION LEVELS</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px">
+      <div class="card">
+        <div class="card-name">CARGO</div>
+        <div class="card-value level-high" id="per-val-cargo">--</div>
+        <div class="card-sub" id="per-next-cargo">NEXT: --</div>
+        <div class="mini-chart" id="per-bars-cargo"></div>
+      </div>
+      <div class="card">
+        <div class="card-name">INDEX</div>
+        <div class="card-value level-high" id="per-val-index">--</div>
+        <div class="card-sub" id="per-next-index">NEXT: --</div>
+        <div class="mini-chart" id="per-bars-index"></div>
+      </div>
+      <div class="card">
+        <div class="card-name">CRYOHUB</div>
+        <div class="card-value level-high" id="per-val-cryoHub">--</div>
+        <div class="card-sub" id="per-next-cryoHub">NEXT: --</div>
+        <div class="mini-chart" id="per-bars-cryoHub"></div>
+      </div>
+    </div>
+
+    <div class="section-title">PERIMETER // TERMINAL MAP</div>
     <div class="map-wrapper">
 
       <div class="map-container">
@@ -1030,10 +1053,33 @@
     <div class="alert-banner" style="border-color:rgba(255,107,53,0.25);background:rgba(255,107,53,0.06);color:var(--warn);text-shadow:none;">
       <span class="alert-banner-dot" style="background:var(--warn);box-shadow:0 0 6px var(--warn);animation:none"></span>
       OUTPOST TERMINALS INCOMPLETE
-      <span style="margin-left:auto;font-size:0.65rem;color:var(--dim)" id="outpost-progress">LOADING...</span>
+      <span style="margin-left:auto;font-size:0.65rem;color:var(--dim)" id="outpost-progress"></span>
       <span class="alert-banner-dot" style="background:var(--warn);box-shadow:0 0 6px var(--warn);animation:none"></span>
     </div>
-    <div class="section-title" style="margin-top:24px">OUTPOST // TERMINAL MAP</div>
+
+    <div class="section-title" style="margin-top:24px">OUTPOST // STABILIZATION LEVELS</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px">
+      <div class="card" id="op-card-revival">
+        <div class="card-name">REVIVAL</div>
+        <div class="card-value level-high" id="op-val-revival">--</div>
+        <div class="card-sub" id="op-next-revival">NEXT: --</div>
+        <div class="mini-chart" id="op-bars-revival"></div>
+      </div>
+      <div class="card" id="op-card-camera06">
+        <div class="card-name">CAMERA06</div>
+        <div class="card-value level-high" id="op-val-camera06">--</div>
+        <div class="card-sub" id="op-next-camera06">NEXT: --</div>
+        <div class="mini-chart" id="op-bars-camera06"></div>
+      </div>
+      <div class="card" id="op-card-preservation">
+        <div class="card-name">PRESERVATION</div>
+        <div class="card-value level-high" id="op-val-preservation">--</div>
+        <div class="card-sub" id="op-next-preservation">NEXT: --</div>
+        <div class="mini-chart" id="op-bars-preservation"></div>
+      </div>
+    </div>
+
+    <div class="section-title">OUTPOST // TERMINAL MAP</div>
     <div class="map-placeholder">
       <div class="map-placeholder-icon">[ MAP ]</div>
       <div class="map-placeholder-text">OUTPOST MAP — COMING SOON</div>
@@ -1168,17 +1214,20 @@
     return base + filename + '?t=' + Date.now();
   }
 
-  function renderDmCards() {
+  const OP_CAMERAS = ['revival', 'camera06', 'preservation'];
+  const PER_CAMERAS = ['cargo', 'index', 'cryoHub'];
+
+  function renderCameraCards(cameras, prefix) {
     if (!dmStabData.length) return;
     const latest = dmStabData[dmStabData.length - 1];
-    DM_CAMERAS.forEach(cam => {
+    cameras.forEach(cam => {
       const level = parseInt(latest[`${cam}_stabilizationLevel`]) || 0;
       const next = latest[`${cam}_nextStabilizationAt`] || '--';
       const levelClass = level === 0 ? 'level-0' : level === 1 ? 'level-1' : level === 2 ? 'level-2' : 'level-high';
       const history = dmStabData.slice(-20).map(r => parseInt(r[`${cam}_stabilizationLevel`]) || 0);
-      const valEl = document.getElementById(`dm-val-${cam}`);
-      const nextEl = document.getElementById(`dm-next-${cam}`);
-      const barsEl = document.getElementById(`dm-bars-${cam}`);
+      const valEl = document.getElementById(`${prefix}-val-${cam}`);
+      const nextEl = document.getElementById(`${prefix}-next-${cam}`);
+      const barsEl = document.getElementById(`${prefix}-bars-${cam}`);
       if (!valEl) return;
       valEl.textContent = level;
       valEl.className = `card-value ${levelClass}`;
@@ -1191,12 +1240,18 @@
     });
   }
 
+  function renderDmCards() { renderCameraCards(DM_CAMERAS, 'dm'); }
+  function renderOpCards() { renderCameraCards(OP_CAMERAS, 'op'); }
+  function renderPerCards() { renderCameraCards(PER_CAMERAS, 'per'); }
+
   async function fetchDmCards() {
     try {
       const res = await fetch(csvUrl('stabilization_log.csv'));
       if (!res.ok) return;
       dmStabData = parseCSV(await res.text());
       renderDmCards();
+      renderOpCards();
+      renderPerCards();
     } catch (e) {}
   }
 
@@ -1234,7 +1289,7 @@
   // -------------------------------------------------------
   const MAP_CAMERAS = {
     'dire-marsh': ['biostock', 'steerage', 'camera09'],
-    'outpost':    [null, null, null],
+    'outpost':    ['revival', 'camera06', 'preservation'],
   };
 
   async function fetchProgress() {
