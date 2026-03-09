@@ -583,6 +583,41 @@
     letter-spacing: 4px;
     color: var(--dim);
   }
+  .next-update-bar {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 30px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 0.75rem;
+  }
+
+  .next-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 3px;
+    color: var(--dim);
+  }
+
+  #next-update-time { color: var(--accent); }
+  #next-update-countdown { color: var(--accent2); font-size: 0.8rem; }
+
+  .progress-bar {
+    flex: 1;
+    height: 3px;
+    background: var(--border);
+    margin-left: 10px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    transition: width 1s linear;
+    box-shadow: var(--glow2);
+  }
+
 </style>
 </head>
 <body>
@@ -599,6 +634,15 @@
   <a href="terminal_maps.html" class="active"><span class="nav-dot"></span>Terminal Maps</a>
   <a href="https://docs.google.com/document/d/1mtUtDPvbh6ahiynYFVS7Z4O79Nw6y5PEOjweCpzWV_A/edit?tab=t.0" target="_blank"><span class="nav-dot"></span>Google Doc</a>
 </nav>
+
+<div class="next-update-bar">
+  <span class="next-label">NEXT STABILIZATION</span>
+  <span id="next-update-time">--:--:-- ET</span>
+  <span id="next-update-countdown">-- --s</span>
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+  </div>
+</div>
 
 <div class="sub-tabs">
   <div class="sub-tab active" data-tab="perimeter"><span class="tab-dot"></span>Perimeter</div>
@@ -973,16 +1017,84 @@
 
   // Clock
   function toESTTimeOnly(date) {
-    return date.toLocaleString('en-US', {
+    if (!date) return '--';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d)) return '--';
+    return d.toLocaleString('en-US', {
       timeZone: 'America/New_York',
       hour: 'numeric', minute: '2-digit', second: '2-digit',
       hour12: true
     }) + ' ET';
   }
+
+  let nextStabilizationAt = null;
+  let intervalTotal = 15 * 60;
+
   setInterval(() => {
-    document.getElementById('clock').textContent = toESTTimeOnly(new Date());
+    const now = new Date();
+    document.getElementById('clock').textContent = toESTTimeOnly(now);
+
+    if (nextStabilizationAt) {
+      const secsLeft = Math.max(0, (nextStabilizationAt - now) / 1000);
+      const mins = Math.floor(secsLeft / 60);
+      const secs = Math.floor(secsLeft % 60);
+      document.getElementById('next-update-countdown').textContent =
+        secsLeft > 0 ? `IN ${mins}m ${secs}s` : `UPDATING...`;
+      const elapsed = intervalTotal - secsLeft;
+      const pct = Math.min(100, Math.max(0, (elapsed / intervalTotal) * 100));
+      document.getElementById('progress-fill').style.width = pct + '%';
+    }
   }, 1000);
   document.getElementById('clock').textContent = toESTTimeOnly(new Date());
+
+  // Fetch next stabilization time from API
+  const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  const GITHUB_RAW = 'https://raw.githubusercontent.com/CrowdTypical/Marathon-arg/main/';
+
+  async function fetchStabTime() {
+    try {
+      const res = await fetch('https://cryoarchive.systems/api/public/cctv-cameras/stabilization?t=' + Date.now());
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      const nextStr = Object.values(data?.stabilization || {})
+        .map(c => c?.nextStabilizationAt)
+        .find(v => v != null);
+      if (nextStr) {
+        const newNext = new Date(nextStr);
+        if (newNext > new Date()) {
+          intervalTotal = (newNext - new Date()) / 1000;
+          nextStabilizationAt = newNext;
+          document.getElementById('next-update-time').textContent = toESTTimeOnly(nextStabilizationAt);
+          return;
+        }
+      }
+    } catch (e) {}
+
+    // Fallback: try CSV
+    try {
+      const csvRes = await fetch((isLocal ? '' : GITHUB_RAW) + 'stabilization_log.csv?t=' + Date.now());
+      if (!csvRes.ok) return;
+      const text = await csvRes.text();
+      const lines = text.trim().split('\n');
+      const headers = lines[0].split(',').map(h => h.trim());
+      const last = lines[lines.length - 1].split(',');
+      const obj = {};
+      headers.forEach((h, i) => obj[h] = (last[i] || '').trim());
+      const CAMERAS = ['cargo','index','revival','biostock','steerage','preservation','cryoHub','camera06','camera09'];
+      const nextStr = CAMERAS.map(c => obj[`${c}_nextStabilizationAt`]).find(v => v && v !== 'N/A' && v !== 'null' && v !== '');
+      if (nextStr) {
+        let candidate = new Date(nextStr);
+        const now = new Date();
+        while (candidate <= now) candidate = new Date(candidate.getTime() + 15 * 60 * 1000);
+        intervalTotal = (candidate - now) / 1000;
+        nextStabilizationAt = candidate;
+        document.getElementById('next-update-time').textContent = toESTTimeOnly(nextStabilizationAt);
+      }
+    } catch (e) {}
+  }
+
+  fetchStabTime();
+  setInterval(fetchStabTime, 60 * 1000);
 
   // Sub-tab switching
   document.querySelectorAll('.sub-tab').forEach(tab => {
