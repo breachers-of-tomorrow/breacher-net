@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRYOARCHIVE // TERMINAL MAPS</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+  :root {
+    --bg: #030a0f;
+    --panel: #060f17;
+    --border: #0a3a4a;
+    --accent: #00d4ff;
+    --accent2: #00ff9d;
+    --warn: #ff6b35;
+    --danger: #ff2244;
+    --text: #7ecfdf;
+    --dim: #2a5a6a;
+    --glow: 0 0 10px rgba(0,212,255,0.4);
+    --glow2: 0 0 10px rgba(0,255,157,0.4);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(90deg, rgba(0,212,255,0.05) 0%, transparent 100%);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .logo {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: var(--accent);
+    text-shadow: var(--glow);
+    letter-spacing: 4px;
+  }
+
+  .logo span { color: var(--accent2); }
+
+  .status-bar {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    font-size: 0.75rem;
+  }
+
+  #clock { color: var(--accent); }
+
+  /* Top nav */
+  nav {
+    background: var(--bg);
+    border-bottom: 2px solid var(--border);
+    padding: 10px 30px 0;
+    display: flex;
+    gap: 6px;
+  }
+
+  nav a {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--dim);
+    text-decoration: none;
+    padding: 10px 22px;
+    border: 1px solid transparent;
+    border-bottom: none;
+    transition: color 0.2s, background 0.2s, border-color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    top: 2px;
+  }
+
+  nav a:hover {
+    color: var(--text);
+    background: rgba(0,212,255,0.05);
+    border-color: var(--border);
+  }
+
+  nav a.active {
+    color: var(--accent);
+    background: var(--panel);
+    border-color: var(--border);
+    border-bottom: 2px solid var(--panel);
+    text-shadow: var(--glow);
+  }
+
+  nav a .nav-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 6px currentColor;
+  }
+
+  /* Sub-tabs */
+  .sub-tabs {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 0 30px;
+    display: flex;
+    gap: 0;
+  }
+
+  .sub-tab {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--dim);
+    padding: 12px 28px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
+  }
+
+  .sub-tab:hover {
+    color: var(--text);
+    background: rgba(0,212,255,0.04);
+  }
+
+  .sub-tab.active {
+    color: var(--accent2);
+    border-bottom: 2px solid var(--accent2);
+    background: rgba(0,255,157,0.04);
+    text-shadow: var(--glow2);
+  }
+
+  .sub-tab .tab-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 5px currentColor;
+  }
+
+  /* Content panels */
+  main { padding: 30px; max-width: 1400px; margin: 0 auto; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: fadeIn 0.25s ease; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 6px;
+    color: var(--dim);
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Interactive map */
+  .map-wrapper {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+  }
+
+  .map-container {
+    position: relative;
+    flex: 0 0 auto;
+    max-width: 700px;
+    width: 100%;
+    border: 1px solid var(--border);
+    background: var(--panel);
+  }
+
+  .map-container img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .map-container svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Zone hotspot circles */
+  .zone-group { cursor: pointer; }
+
+  .zone-ring {
+    fill: none;
+    stroke-width: 3;
+    opacity: 0;
+    transition: opacity 0.2s, r 0.2s;
+  }
+
+  .zone-fill {
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .zone-group:hover .zone-ring,
+  .zone-group.active .zone-ring { opacity: 1; }
+
+  .zone-group:hover .zone-fill,
+  .zone-group.active .zone-fill { opacity: 0.18; }
+
+  .zone-1 .zone-ring { stroke: #00d4ff; filter: drop-shadow(0 0 8px #00d4ff); }
+  .zone-1 .zone-fill { fill: #00d4ff; }
+  .zone-2 .zone-ring { stroke: #00ff9d; filter: drop-shadow(0 0 8px #00ff9d); }
+  .zone-2 .zone-fill { fill: #00ff9d; }
+  .zone-3 .zone-ring { stroke: #ff6b35; filter: drop-shadow(0 0 8px #ff6b35); }
+  .zone-3 .zone-fill { fill: #ff6b35; }
+
+  /* Info panel */
+  .map-info {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 24px;
+    min-height: 400px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .map-info::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+    transition: background 0.3s;
+  }
+
+  .map-info.zone-1-active::before { background: linear-gradient(90deg, #00d4ff, transparent); }
+  .map-info.zone-2-active::before { background: linear-gradient(90deg, #00ff9d, transparent); }
+  .map-info.zone-3-active::before { background: linear-gradient(90deg, #ff6b35, transparent); }
+
+  .info-idle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 300px;
+    gap: 10px;
+  }
+
+  .info-idle-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 4px;
+    color: var(--dim);
+  }
+
+  .info-content { display: none; animation: fadeIn 0.2s ease; }
+  .info-content.visible { display: block; }
+
+  .info-zone-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 4px;
+    margin-bottom: 6px;
+  }
+
+  .info-zone-label.z1 { color: #00d4ff; }
+  .info-zone-label.z2 { color: #00ff9d; }
+  .info-zone-label.z3 { color: #ff6b35; }
+
+  .info-zone-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.4rem;
+    font-weight: 900;
+    letter-spacing: 4px;
+    margin-bottom: 16px;
+    color: var(--text);
+  }
+
+  .info-divider {
+    height: 1px;
+    background: var(--border);
+    margin-bottom: 16px;
+  }
+
+  .info-body {
+    font-size: 0.8rem;
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  /* Image gallery */
+  .info-section-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 3px;
+    color: var(--dim);
+    margin: 16px 0 8px;
+  }
+
+  .img-gallery {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .img-thumb {
+    aspect-ratio: 16/9;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    cursor: zoom-in;
+    position: relative;
+    background: #020608;
+    transition: border-color 0.2s;
+  }
+
+  .img-thumb:hover { border-color: var(--accent); }
+
+  .img-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s, opacity 0.2s;
+  }
+
+  .img-thumb:hover img { transform: scale(1.04); opacity: 0.85; }
+
+  .img-thumb-label {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(3,10,15,0.8);
+    font-size: 0.55rem;
+    letter-spacing: 2px;
+    color: var(--dim);
+    padding: 4px 7px;
+    font-family: 'Orbitron', monospace;
+  }
+
+  /* Lightbox */
+  #lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(3,10,15,0.95);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+    cursor: zoom-out;
+  }
+
+  #lightbox.open { display: flex; animation: fadeIn 0.15s ease; }
+
+  #lightbox img {
+    max-width: 90vw;
+    max-height: 82vh;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    box-shadow: 0 0 60px rgba(0,212,255,0.1);
+  }
+
+  #lightbox-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 3px;
+    color: var(--dim);
+  }
+
+  #lightbox-close {
+    position: absolute;
+    top: 20px; right: 24px;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    color: var(--dim);
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+
+  #lightbox-close:hover { color: var(--accent); }
+
+  .info-locations {
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .info-loc {
+    font-size: 0.75rem;
+    color: var(--dim);
+    padding: 6px 10px;
+    border-left: 2px solid var(--border);
+  }
+
+  .info-loc.z1 { border-color: #00d4ff; color: var(--text); }
+  .info-loc.z2 { border-color: #00ff9d; color: var(--text); }
+  .info-loc.z3 { border-color: #ff6b35; color: var(--text); }
+
+  .info-images {
+    margin-top: 16px;
+  }
+
+  .info-images-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 3px;
+    color: var(--dim);
+    margin-bottom: 8px;
+  }
+
+  .image-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .img-thumb {
+    position: relative;
+    aspect-ratio: 16/9;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    background: #020810;
+    transition: border-color 0.2s;
+  }
+
+  .img-thumb:hover { border-color: var(--accent); }
+
+  .img-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.2s;
+  }
+
+  .img-thumb:hover img { opacity: 0.85; }
+
+  .img-thumb-label {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(3,10,15,0.85);
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    color: var(--dim);
+    padding: 4px 7px;
+    font-family: 'Orbitron', monospace;
+  }
+
+  .img-thumb.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    border-style: dashed;
+  }
+
+  .img-thumb.placeholder span {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 2px;
+    color: var(--dim);
+  }
+
+  /* Lightbox */
+  #lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(3,10,15,0.95);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  #lightbox.open { display: flex; }
+
+  #lightbox img {
+    max-width: 90vw;
+    max-height: 82vh;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    box-shadow: 0 0 40px rgba(0,212,255,0.15);
+  }
+
+  #lightbox-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 3px;
+    color: var(--dim);
+  }
+
+  #lightbox-close {
+    position: absolute;
+    top: 20px; right: 24px;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 3px;
+    color: var(--accent);
+    cursor: pointer;
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  #lightbox-close:hover {
+    border-color: var(--accent);
+    background: rgba(0,212,255,0.08);
+  }
+  .map-placeholder {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    min-height: 500px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .map-placeholder::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--accent2), transparent);
+  }
+
+  .map-placeholder-icon {
+    font-family: 'Orbitron', monospace;
+    font-size: 3rem;
+    color: var(--border);
+    letter-spacing: 8px;
+  }
+
+  .map-placeholder-text {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 4px;
+    color: var(--dim);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">CRYO<span>ARCHIVE</span> // <span style="font-size:0.8rem;color:var(--text)">TERMINAL MAPS</span></div>
+  <div class="status-bar">
+    <span id="clock">--:--:--</span>
+  </div>
+</header>
+
+<nav>
+  <a href="dashboard.html"><span class="nav-dot"></span>Camera Monitoring</a>
+  <a href="terminal_maps.html" class="active"><span class="nav-dot"></span>Terminal Maps</a>
+  <a href="https://docs.google.com/document/d/1mtUtDPvbh6ahiynYFVS7Z4O79Nw6y5PEOjweCpzWV_A/edit?tab=t.0" target="_blank"><span class="nav-dot"></span>Google Doc</a>
+</nav>
+
+<div class="sub-tabs">
+  <div class="sub-tab active" data-tab="perimeter"><span class="tab-dot"></span>Perimeter</div>
+  <div class="sub-tab" data-tab="dire-marsh"><span class="tab-dot"></span>Dire Marsh</div>
+  <div class="sub-tab" data-tab="outpost"><span class="tab-dot"></span>Outpost</div>
+</div>
+
+<main>
+
+  <div class="tab-panel active" id="tab-perimeter">
+    <div class="section-title">PERIMETER // TERMINAL MAP</div>
+    <div class="map-wrapper">
+
+      <div class="map-container">
+        <img src="Marathon_Terminal_Map.jpg" alt="Perimeter Terminal Map">
+
+        <svg viewBox="0 0 1100 1100" xmlns="http://www.w3.org/2000/svg">
+
+          <!-- ZONE 1: top-left circle + bottom-left START -->
+          <g class="zone-group zone-1" data-zone="1">
+            <circle class="zone-fill" cx="200" cy="108" r="78"/>
+            <circle class="zone-ring" cx="200" cy="108" r="78"/>
+            <circle class="zone-fill" cx="128" cy="928" r="82"/>
+            <circle class="zone-ring" cx="128" cy="928" r="82"/>
+          </g>
+
+          <!-- ZONE 2: center circle + bottom-right START -->
+          <g class="zone-group zone-2" data-zone="2">
+            <circle class="zone-fill" cx="425" cy="525" r="78"/>
+            <circle class="zone-ring" cx="425" cy="525" r="78"/>
+            <circle class="zone-fill" cx="862" cy="892" r="82"/>
+            <circle class="zone-ring" cx="862" cy="892" r="82"/>
+          </g>
+
+          <!-- ZONE 3: left-middle circle + right-middle START -->
+          <g class="zone-group zone-3" data-zone="3">
+            <circle class="zone-fill" cx="158" cy="558" r="78"/>
+            <circle class="zone-ring" cx="158" cy="558" r="78"/>
+            <circle class="zone-fill" cx="893" cy="458" r="82"/>
+            <circle class="zone-ring" cx="893" cy="458" r="82"/>
+          </g>
+
+        </svg>
+      </div>
+
+      <div class="map-info" id="map-info">
+        <div class="info-idle" id="info-idle">
+          <div class="map-placeholder-icon">[ — ]</div>
+          <div class="info-idle-label">HOVER A ZONE TO INSPECT</div>
+        </div>
+
+        <div class="info-content" id="info-zone-1">
+          <div class="info-zone-label z1">// ZONE 01</div>
+          <div class="info-zone-title">ROUTE ONE</div>
+          <div class="info-divider"></div>
+          <div class="info-body">Connects the northern sector down through the western wall to the Overflow extraction point.</div>
+          <div class="info-locations">
+            <div class="info-loc z1">⬤ North Relay</div>
+            <div class="info-loc z1">⬤ Overflow</div>
+            <div class="info-loc z1">⬤ 1 START — Overflow extraction</div>
+          </div>
+
+          <div class="info-images">
+            <div class="info-images-label">// START TERMINAL</div>
+            <div class="image-grid">
+              <div class="img-thumb" onclick="openLightbox('z1_start_1.png', 'ZONE 1 — START / EXTERIOR')">
+                <img src="z1_start_1.png" alt="Zone 1 Start Exterior">
+                <div class="img-thumb-label">EXTERIOR</div>
+              </div>
+              <div class="img-thumb" onclick="openLightbox('z1_start_2.png', 'ZONE 1 — START / INTERIOR')">
+                <img src="z1_start_2.png" alt="Zone 1 Start Interior">
+                <div class="img-thumb-label">INTERIOR</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-images" style="margin-top:12px">
+            <div class="info-images-label">// END TERMINAL</div>
+            <div class="image-grid">
+              <div class="img-thumb" onclick="openLightbox('z1_end_1.png', 'ZONE 1 — END / EXTERIOR')">
+                <img src="z1_end_1.png" alt="Zone 1 End Exterior">
+                <div class="img-thumb-label">EXTERIOR</div>
+              </div>
+              <div class="img-thumb" onclick="openLightbox('z1_end_2.png', 'ZONE 1 — END / INTERIOR')">
+                <img src="z1_end_2.png" alt="Zone 1 End Interior">
+                <div class="img-thumb-label">INTERIOR</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-content" id="info-zone-2">
+          <div class="info-zone-label z2">// ZONE 02</div>
+          <div class="info-zone-title">ROUTE TWO</div>
+          <div class="info-divider"></div>
+          <div class="info-body">Central route running through Data Wall and south through Ravine to the South Relay extraction point.</div>
+          <div class="info-locations">
+            <div class="info-loc z2">⬤ Data Wall</div>
+            <div class="info-loc z2">⬤ Ravine</div>
+            <div class="info-loc z2">⬤ South Relay</div>
+            <div class="info-loc z2">⬤ 2 START — South Relay extraction</div>
+          </div>
+
+          <div class="info-images">
+            <div class="info-images-label">// START TERMINAL</div>
+            <div class="info-body" style="margin-bottom:8px;font-size:0.72rem;color:var(--dim)">In the main building, in the back room.</div>
+            <div class="image-grid">
+              <div class="img-thumb" onclick="openLightbox('z2_start_1.png', 'ZONE 2 — START / EXTERIOR')">
+                <img src="z2_start_1.png" alt="Zone 2 Start Exterior">
+                <div class="img-thumb-label">EXTERIOR</div>
+              </div>
+              <div class="img-thumb" onclick="openLightbox('z2_start_2.png', 'ZONE 2 — START / INTERIOR')">
+                <img src="z2_start_2.png" alt="Zone 2 Start Interior">
+                <div class="img-thumb-label">INTERIOR</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-images" style="margin-top:12px">
+            <div class="info-images-label">// END TERMINAL</div>
+            <div class="info-body" style="margin-bottom:8px;font-size:0.72rem;color:var(--dim)">Go up the stairs then to the right.</div>
+            <div class="image-grid">
+              <div class="img-thumb" onclick="openLightbox('z2_end_1.png', 'ZONE 2 — END / EXTERIOR')">
+                <img src="z2_end_1.png" alt="Zone 2 End Exterior">
+                <div class="img-thumb-label">EXTERIOR</div>
+              </div>
+              <div class="img-thumb" onclick="openLightbox('z2_end_2.png', 'ZONE 2 — END / INTERIOR')">
+                <img src="z2_end_2.png" alt="Zone 2 End Interior">
+                <div class="img-thumb-label">INTERIOR</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-content" id="info-zone-3">
+          <div class="info-zone-label z3">// ZONE 03</div>
+          <div class="info-zone-title">ROUTE THREE</div>
+          <div class="info-divider"></div>
+          <div class="info-body">Eastern corridor from Station through Tunnels west to Hauler. Crosses the East Wall checkpoint.</div>
+          <div class="info-locations">
+            <div class="info-loc z3">⬤ Station</div>
+            <div class="info-loc z3">⬤ Tunnels</div>
+            <div class="info-loc z3">⬤ East Wall</div>
+            <div class="info-loc z3">⬤ Hauler</div>
+            <div class="info-loc z3">⬤ 3 START — Station extraction</div>
+          </div>
+
+          <div class="info-images">
+            <div class="info-images-label">// START TERMINAL</div>
+            <div class="image-grid">
+              <div class="img-thumb" onclick="openLightbox('z3_start_1.png', 'ZONE 3 — START / EXTERIOR')">
+                <img src="z3_start_1.png" alt="Zone 3 Start Exterior">
+                <div class="img-thumb-label">EXTERIOR</div>
+              </div>
+              <div class="img-thumb" onclick="openLightbox('z3_start_2.png', 'ZONE 3 — START / INTERIOR')">
+                <img src="z3_start_2.png" alt="Zone 3 Start Interior">
+                <div class="img-thumb-label">INTERIOR</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-images" style="margin-top:12px">
+            <div class="info-images-label">// END TERMINAL</div>
+            <div class="image-grid">
+              <div class="img-thumb" onclick="openLightbox('z3_end_1.png', 'ZONE 3 — END / EXTERIOR')">
+                <img src="z3_end_1.png" alt="Zone 3 End Exterior">
+                <div class="img-thumb-label">EXTERIOR</div>
+              </div>
+              <div class="img-thumb" onclick="openLightbox('z3_end_2.png', 'ZONE 3 — END / INTERIOR')">
+                <img src="z3_end_2.png" alt="Zone 3 End Interior">
+                <div class="img-thumb-label">INTERIOR</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-dire-marsh">
+    <div class="section-title">DIRE MARSH // TERMINAL MAP</div>
+    <div class="map-placeholder">
+      <div class="map-placeholder-icon">[ MAP ]</div>
+      <div class="map-placeholder-text">DIRE MARSH MAP — COMING SOON</div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-outpost">
+    <div class="section-title">OUTPOST // TERMINAL MAP</div>
+    <div class="map-placeholder">
+      <div class="map-placeholder-icon">[ MAP ]</div>
+      <div class="map-placeholder-text">OUTPOST MAP — COMING SOON</div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Lightbox -->
+<div id="lightbox" onclick="closeLightbox()">
+  <div id="lightbox-close">✕ CLOSE</div>
+  <img id="lightbox-img" src="" alt="">
+  <div id="lightbox-label"></div>
+</div>
+
+<script>
+  // Lightbox
+  function openLightbox(src, label) {
+    document.getElementById('lightbox-img').src = src;
+    document.getElementById('lightbox-label').textContent = label;
+    document.getElementById('lightbox').classList.add('open');
+  }
+
+  function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('open');
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeLightbox();
+  });
+
+  // Clock
+  function toESTTimeOnly(date) {
+    return date.toLocaleString('en-US', {
+      timeZone: 'America/New_York',
+      hour: 'numeric', minute: '2-digit', second: '2-digit',
+      hour12: true
+    }) + ' ET';
+  }
+  setInterval(() => {
+    document.getElementById('clock').textContent = toESTTimeOnly(new Date());
+  }, 1000);
+  document.getElementById('clock').textContent = toESTTimeOnly(new Date());
+
+  // Sub-tab switching
+  document.querySelectorAll('.sub-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  // Zone interactions
+  let activeZone = null;
+
+  function showZoneInfo(zone) {
+    const info = document.getElementById('map-info');
+    document.getElementById('info-idle').style.display = 'none';
+    document.querySelectorAll('.info-content').forEach(el => el.classList.remove('visible'));
+    document.getElementById('info-zone-' + zone).classList.add('visible');
+    info.className = 'map-info zone-' + zone + '-active';
+  }
+
+  function clearZoneInfo() {
+    if (activeZone) return; // keep showing if a zone is clicked/locked
+    document.getElementById('info-idle').style.display = '';
+    document.querySelectorAll('.info-content').forEach(el => el.classList.remove('visible'));
+    document.getElementById('map-info').className = 'map-info';
+  }
+
+  document.querySelectorAll('.zone-group').forEach(group => {
+    const zone = group.dataset.zone;
+
+    group.addEventListener('mouseenter', () => {
+      showZoneInfo(zone);
+    });
+
+    group.addEventListener('mouseleave', () => {
+      if (activeZone) {
+        showZoneInfo(activeZone);
+      } else {
+        clearZoneInfo();
+      }
+    });
+
+    group.addEventListener('click', () => {
+      if (activeZone === zone) {
+        // deselect
+        activeZone = null;
+        document.querySelectorAll('.zone-group').forEach(g => g.classList.remove('active'));
+        clearZoneInfo();
+      } else {
+        // deselect previous, select new
+        activeZone = null;
+        document.querySelectorAll('.zone-group').forEach(g => g.classList.remove('active'));
+        clearZoneInfo();
+        activeZone = zone;
+        group.classList.add('active');
+        showZoneInfo(zone);
+      }
+    });
+  });
+</script>
+</body>
+</html>
