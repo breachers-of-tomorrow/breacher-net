@@ -172,6 +172,30 @@
     border-bottom: 1px solid var(--border);
   }
 
+  .alert-banner {
+    background: rgba(0,255,157,0.06);
+    border: 1px solid rgba(0,255,157,0.25);
+    padding: 9px 20px;
+    margin-bottom: 24px;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 4px;
+    color: var(--accent2);
+    text-shadow: var(--glow2);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .alert-banner-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent2);
+    box-shadow: var(--glow2);
+    animation: pulse 2s infinite;
+    flex-shrink: 0;
+  }
+
   /* Interactive map */
   .map-wrapper {
     display: flex;
@@ -421,7 +445,7 @@
     font-family: 'Orbitron', monospace;
     font-size: 0.55rem;
     letter-spacing: 3px;
-    color: var(--dim);
+    color: #5a8a9a;
     margin-bottom: 8px;
   }
 
@@ -459,7 +483,7 @@
     background: rgba(3,10,15,0.85);
     font-size: 0.6rem;
     letter-spacing: 2px;
-    color: var(--dim);
+    color: #5a8a9a;
     padding: 4px 7px;
     font-family: 'Orbitron', monospace;
   }
@@ -585,7 +609,12 @@
 <main>
 
   <div class="tab-panel active" id="tab-perimeter">
-    <div class="section-title">PERIMETER // TERMINAL MAP</div>
+    <div class="alert-banner">
+      <span class="alert-banner-dot"></span>
+      PERIMETER TERMINALS COMPLETE
+      <span class="alert-banner-dot"></span>
+    </div>
+    <div class="section-title" style="margin-top:24px">PERIMETER // TERMINAL MAP</div>
     <div class="map-wrapper">
 
       <div class="map-container">
@@ -630,12 +659,6 @@
           <div class="info-zone-label z1">// ZONE 01</div>
           <div class="info-zone-title">ROUTE ONE</div>
           <div class="info-divider"></div>
-          <div class="info-body">Connects the northern sector down through the western wall to the Overflow extraction point.</div>
-          <div class="info-locations">
-            <div class="info-loc z1">⬤ North Relay</div>
-            <div class="info-loc z1">⬤ Overflow</div>
-            <div class="info-loc z1">⬤ 1 START — Overflow extraction</div>
-          </div>
 
           <div class="info-images">
             <div class="info-images-label">// START TERMINAL</div>
@@ -670,17 +693,10 @@
           <div class="info-zone-label z2">// ZONE 02</div>
           <div class="info-zone-title">ROUTE TWO</div>
           <div class="info-divider"></div>
-          <div class="info-body">Central route running through Data Wall and south through Ravine to the South Relay extraction point.</div>
-          <div class="info-locations">
-            <div class="info-loc z2">⬤ Data Wall</div>
-            <div class="info-loc z2">⬤ Ravine</div>
-            <div class="info-loc z2">⬤ South Relay</div>
-            <div class="info-loc z2">⬤ 2 START — South Relay extraction</div>
-          </div>
 
           <div class="info-images">
             <div class="info-images-label">// START TERMINAL</div>
-            <div class="info-body" style="margin-bottom:8px;font-size:0.72rem;color:var(--dim)">In the main building, in the back room.</div>
+            <div class="info-body" style="margin-bottom:8px;font-size:0.72rem;color:#5a8a9a">In the main building, in the back room.</div>
             <div class="image-grid">
               <div class="img-thumb" onclick="openLightbox('z2_start_1.png', 'ZONE 2 — START / EXTERIOR')">
                 <img src="z2_start_1.png" alt="Zone 2 Start Exterior">
@@ -695,7 +711,7 @@
 
           <div class="info-images" style="margin-top:12px">
             <div class="info-images-label">// END TERMINAL</div>
-            <div class="info-body" style="margin-bottom:8px;font-size:0.72rem;color:var(--dim)">Go up the stairs then to the right.</div>
+            <div class="info-body" style="margin-bottom:8px;font-size:0.72rem;color:#5a8a9a">Go up the stairs then to the right.</div>
             <div class="image-grid">
               <div class="img-thumb" onclick="openLightbox('z2_end_1.png', 'ZONE 2 — END / EXTERIOR')">
                 <img src="z2_end_1.png" alt="Zone 2 End Exterior">
@@ -713,14 +729,6 @@
           <div class="info-zone-label z3">// ZONE 03</div>
           <div class="info-zone-title">ROUTE THREE</div>
           <div class="info-divider"></div>
-          <div class="info-body">Eastern corridor from Station through Tunnels west to Hauler. Crosses the East Wall checkpoint.</div>
-          <div class="info-locations">
-            <div class="info-loc z3">⬤ Station</div>
-            <div class="info-loc z3">⬤ Tunnels</div>
-            <div class="info-loc z3">⬤ East Wall</div>
-            <div class="info-loc z3">⬤ Hauler</div>
-            <div class="info-loc z3">⬤ 3 START — Station extraction</div>
-          </div>
 
           <div class="info-images">
             <div class="info-images-label">// START TERMINAL</div>
@@ -756,15 +764,182 @@
   </div>
 
   <div class="tab-panel" id="tab-dire-marsh">
-    <div class="section-title">DIRE MARSH // TERMINAL MAP</div>
-    <div class="map-placeholder">
-      <div class="map-placeholder-icon">[ MAP ]</div>
-      <div class="map-placeholder-text">DIRE MARSH MAP — COMING SOON</div>
+    <div class="alert-banner" style="border-color:rgba(255,107,53,0.25);background:rgba(255,107,53,0.06);color:var(--warn);text-shadow:none;">
+      <span class="alert-banner-dot" style="background:var(--warn);box-shadow:0 0 6px var(--warn);animation:none"></span>
+      DIRE MARSH TERMINALS INCOMPLETE
+      <span style="margin-left:auto;font-size:0.65rem;color:var(--dim)" id="dire-marsh-progress">LOADING...</span>
+      <span class="alert-banner-dot" style="background:var(--warn);box-shadow:0 0 6px var(--warn);animation:none"></span>
+    </div>
+    <div class="section-title" style="margin-top:24px">DIRE MARSH // TERMINAL MAP</div>
+    <div class="map-wrapper">
+
+      <div class="map-container">
+        <img src="Dire_Marsh_Map.jpg" alt="Dire Marsh Terminal Map">
+
+        <svg viewBox="0 0 1100 1060" xmlns="http://www.w3.org/2000/svg">
+
+          <!-- ROUTE 1: West Gate (end) -->
+          <g class="zone-group dm-zone" data-zone="dm-route1" style="cursor:pointer">
+            <circle cx="120" cy="472" r="70" fill="transparent"/>
+            <circle class="zone-fill" cx="120" cy="472" r="55" fill="#00d4ff"/>
+            <circle class="zone-ring" cx="120" cy="472" r="55" fill="none" stroke="#00d4ff" stroke-width="3"/>
+          </g>
+
+          <!-- ROUTE 1: AI Uplink (start) -->
+          <g class="zone-group dm-zone" data-zone="dm-route1" style="cursor:pointer">
+            <circle cx="583" cy="712" r="70" fill="transparent"/>
+            <circle class="zone-fill" cx="583" cy="712" r="55" fill="#00d4ff"/>
+            <circle class="zone-ring" cx="583" cy="712" r="55" fill="none" stroke="#00d4ff" stroke-width="3"/>
+          </g>
+
+          <!-- ROUTE 2: Complex (start) -->
+          <g class="zone-group dm-zone" data-zone="dm-route2" style="cursor:pointer">
+            <circle cx="895" cy="501" r="70" fill="transparent"/>
+            <circle class="zone-fill" cx="895" cy="501" r="55" fill="#ff6b35"/>
+            <circle class="zone-ring" cx="895" cy="501" r="55" fill="none" stroke="#ff6b35" stroke-width="3"/>
+          </g>
+
+          <!-- ROUTE 2: Maintenance/Canal (end) -->
+          <g class="zone-group dm-zone" data-zone="dm-route2" style="cursor:pointer">
+            <circle cx="428" cy="723" r="70" fill="transparent"/>
+            <circle class="zone-fill" cx="428" cy="723" r="55" fill="#ff6b35"/>
+            <circle class="zone-ring" cx="428" cy="723" r="55" fill="none" stroke="#ff6b35" stroke-width="3"/>
+          </g>
+
+          <!-- ROUTE 3: Algae Ponds (start) -->
+          <g class="zone-group dm-zone" data-zone="dm-route3" style="cursor:pointer">
+            <circle cx="418" cy="597" r="70" fill="transparent"/>
+            <circle class="zone-fill" cx="418" cy="597" r="55" fill="#c084fc"/>
+            <circle class="zone-ring" cx="418" cy="597" r="55" fill="none" stroke="#c084fc" stroke-width="3"/>
+          </g>
+
+          <!-- ROUTE 3: Bio Research (end) -->
+          <g class="zone-group dm-zone" data-zone="dm-route3" style="cursor:pointer">
+            <circle cx="706" cy="347" r="70" fill="transparent"/>
+            <circle class="zone-fill" cx="706" cy="347" r="55" fill="#c084fc"/>
+            <circle class="zone-ring" cx="706" cy="347" r="55" fill="none" stroke="#c084fc" stroke-width="3"/>
+          </g>
+
+        </svg>
+      </div>
+
+      <div class="map-info" id="dm-map-info">
+        <div class="info-idle" id="dm-info-idle">
+          <div class="map-placeholder-icon">[ — ]</div>
+          <div class="info-idle-label">HOVER A TERMINAL TO INSPECT</div>
+        </div>
+
+        <!-- ROUTE 1: West Gate + AI Uplink -->
+        <div class="info-content" id="info-dm-route1">
+          <div class="info-zone-label" style="color:#00d4ff">// ROUTE 01</div>
+          <div class="info-zone-title">WEST GATE → AI UPLINK</div>
+          <div class="info-divider"></div>
+          <div class="info-images">
+            <div class="info-images-label">// WEST GATE (END)</div>
+            <div class="image-grid">
+              <div class="img-thumb" onclick="openLightbox('dm_westgate_1.png', 'WEST GATE — EXTERIOR')">
+                <img src="dm_westgate_1.png" alt="West Gate Exterior">
+                <div class="img-thumb-label">EXTERIOR</div>
+              </div>
+              <div class="img-thumb" onclick="openLightbox('dm_westgate_2.png', 'WEST GATE — INTERIOR')">
+                <img src="dm_westgate_2.png" alt="West Gate Interior">
+                <div class="img-thumb-label">INTERIOR</div>
+              </div>
+            </div>
+          </div>
+          <div class="info-images" style="margin-top:12px">
+            <div class="info-images-label">// AI UPLINK (START)</div>
+            <div class="image-grid">
+              <div class="img-thumb" onclick="openLightbox('dm_aiuplink_1.png', 'AI UPLINK — EXTERIOR')">
+                <img src="dm_aiuplink_1.png" alt="AI Uplink Exterior">
+                <div class="img-thumb-label">EXTERIOR</div>
+              </div>
+              <div class="img-thumb" onclick="openLightbox('dm_aiuplink_2.png', 'AI UPLINK — INTERIOR')">
+                <img src="dm_aiuplink_2.png" alt="AI Uplink Interior">
+                <div class="img-thumb-label">INTERIOR</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ROUTE 2: Complex + Canal -->
+        <div class="info-content" id="info-dm-route2">
+          <div class="info-zone-label" style="color:#ff6b35">// ROUTE 02</div>
+          <div class="info-zone-title">COMPLEX → CANAL</div>
+          <div class="info-divider"></div>
+          <div class="info-images">
+            <div class="info-images-label">// COMPLEX (START)</div>
+            <div class="image-grid">
+              <div class="img-thumb" onclick="openLightbox('dm_complex_1.png', 'COMPLEX — EXTERIOR')">
+                <img src="dm_complex_1.png" alt="Complex Exterior">
+                <div class="img-thumb-label">EXTERIOR</div>
+              </div>
+              <div class="img-thumb" onclick="openLightbox('dm_complex_2.png', 'COMPLEX — INTERIOR')">
+                <img src="dm_complex_2.png" alt="Complex Interior">
+                <div class="img-thumb-label">INTERIOR</div>
+              </div>
+            </div>
+          </div>
+          <div class="info-images" style="margin-top:12px">
+            <div class="info-images-label">// CANAL (END)</div>
+            <div class="image-grid">
+              <div class="img-thumb" onclick="openLightbox('dm_canal_1.png', 'CANAL — EXTERIOR')">
+                <img src="dm_canal_1.png" alt="Canal Exterior">
+                <div class="img-thumb-label">EXTERIOR</div>
+              </div>
+              <div class="img-thumb" onclick="openLightbox('dm_canal_2.png', 'CANAL — INTERIOR')">
+                <img src="dm_canal_2.png" alt="Canal Interior">
+                <div class="img-thumb-label">INTERIOR</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ROUTE 3: Algae Ponds + Bio Research -->
+        <div class="info-content" id="info-dm-route3">
+          <div class="info-zone-label" style="color:#c084fc">// ROUTE 03</div>
+          <div class="info-zone-title">ALGAE PONDS → BIO RESEARCH</div>
+          <div class="info-divider"></div>
+          <div class="info-images">
+            <div class="info-images-label">// ALGAE PONDS (START)</div>
+            <div class="image-grid">
+              <div class="img-thumb" onclick="openLightbox('dm_algaeponds_1.png', 'ALGAE PONDS — EXTERIOR')">
+                <img src="dm_algaeponds_1.png" alt="Algae Ponds Exterior">
+                <div class="img-thumb-label">EXTERIOR</div>
+              </div>
+              <div class="img-thumb" onclick="openLightbox('dm_algaeponds_2.png', 'ALGAE PONDS — INTERIOR')">
+                <img src="dm_algaeponds_2.png" alt="Algae Ponds Interior">
+                <div class="img-thumb-label">INTERIOR</div>
+              </div>
+            </div>
+          </div>
+          <div class="info-images" style="margin-top:12px">
+            <div class="info-images-label">// BIO RESEARCH (END)</div>
+            <div class="image-grid">
+              <div class="img-thumb" onclick="openLightbox('dm_bioresearch_1.png', 'BIO RESEARCH — EXTERIOR')">
+                <img src="dm_bioresearch_1.png" alt="Bio Research Exterior">
+                <div class="img-thumb-label">EXTERIOR</div>
+              </div>
+              <div class="img-thumb" onclick="openLightbox('dm_bioresearch_2.png', 'BIO RESEARCH — INTERIOR')">
+                <img src="dm_bioresearch_2.png" alt="Bio Research Interior">
+                <div class="img-thumb-label">INTERIOR</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
   </div>
 
   <div class="tab-panel" id="tab-outpost">
-    <div class="section-title">OUTPOST // TERMINAL MAP</div>
+    <div class="alert-banner" style="border-color:rgba(255,107,53,0.25);background:rgba(255,107,53,0.06);color:var(--warn);text-shadow:none;">
+      <span class="alert-banner-dot" style="background:var(--warn);box-shadow:0 0 6px var(--warn);animation:none"></span>
+      OUTPOST TERMINALS INCOMPLETE
+      <span style="margin-left:auto;font-size:0.65rem;color:var(--dim)" id="outpost-progress">LOADING...</span>
+      <span class="alert-banner-dot" style="background:var(--warn);box-shadow:0 0 6px var(--warn);animation:none"></span>
+    </div>
+    <div class="section-title" style="margin-top:24px">OUTPOST // TERMINAL MAP</div>
     <div class="map-placeholder">
       <div class="map-placeholder-icon">[ MAP ]</div>
       <div class="map-placeholder-text">OUTPOST MAP — COMING SOON</div>
@@ -819,21 +994,118 @@
     });
   });
 
-  // Zone interactions
+  // -------------------------------------------------------
+  // CAMERA CONFIG — fill in camera names when known
+  // Each map needs 3 cameras from the stabilization API.
+  // stabilizationLevel of 0 = complete, higher = incomplete.
+  // -------------------------------------------------------
+  const MAP_CAMERAS = {
+    'dire-marsh': [null, null, null],  // e.g. ['cargo', 'revival', 'biostock']
+    'outpost':    [null, null, null],  // e.g. ['steerage', 'camera06', 'camera09']
+  };
+
+  async function fetchProgress() {
+    try {
+      const res = await fetch('https://cryoarchive.systems/api/public/cctv-cameras/stabilization?t=' + Date.now());
+      if (!res.ok) throw new Error('API error');
+      const data = await res.json();
+      const stab = data?.stabilization || {};
+
+      for (const [mapId, cameras] of Object.entries(MAP_CAMERAS)) {
+        const el = document.getElementById(mapId + '-progress');
+        if (!el) continue;
+
+        const configured = cameras.filter(Boolean);
+        if (configured.length === 0) {
+          el.textContent = 'CAMERAS TBD';
+          continue;
+        }
+
+        // Average stabilization level across assigned cameras (0 = stable/done)
+        const levels = configured.map(cam => parseInt(stab[cam]?.stabilizationLevel) || 0);
+        const avg = levels.reduce((a, b) => a + b, 0) / levels.length;
+        // Invert: 0 stab level = 100% complete
+        const pct = Math.max(0, Math.round(100 - avg));
+        el.textContent = `STABILITY: ${pct}%`;
+        el.style.color = pct >= 100 ? 'var(--accent2)' : pct >= 50 ? 'var(--accent)' : 'var(--warn)';
+      }
+    } catch (e) {
+      ['dire-marsh', 'outpost'].forEach(id => {
+        const el = document.getElementById(id + '-progress');
+        if (el) el.textContent = 'DATA UNAVAILABLE';
+      });
+    }
+  }
+
+  fetchProgress();
+  setInterval(fetchProgress, 60 * 1000); // refresh every minute
+
+  // Dire Marsh zone interactions
+  let activeDmZone = null;
+
+  function setAllDmVisual(zone, on) {
+    document.querySelectorAll(`.dm-zone[data-zone="${zone}"]`).forEach(g => {
+      g.querySelectorAll('.zone-fill').forEach(el => el.style.opacity = on ? '0.18' : '0');
+      g.querySelectorAll('.zone-ring').forEach(el => el.style.opacity = on ? '1' : '0');
+    });
+  }
+
+  function showDmZoneInfo(zone) {
+    document.getElementById('dm-info-idle').style.display = 'none';
+    document.querySelectorAll('#dm-map-info .info-content').forEach(el => el.classList.remove('visible'));
+    const panel = document.getElementById('info-' + zone);
+    if (panel) panel.classList.add('visible');
+  }
+
+  function clearDmZoneInfo() {
+    if (activeDmZone) return;
+    document.getElementById('dm-info-idle').style.display = '';
+    document.querySelectorAll('#dm-map-info .info-content').forEach(el => el.classList.remove('visible'));
+  }
+
+  document.querySelectorAll('.dm-zone').forEach(group => {
+    const zone = group.dataset.zone;
+
+    group.addEventListener('mouseenter', () => {
+      setAllDmVisual(zone, true);
+      showDmZoneInfo(zone);
+    });
+
+    group.addEventListener('mouseleave', () => {
+      if (activeDmZone === zone) return;
+      setAllDmVisual(zone, false);
+      if (activeDmZone) showDmZoneInfo(activeDmZone);
+      else clearDmZoneInfo();
+    });
+
+    group.addEventListener('click', () => {
+      if (activeDmZone === zone) {
+        activeDmZone = null;
+        setAllDmVisual(zone, false);
+        clearDmZoneInfo();
+      } else {
+        if (activeDmZone) setAllDmVisual(activeDmZone, false);
+        activeDmZone = zone;
+        setAllDmVisual(zone, true);
+        showDmZoneInfo(zone);
+      }
+    });
+  });
+
   let activeZone = null;
 
   function showZoneInfo(zone) {
     const info = document.getElementById('map-info');
     document.getElementById('info-idle').style.display = 'none';
-    document.querySelectorAll('.info-content').forEach(el => el.classList.remove('visible'));
+    document.querySelectorAll('#map-info .info-content').forEach(el => el.classList.remove('visible'));
     document.getElementById('info-zone-' + zone).classList.add('visible');
     info.className = 'map-info zone-' + zone + '-active';
   }
 
   function clearZoneInfo() {
-    if (activeZone) return; // keep showing if a zone is clicked/locked
+    if (activeZone) return;
     document.getElementById('info-idle').style.display = '';
-    document.querySelectorAll('.info-content').forEach(el => el.classList.remove('visible'));
+    document.querySelectorAll('#map-info .info-content').forEach(el => el.classList.remove('visible'));
     document.getElementById('map-info').className = 'map-info';
   }
 
