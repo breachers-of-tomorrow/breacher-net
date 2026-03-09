@@ -170,6 +170,34 @@
 
   .card:hover { border-color: var(--accent); }
 
+  .card .tooltip {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #0a1a24;
+    border: 1px solid var(--accent);
+    padding: 8px 12px;
+    font-size: 0.7rem;
+    color: var(--text);
+    white-space: nowrap;
+    z-index: 100;
+    pointer-events: none;
+    margin-bottom: 6px;
+  }
+
+  .card .tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%; left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--accent);
+  }
+
+  .card:hover .tooltip { display: block; }
+
   .card-name {
     font-family: 'Orbitron', monospace;
     font-size: 0.65rem;
@@ -543,14 +571,20 @@
       const level = parseInt(latest[`${cam}_stabilizationLevel`]) || 0;
       const next = latest[`${cam}_nextStabilizationAt`] || '--';
       const history = stabData.slice(-20).map(r => parseInt(r[`${cam}_stabilizationLevel`]) || 0);
+      const timestamps = stabData.slice(-20).map(r => r.timestamp ? toESTTimeOnly(new Date(r.timestamp.replace(' UTC',''))) : '');
       const maxVal = Math.max(...history, 1);
       const levelClass = level === 0 ? 'level-0' : level === 1 ? 'level-1' : level === 2 ? 'level-2' : 'level-high';
-      const bars = history.map(v => {
+      const bars = history.map((v, i) => {
         const pct = Math.round((v / maxVal) * 100);
         const color = v === 0 ? 'var(--accent2)' : v === 1 ? 'var(--accent)' : v === 2 ? 'var(--warn)' : 'var(--danger)';
-        return `<div class="mini-bar" style="height:${Math.max(pct,4)}%;background:${color}"></div>`;
+        return `<div class="mini-bar" style="height:${Math.max(pct,4)}%;background:${color}" title="${timestamps[i]}: Level ${v}"></div>`;
       }).join('');
+      const tooltipRows = history.slice(-5).map((v, i) => {
+        const ts = timestamps[timestamps.length - 5 + i] || '';
+        return `${ts}: Level ${v}`;
+      }).join('<br>');
       return `<div class="card">
+        <div class="tooltip">LAST 5 READINGS<br><br>${tooltipRows}</div>
         <div class="card-name">${cam}</div>
         <div class="card-value ${levelClass}">${level}</div>
         <div class="card-sub">NEXT: ${next !== '--' ? toEST(next) : '--'}</div>
@@ -610,7 +644,20 @@
       },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#2a5a6a', font: { family: 'Share Tech Mono', size: 10 }, boxWidth: 12 } } },
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { labels: { color: '#2a5a6a', font: { family: 'Share Tech Mono', size: 10 }, boxWidth: 12 } },
+          tooltip: {
+            backgroundColor: '#0a1a24',
+            borderColor: '#0a3a4a',
+            borderWidth: 1,
+            titleColor: '#00d4ff',
+            bodyColor: '#7ecfdf',
+            titleFont: { family: 'Share Tech Mono', size: 11 },
+            bodyFont: { family: 'Share Tech Mono', size: 10 },
+            padding: 10,
+          }
+        },
         scales: {
           x: { ticks: { color: '#2a5a6a', font: { size: 9 } }, grid: { color: '#0a3a4a' } },
           y: { ticks: { color: '#2a5a6a', font: { size: 9 } }, grid: { color: '#0a3a4a' }, beginAtZero: true }
@@ -635,7 +682,23 @@
       },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#2a5a6a', font: { family: 'Share Tech Mono', size: 10 } } } },
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { labels: { color: '#2a5a6a', font: { family: 'Share Tech Mono', size: 10 } } },
+          tooltip: {
+            backgroundColor: '#0a1a24',
+            borderColor: '#0a3a4a',
+            borderWidth: 1,
+            titleColor: '#00d4ff',
+            bodyColor: '#7ecfdf',
+            titleFont: { family: 'Share Tech Mono', size: 11 },
+            bodyFont: { family: 'Share Tech Mono', size: 10 },
+            padding: 10,
+            callbacks: {
+              label: ctx => ` ${ctx.parsed.y.toLocaleString()} kills`
+            }
+          }
+        },
         scales: {
           x: { ticks: { color: '#2a5a6a', font: { size: 9 } }, grid: { color: '#0a3a4a' } },
           y: { ticks: { color: '#2a5a6a', font: { size: 9 } }, grid: { color: '#0a3a4a' } }
