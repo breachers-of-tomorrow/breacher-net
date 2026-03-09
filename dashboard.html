@@ -275,6 +275,66 @@
 
   .chart-container { background: var(--panel); border: 1px solid var(--border); padding: 20px; height: 220px; }
 
+  .chart-controls {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-top: none;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .chart-controls label {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    color: var(--dim);
+    white-space: nowrap;
+  }
+
+  .chart-controls span {
+    font-size: 0.75rem;
+    color: var(--accent);
+    white-space: nowrap;
+    min-width: 120px;
+  }
+
+  input[type=range] {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    background: var(--border);
+    outline: none;
+    cursor: pointer;
+    border-radius: 2px;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: var(--glow), 0 0 0 3px rgba(0,212,255,0.15);
+    cursor: pointer;
+    transition: box-shadow 0.2s;
+  }
+
+  input[type=range]::-webkit-slider-thumb:hover {
+    box-shadow: var(--glow), 0 0 0 6px rgba(0,212,255,0.2);
+  }
+
+  input[type=range]::-moz-range-thumb {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: var(--glow);
+    cursor: pointer;
+    border: none;
+  }
+
   canvas { width: 100% !important; }
 
   #loading {
@@ -313,6 +373,53 @@
     transition: opacity 0.3s;
     z-index: 500;
   }
+
+  nav {
+    background: var(--bg);
+    border-bottom: 2px solid var(--border);
+    padding: 10px 30px 0;
+    display: flex;
+    gap: 6px;
+  }
+
+  nav a {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--dim);
+    text-decoration: none;
+    padding: 10px 22px;
+    border: 1px solid transparent;
+    border-bottom: none;
+    transition: color 0.2s, background 0.2s, border-color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    top: 2px;
+  }
+
+  nav a:hover {
+    color: var(--text);
+    background: rgba(0,212,255,0.05);
+    border-color: var(--border);
+  }
+
+  nav a.active {
+    color: var(--accent);
+    background: var(--panel);
+    border-color: var(--border);
+    border-bottom: 2px solid var(--panel);
+    text-shadow: var(--glow);
+  }
+
+  nav a .nav-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 6px currentColor;
+  }
 </style>
 <script data-goatcounter="https://crowdtypical.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
@@ -336,6 +443,12 @@
   </div>
 </header>
 
+<nav>
+  <a href="dashboard.html" class="active"><span class="nav-dot"></span>Camera Monitoring</a>
+  <a href="terminal_maps.html"><span class="nav-dot"></span>Terminal Maps</a>
+  <a href="https://docs.google.com/document/d/1mtUtDPvbh6ahiynYFVS7Z4O79Nw6y5PEOjweCpzWV_A/edit?tab=t.0" target="_blank"><span class="nav-dot"></span>Google Doc</a>
+</nav>
+
 <div class="next-update-bar">
   <span class="next-label">NEXT STABILIZATION</span>
   <span id="next-update-time">--:--:-- UTC</span>
@@ -349,6 +462,17 @@
   <div id="error-box" style="display:none"></div>
 
   <div id="dashboard">
+    <div class="section-title">STABILIZATION HISTORY</div>
+    <div class="chart-section" style="margin-bottom:30px">
+      <div class="chart-container" style="height:260px"><canvas id="stab-chart"></canvas></div>
+      <div class="chart-controls">
+        <label>TIME WINDOW</label>
+        <input type="range" id="stab-slider" min="1" max="192" value="96" step="1">
+        <span id="stab-slider-label">LAST 24H</span>
+        <span id="stab-slider-range" style="font-size:0.65rem;color:var(--dim);min-width:200px;text-align:right"></span>
+      </div>
+    </div>
+
     <div id="alerts-section">
       <div class="section-title">SYSTEM ALERTS</div>
       <div id="alerts-container"><span class="no-alerts">// LOADING...</span></div>
@@ -366,11 +490,6 @@
 
     <div class="section-title">CAMERA STABILIZATION LEVELS</div>
     <div class="grid" id="stab-cards"></div>
-
-    <div class="section-title">STABILIZATION HISTORY</div>
-    <div class="chart-section">
-      <div class="chart-container"><canvas id="stab-chart"></canvas></div>
-    </div>
 
     <div class="section-title">SECTOR STATE</div>
     <div class="state-grid" id="state-cards"></div>
@@ -509,7 +628,26 @@
       document.getElementById('last-updated').textContent =
         'UPDATED ' + toESTTimeOnly(new Date());
 
+      // Set slider max based on oldest data point
+      if (stabData.length) {
+        const oldest = stabData[0];
+        if (oldest.timestamp) {
+          const oldestTime = new Date(oldest.timestamp.replace(' UTC','') + 'Z');
+          const nowTime = new Date();
+          const totalIntervals = Math.ceil((nowTime - oldestTime) / (15 * 60 * 1000));
+          const slider = document.getElementById('stab-slider');
+          if (slider) {
+            slider.max = Math.max(totalIntervals, 96);
+            // Only reset to 96 on first load, not on refresh
+            if (firstLoad) slider.value = Math.min(96, slider.max);
+          }
+        }
+      }
+
       render();
+
+      const slider = document.getElementById('stab-slider');
+      if (slider) updateSliderTrack(slider);
 
       if (!firstLoad) {
         const flash = document.getElementById('flash');
@@ -628,10 +766,65 @@
     prevKillCount = count;
   }
 
+  function getSliderWindow() {
+    // slider value = number of 15-min intervals; 96 = 24h
+    const intervals = parseInt(document.getElementById('stab-slider').value);
+    return intervals;
+  }
+
+  function updateSliderLabel(intervals) {
+    const totalMins = intervals * 15;
+    const hours = totalMins / 60;
+    let label;
+    if (hours >= 24 && Number.isInteger(hours / 24)) {
+      label = `LAST ${hours / 24}D`;
+    } else if (hours >= 1) {
+      label = Number.isInteger(hours) ? `LAST ${hours}H` : `LAST ${hours.toFixed(1)}H`;
+    } else {
+      label = `LAST ${totalMins}MIN`;
+    }
+    document.getElementById('stab-slider-label').textContent = label;
+
+    // Also update the range indicator
+    const rangeEl = document.getElementById('stab-slider-range');
+    if (rangeEl && stabData.length) {
+      const now = new Date();
+      const cutoff = new Date(now.getTime() - intervals * 15 * 60 * 1000);
+      const count = stabData.filter(r => {
+        if (!r.timestamp) return false;
+        const t = new Date(r.timestamp.replace(' UTC','') + 'Z');
+        return t >= cutoff;
+      }).length;
+      rangeEl.textContent = `${count} DATA POINTS`;
+    }
+  }
+
   function renderStabChart() {
     if (!stabData.length) return;
-    const recent = stabData.slice(-30);
-    const labels = recent.map(r => r.timestamp ? toESTTimeOnly(new Date(r.timestamp.replace(' UTC',''))) : '');
+    const intervals = getSliderWindow();
+    updateSliderLabel(intervals);
+
+    // Filter to entries within the selected window
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - intervals * 15 * 60 * 1000);
+    const windowed = stabData.filter(r => {
+      if (!r.timestamp) return false;
+      const t = new Date(r.timestamp.replace(' UTC', '') + 'Z');
+      return t >= cutoff;
+    });
+    const recent = windowed.length ? windowed : stabData.slice(-intervals);
+
+    const labels = recent.map(r => {
+      if (!r.timestamp) return '';
+      const d = new Date(r.timestamp.replace(' UTC','') + 'Z');
+      return d.toLocaleString('en-US', {
+        timeZone: 'America/New_York',
+        month: 'short', day: 'numeric',
+        hour: 'numeric', minute: '2-digit',
+        hour12: true
+      }) + ' ET';
+    });
+
     const ctx = document.getElementById('stab-chart').getContext('2d');
     if (stabChart) stabChart.destroy();
     stabChart = new Chart(ctx, {
@@ -662,12 +855,28 @@
           }
         },
         scales: {
-          x: { ticks: { color: '#2a5a6a', font: { size: 9 } }, grid: { color: '#0a3a4a' } },
+          x: { ticks: { color: '#2a5a6a', font: { size: 9 }, maxRotation: 30, autoSkip: true, maxTicksLimit: 12 }, grid: { color: '#0a3a4a' } },
           y: { ticks: { color: '#2a5a6a', font: { size: 9 } }, grid: { color: '#0a3a4a' }, beginAtZero: true, max: 100 }
         }
       }
     });
   }
+
+  function updateSliderTrack(slider) {
+    const pct = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
+    slider.style.background = `linear-gradient(to right, var(--accent) ${pct}%, var(--border) ${pct}%)`;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const slider = document.getElementById('stab-slider');
+    updateSliderTrack(slider);
+    slider.addEventListener('input', () => {
+      updateSliderLabel(parseInt(slider.value));
+      updateSliderTrack(slider);
+      renderStabChart();
+    });
+    updateSliderLabel(parseInt(slider.value));
+  });
 
   function renderKillChart() {
     if (!stateData.length) return;
