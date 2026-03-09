@@ -618,6 +618,32 @@
     box-shadow: var(--glow2);
   }
 
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 14px 18px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+  .card:hover { border-color: var(--accent); }
+  .card-name { font-family: 'Orbitron', monospace; font-size: 0.65rem; letter-spacing: 3px; color: var(--dim); margin-bottom: 6px; text-transform: uppercase; }
+  .card-value { font-size: 2rem; font-weight: bold; line-height: 1; margin-bottom: 4px; }
+  .card-value.level-0 { color: var(--accent2); text-shadow: var(--glow2); }
+  .card-value.level-1 { color: var(--accent); text-shadow: var(--glow); }
+  .card-value.level-2 { color: var(--warn); text-shadow: 0 0 10px rgba(255,107,53,0.4); }
+  .card-value.level-high { color: var(--danger); text-shadow: 0 0 10px rgba(255,34,68,0.4); }
+  .card-sub { font-size: 0.65rem; color: var(--dim); }
+  .mini-chart { margin-top: 8px; height: 30px; display: flex; align-items: flex-end; gap: 2px; }
+  .mini-bar { flex: 1; height: 100%; position: relative; }
+  .mini-bar-fill { position: absolute; bottom: 0; left: 0; right: 0; min-height: 2px; }
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 </head>
@@ -817,8 +843,25 @@
     </div>
 
     <div class="section-title" style="margin-top:24px">DIRE MARSH // STABILIZATION LEVELS</div>
-    <div style="background:var(--panel);border:1px solid var(--border);padding:20px;height:220px;margin-bottom:24px">
-      <canvas id="dm-stab-chart"></canvas>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px">
+        <div class="card" id="dm-card-biostock">
+          <div class="card-name">BIOSTOCK</div>
+          <div class="card-value level-high" id="dm-val-biostock">--</div>
+          <div class="card-sub" id="dm-next-biostock">NEXT: --</div>
+          <div class="mini-chart" id="dm-bars-biostock"></div>
+        </div>
+        <div class="card" id="dm-card-steerage">
+          <div class="card-name">STEERAGE</div>
+          <div class="card-value level-high" id="dm-val-steerage">--</div>
+          <div class="card-sub" id="dm-next-steerage">NEXT: --</div>
+          <div class="mini-chart" id="dm-bars-steerage"></div>
+        </div>
+        <div class="card" id="dm-card-camera09">
+          <div class="card-name">CAMERA09</div>
+          <div class="card-value level-high" id="dm-val-camera09">--</div>
+          <div class="card-sub" id="dm-next-camera09">NEXT: --</div>
+          <div class="mini-chart" id="dm-bars-camera09"></div>
+        </div>
     </div>
 
     <div class="section-title">DIRE MARSH // TERMINAL MAP</div>
@@ -1103,10 +1146,8 @@
   fetchStabTime();
   setInterval(fetchStabTime, 60 * 1000);
 
-  // Dire Marsh stabilization chart
+  // Dire Marsh stabilization cards
   const DM_CAMERAS = ['biostock', 'steerage', 'camera09'];
-  const DM_COLORS  = ['#c084fc', '#fbbf24', '#60a5fa'];
-  let dmChart = null;
   let dmStabData = [];
 
   function parseCSV(text) {
@@ -1127,65 +1168,40 @@
     return base + filename + '?t=' + Date.now();
   }
 
-  function renderDmChart() {
+  function renderDmCards() {
     if (!dmStabData.length) return;
-    const recent = dmStabData.slice(-96);
-    const labels = recent.map(r => {
-      if (!r.timestamp) return '';
-      const d = new Date(r.timestamp.replace(' UTC','') + 'Z');
-      return d.toLocaleString('en-US', {
-        timeZone: 'America/New_York',
-        month: 'short', day: 'numeric',
-        hour: 'numeric', minute: '2-digit',
-        hour12: true
-      }) + ' ET';
-    });
-    const ctx = document.getElementById('dm-stab-chart').getContext('2d');
-    if (dmChart) dmChart.destroy();
-    dmChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: DM_CAMERAS.map((cam, i) => ({
-          label: cam,
-          data: recent.map(r => parseInt(r[`${cam}_stabilizationLevel`]) || 0),
-          borderColor: DM_COLORS[i],
-          backgroundColor: 'transparent',
-          borderWidth: 1.5, pointRadius: 2, tension: 0.3,
-        }))
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: { labels: { color: '#2a5a6a', font: { family: 'Share Tech Mono', size: 10 }, boxWidth: 12 } },
-          tooltip: {
-            backgroundColor: '#0a1a24', borderColor: '#0a3a4a', borderWidth: 1,
-            titleColor: '#00d4ff', bodyColor: '#7ecfdf',
-            titleFont: { family: 'Share Tech Mono', size: 11 },
-            bodyFont:  { family: 'Share Tech Mono', size: 10 },
-            padding: 10,
-          }
-        },
-        scales: {
-          x: { ticks: { color: '#2a5a6a', font: { size: 9 }, maxRotation: 30, autoSkip: true, maxTicksLimit: 12 }, grid: { color: '#0a3a4a' } },
-          y: { ticks: { color: '#2a5a6a', font: { size: 9 } }, grid: { color: '#0a3a4a' }, beginAtZero: true, max: 100 }
-        }
-      }
+    const latest = dmStabData[dmStabData.length - 1];
+    DM_CAMERAS.forEach(cam => {
+      const level = parseInt(latest[`${cam}_stabilizationLevel`]) || 0;
+      const next = latest[`${cam}_nextStabilizationAt`] || '--';
+      const levelClass = level === 0 ? 'level-0' : level === 1 ? 'level-1' : level === 2 ? 'level-2' : 'level-high';
+      const history = dmStabData.slice(-20).map(r => parseInt(r[`${cam}_stabilizationLevel`]) || 0);
+      const valEl = document.getElementById(`dm-val-${cam}`);
+      const nextEl = document.getElementById(`dm-next-${cam}`);
+      const barsEl = document.getElementById(`dm-bars-${cam}`);
+      if (!valEl) return;
+      valEl.textContent = level;
+      valEl.className = `card-value ${levelClass}`;
+      nextEl.textContent = next !== '--' ? `NEXT: ${toESTTimeOnly(new Date(next))}` : 'NEXT: --';
+      barsEl.innerHTML = history.map(v => {
+        const pct = Math.round((v / 100) * 100);
+        const color = v === 0 ? 'var(--accent2)' : v === 1 ? 'var(--accent)' : v === 2 ? 'var(--warn)' : 'var(--danger)';
+        return `<div class="mini-bar"><div class="mini-bar-fill" style="height:${Math.max(pct,4)}%;background:${color}"></div></div>`;
+      }).join('');
     });
   }
 
-  async function fetchDmChart() {
+  async function fetchDmCards() {
     try {
       const res = await fetch(csvUrl('stabilization_log.csv'));
       if (!res.ok) return;
       dmStabData = parseCSV(await res.text());
-      renderDmChart();
+      renderDmCards();
     } catch (e) {}
   }
 
-  fetchDmChart();
-  setInterval(fetchDmChart, 15 * 60 * 1000);
+  fetchDmCards();
+  setInterval(fetchDmCards, 15 * 60 * 1000);
 
   // Sub-tab switching with URL hash
   function activateTab(tabId) {
@@ -1201,7 +1217,7 @@
     tab.addEventListener('click', () => {
       const tabId = tab.dataset.tab;
       activateTab(tabId);
-      history.replaceState(null, '', '#' + tabId);
+      try { history.replaceState(null, '', '#' + tabId); } catch(e) {}
     });
   });
 
