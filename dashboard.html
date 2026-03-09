@@ -684,13 +684,6 @@
 
   function renderAlerts() {
     const alerts = [];
-    if (stabData.length) {
-      const latest = stabData[stabData.length - 1];
-      CAMERAS.forEach(cam => {
-        const level = parseInt(latest[`${cam}_stabilizationLevel`]);
-        if (level >= 2) alerts.push({ msg: `${cam.toUpperCase()} stabilization level critical: ${level}`, type: 'warn' });
-      });
-    }
     if (stateData.length >= 2) {
       const prev = stateData[stateData.length - 2];
       const curr = stateData[stateData.length - 1];
