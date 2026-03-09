@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRYOARCHIVE // MONITORING SYSTEM</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+  :root {
+    --bg: #030a0f;
+    --panel: #060f17;
+    --border: #0a3a4a;
+    --accent: #00d4ff;
+    --accent2: #00ff9d;
+    --warn: #ff6b35;
+    --danger: #ff2244;
+    --text: #7ecfdf;
+    --dim: #2a5a6a;
+    --glow: 0 0 10px rgba(0,212,255,0.4);
+    --glow2: 0 0 10px rgba(0,255,157,0.4);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,20,30,0.3) 2px, rgba(0,20,30,0.3) 4px);
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(90deg, rgba(0,212,255,0.05) 0%, transparent 100%);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .logo {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: var(--accent);
+    text-shadow: var(--glow);
+    letter-spacing: 4px;
+  }
+
+  .logo span { color: var(--accent2); }
+
+  .status-bar {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    font-size: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent2);
+    box-shadow: var(--glow2);
+    animation: pulse 2s infinite;
+  }
+
+  .status-dot.error { background: var(--danger); box-shadow: 0 0 10px rgba(255,34,68,0.4); animation: none; }
+
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  #clock { color: var(--accent); }
+  #last-updated { color: var(--dim); font-size: 0.7rem; }
+
+  .next-update-bar {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 30px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 0.75rem;
+  }
+
+  .next-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 3px;
+    color: var(--dim);
+  }
+
+  #next-update-time { color: var(--accent); }
+  #next-update-countdown { color: var(--accent2); font-size: 0.8rem; }
+
+  .progress-bar {
+    flex: 1;
+    height: 3px;
+    background: var(--border);
+    margin-left: 10px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    transition: width 1s linear;
+    box-shadow: var(--glow2);
+  }
+
+  main { padding: 30px; max-width: 1400px; margin: 0 auto; }
+
+  .section-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 6px;
+    color: var(--dim);
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  #alerts-section { margin-bottom: 30px; }
+  #alerts-container { display: flex; flex-direction: column; gap: 8px; }
+
+  .alert {
+    padding: 10px 16px;
+    border-left: 3px solid var(--warn);
+    background: rgba(255,107,53,0.08);
+    font-size: 0.8rem;
+    color: var(--warn);
+    animation: slideIn 0.3s ease;
+  }
+
+  .alert.info { border-color: var(--accent); background: rgba(0,212,255,0.05); color: var(--accent); }
+
+  @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+  .no-alerts { color: var(--dim); font-size: 0.8rem; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 30px; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+
+  .card:hover { border-color: var(--accent); }
+
+  .card-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 3px;
+    color: var(--dim);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+
+  .card-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .card-value.level-0 { color: var(--accent2); text-shadow: var(--glow2); }
+  .card-value.level-1 { color: var(--accent); text-shadow: var(--glow); }
+  .card-value.level-2 { color: var(--warn); text-shadow: 0 0 10px rgba(255,107,53,0.4); }
+  .card-value.level-high { color: var(--danger); text-shadow: 0 0 10px rgba(255,34,68,0.4); }
+
+  .card-sub { font-size: 0.7rem; color: var(--dim); }
+
+  .mini-chart { margin-top: 12px; height: 40px; display: flex; align-items: flex-end; gap: 2px; }
+
+  .mini-bar { flex: 1; background: var(--border); min-height: 2px; }
+
+  .state-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 30px; }
+
+  .state-card { background: var(--panel); border: 1px solid var(--border); padding: 14px; text-align: center; }
+
+  .state-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    color: var(--dim);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+
+  .state-badges { display: flex; gap: 6px; justify-content: center; }
+
+  .badge { font-size: 0.6rem; padding: 3px 8px; border: 1px solid var(--border); color: var(--dim); letter-spacing: 1px; }
+
+  .badge.on { border-color: var(--accent2); color: var(--accent2); background: rgba(0,255,157,0.08); box-shadow: var(--glow2); }
+
+  .kill-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 20px 24px;
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .kill-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--danger), transparent);
+  }
+
+  .kill-label { font-family: 'Orbitron', monospace; font-size: 0.65rem; letter-spacing: 3px; color: var(--dim); }
+
+  .kill-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--danger);
+    text-shadow: 0 0 15px rgba(255,34,68,0.5);
+    letter-spacing: 2px;
+  }
+
+  .kill-delta { font-size: 0.8rem; color: var(--warn); }
+
+  .chart-section { margin-bottom: 30px; }
+
+  .chart-container { background: var(--panel); border: 1px solid var(--border); padding: 20px; height: 220px; }
+
+  canvas { width: 100% !important; }
+
+  #loading {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 20px; z-index: 9999; transition: opacity 0.5s;
+  }
+
+  .loading-text {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 6px;
+    color: var(--accent);
+    animation: blink 1s infinite;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  .error-msg {
+    background: rgba(255,34,68,0.1);
+    border: 1px solid var(--danger);
+    padding: 12px 20px;
+    color: var(--danger);
+    font-size: 0.8rem;
+    margin-bottom: 20px;
+  }
+
+  #flash {
+    position: fixed; top: 110px; right: 20px;
+    background: rgba(0,212,255,0.1);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 8px 16px;
+    font-size: 0.75rem;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 500;
+  }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="logo">CRYO<span>ARCHIVE</span></div>
+  <div class="loading-text">CONNECTING TO DATA FEED...</div>
+</div>
+
+<div id="flash">// DATA REFRESHED</div>
+
+<header>
+  <div class="logo">CRYO<span>ARCHIVE</span> // <span style="font-size:0.8rem;color:var(--text)">MONITORING</span></div>
+  <div class="status-bar">
+    <div class="status-dot" id="status-dot"></div>
+    <span id="clock">--:--:--</span>
+    <span id="last-updated"></span>
+  </div>
+</header>
+
+<div class="next-update-bar">
+  <span class="next-label">NEXT STABILIZATION</span>
+  <span id="next-update-time">--:--:-- UTC</span>
+  <span id="next-update-countdown" style="color:var(--accent2)">-- --s</span>
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+  </div>
+</div>
+
+<main>
+  <div id="error-box" style="display:none"></div>
+
+  <div id="dashboard">
+    <div id="alerts-section">
+      <div class="section-title">SYSTEM ALERTS</div>
+      <div id="alerts-container"><span class="no-alerts">// LOADING...</span></div>
+    </div>
+
+    <div class="section-title">UESC KILL COUNT</div>
+    <div class="kill-panel">
+      <div>
+        <div class="kill-label">TOTAL KILLS</div>
+        <div class="kill-value" id="kill-count">--</div>
+      </div>
+      <div class="kill-delta" id="kill-delta"></div>
+      <div style="margin-left:auto;font-size:0.7rem;color:var(--dim)" id="kill-next"></div>
+    </div>
+
+    <div class="section-title">CAMERA STABILIZATION LEVELS</div>
+    <div class="grid" id="stab-cards"></div>
+
+    <div class="section-title">STABILIZATION HISTORY</div>
+    <div class="chart-section">
+      <div class="chart-container"><canvas id="stab-chart"></canvas></div>
+    </div>
+
+    <div class="section-title">SECTOR STATE</div>
+    <div class="state-grid" id="state-cards"></div>
+
+    <div class="section-title">KILL COUNT OVER TIME</div>
+    <div class="chart-section">
+      <div class="chart-container"><canvas id="kill-chart"></canvas></div>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+  let stabData = [], stateData = [];
+  let stabChart, killChart;
+  let prevKillCount = null;
+  let firstLoad = true;
+  let nextStabilizationAt = null;
+  let intervalTotal = 15 * 60; // default 15 min in seconds
+  let refreshScheduled = false;
+
+  const CAMERAS = ['cargo','index','revival','biostock','steerage','preservation','cryoHub','camera06','camera09'];
+  const PAGES = ['cargo','index','revival','biostock','steerage','preservation','cryoHub'];
+  const COLORS = ['#00d4ff','#00ff9d','#ff6b35','#c084fc','#fbbf24','#f472b6','#34d399','#60a5fa','#a78bfa'];
+
+  function toEST(date) {
+    if (!date) return '--';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d)) return '--';
+    return d.toLocaleString('en-US', {
+      timeZone: 'America/New_York',
+      month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit', second: '2-digit',
+      hour12: true
+    }) + ' ET';
+  }
+
+  function toESTTimeOnly(date) {
+    if (!date) return '--';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d)) return '--';
+    return d.toLocaleString('en-US', {
+      timeZone: 'America/New_York',
+      hour: 'numeric', minute: '2-digit', second: '2-digit',
+      hour12: true
+    }) + ' ET';
+  }
+
+  // Clock + countdown ticker
+  setInterval(() => {
+    const now = new Date();
+    document.getElementById('clock').textContent = toESTTimeOnly(now);
+
+    if (nextStabilizationAt) {
+      const secsLeft = Math.max(0, (nextStabilizationAt - now) / 1000);
+      const mins = Math.floor(secsLeft / 60);
+      const secs = Math.floor(secsLeft % 60);
+      document.getElementById('next-update-countdown').textContent =
+        secsLeft > 0 ? `IN ${mins}m ${secs}s` : `UPDATING...`;
+
+      // Progress bar — how far through the 15min window are we
+      const elapsed = intervalTotal - secsLeft;
+      const pct = Math.min(100, Math.max(0, (elapsed / intervalTotal) * 100));
+      document.getElementById('progress-fill').style.width = pct + '%';
+
+      // Schedule a refresh 5s after the next stabilization time
+      if (secsLeft <= 5 && !refreshScheduled) {
+        refreshScheduled = true;
+        setTimeout(() => {
+          fetchAndRender();
+          refreshScheduled = false;
+        }, (secsLeft + 5) * 1000);
+      }
+    }
+  }, 1000);
+
+  function parseCSV(text) {
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) return [];
+    const headers = lines[0].split(',').map(h => h.trim());
+    return lines.slice(1).map(line => {
+      const vals = line.split(',');
+      const obj = {};
+      headers.forEach((h, i) => obj[h] = (vals[i] || '').trim());
+      return obj;
+    });
+  }
+
+  async function fetchAndRender() {
+    try {
+      const [stabRes, stateRes] = await Promise.all([
+        fetch('stabilization_log.csv?t=' + Date.now()),
+        fetch('state_log.csv?t=' + Date.now())
+      ]);
+      if (!stabRes.ok || !stateRes.ok) throw new Error('CSV files not found');
+      const [stabText, stateText] = await Promise.all([stabRes.text(), stateRes.text()]);
+      stabData = parseCSV(stabText);
+      stateData = parseCSV(stateText);
+
+      // Fetch nextStabilizationAt live from the API so it's always current
+      try {
+        const liveRes = await fetch('https://cryoarchive.systems/api/public/cctv-cameras/stabilization?t=' + Date.now());
+        if (liveRes.ok) {
+          const liveData = await liveRes.json();
+          const nextStr = liveData?.stabilization?.cargo?.nextStabilizationAt;
+          if (nextStr) {
+            nextStabilizationAt = new Date(nextStr);
+            document.getElementById('next-update-time').textContent =
+              toESTTimeOnly(nextStabilizationAt);
+          }
+        }
+      } catch (e) {
+        // Fall back to CSV value if API call fails
+        if (stabData.length) {
+          const latest = stabData[stabData.length - 1];
+          const nextStr = latest['cargo_nextStabilizationAt'];
+          if (nextStr) {
+            nextStabilizationAt = new Date(nextStr);
+            document.getElementById('next-update-time').textContent =
+              toESTTimeOnly(nextStabilizationAt);
+          }
+        }
+      }
+
+      document.getElementById('status-dot').classList.remove('error');
+      document.getElementById('error-box').style.display = 'none';
+      document.getElementById('last-updated').textContent =
+        'UPDATED ' + toESTTimeOnly(new Date());
+
+      render();
+
+      if (!firstLoad) {
+        const flash = document.getElementById('flash');
+        flash.style.opacity = '1';
+        setTimeout(() => flash.style.opacity = '0', 2000);
+      }
+
+      if (firstLoad) {
+        document.getElementById('loading').style.opacity = '0';
+        setTimeout(() => document.getElementById('loading').style.display = 'none', 500);
+        firstLoad = false;
+      }
+    } catch (err) {
+      document.getElementById('status-dot').classList.add('error');
+      document.getElementById('error-box').innerHTML =
+        `<div class="error-msg">// ERROR: ${err.message} — make sure server.py is running in your Marathon_ARG folder</div>`;
+      document.getElementById('error-box').style.display = 'block';
+      if (firstLoad) {
+        document.getElementById('loading').style.opacity = '0';
+        setTimeout(() => document.getElementById('loading').style.display = 'none', 500);
+        firstLoad = false;
+      }
+    }
+  }
+
+  function render() {
+    renderAlerts();
+    renderStabCards();
+    renderStateCards();
+    renderKillCount();
+    renderStabChart();
+    renderKillChart();
+  }
+
+  function renderAlerts() {
+    const alerts = [];
+    if (stabData.length) {
+      const latest = stabData[stabData.length - 1];
+      CAMERAS.forEach(cam => {
+        const level = parseInt(latest[`${cam}_stabilizationLevel`]);
+        if (level >= 2) alerts.push({ msg: `${cam.toUpperCase()} stabilization level critical: ${level}`, type: 'warn' });
+      });
+    }
+    if (stateData.length >= 2) {
+      const prev = stateData[stateData.length - 2];
+      const curr = stateData[stateData.length - 1];
+      const diff = parseInt(curr.uescKillCount) - parseInt(prev.uescKillCount);
+      if (!isNaN(diff) && diff !== 0)
+        alerts.push({ msg: `UESC kill count changed by ${diff > 0 ? '+' : ''}${diff.toLocaleString()}`, type: 'info' });
+      PAGES.forEach(p => {
+        if (prev[`${p}_unlocked`] === 'False' && curr[`${p}_unlocked`] === 'True')
+          alerts.push({ msg: `SECTOR ${p.toUpperCase()} UNLOCKED`, type: 'info' });
+        if (prev[`${p}_completed`] === 'False' && curr[`${p}_completed`] === 'True')
+          alerts.push({ msg: `SECTOR ${p.toUpperCase()} COMPLETED`, type: 'info' });
+      });
+    }
+    document.getElementById('alerts-container').innerHTML = alerts.length
+      ? alerts.map(a => `<div class="alert ${a.type === 'info' ? 'info' : ''}">// ${a.msg}</div>`).join('')
+      : '<span class="no-alerts">// NO ACTIVE ALERTS</span>';
+  }
+
+  function renderStabCards() {
+    if (!stabData.length) return;
+    const latest = stabData[stabData.length - 1];
+    document.getElementById('stab-cards').innerHTML = CAMERAS.map(cam => {
+      const level = parseInt(latest[`${cam}_stabilizationLevel`]) || 0;
+      const next = latest[`${cam}_nextStabilizationAt`] || '--';
+      const history = stabData.slice(-20).map(r => parseInt(r[`${cam}_stabilizationLevel`]) || 0);
+      const maxVal = Math.max(...history, 1);
+      const levelClass = level === 0 ? 'level-0' : level === 1 ? 'level-1' : level === 2 ? 'level-2' : 'level-high';
+      const bars = history.map(v => {
+        const pct = Math.round((v / maxVal) * 100);
+        const color = v === 0 ? 'var(--accent2)' : v === 1 ? 'var(--accent)' : v === 2 ? 'var(--warn)' : 'var(--danger)';
+        return `<div class="mini-bar" style="height:${Math.max(pct,4)}%;background:${color}"></div>`;
+      }).join('');
+      return `<div class="card">
+        <div class="card-name">${cam}</div>
+        <div class="card-value ${levelClass}">${level}</div>
+        <div class="card-sub">NEXT: ${next !== '--' ? toEST(next) : '--'}</div>
+        <div class="mini-chart">${bars}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderStateCards() {
+    if (!stateData.length) return;
+    const latest = stateData[stateData.length - 1];
+    document.getElementById('state-cards').innerHTML = PAGES.map(p => {
+      const unlocked = latest[`${p}_unlocked`] === 'True';
+      const completed = latest[`${p}_completed`] === 'True';
+      return `<div class="state-card">
+        <div class="state-name">${p}</div>
+        <div class="state-badges">
+          <div class="badge ${unlocked ? 'on' : ''}">UNLOCKED</div>
+          <div class="badge ${completed ? 'on' : ''}">DONE</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderKillCount() {
+    if (!stateData.length) return;
+    const latest = stateData[stateData.length - 1];
+    const count = parseInt(latest.uescKillCount) || 0;
+    document.getElementById('kill-count').textContent = count.toLocaleString();
+    document.getElementById('kill-next').textContent =
+      latest.uescKillCountNextUpdateAt
+        ? `NEXT UPDATE: ${toEST(latest.uescKillCountNextUpdateAt)}` : '';
+    if (prevKillCount !== null && count !== prevKillCount) {
+      const diff = count - prevKillCount;
+      document.getElementById('kill-delta').textContent =
+        `${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toLocaleString()} since last check`;
+    }
+    prevKillCount = count;
+  }
+
+  function renderStabChart() {
+    if (!stabData.length) return;
+    const recent = stabData.slice(-30);
+    const labels = recent.map(r => r.timestamp ? toESTTimeOnly(new Date(r.timestamp.replace(' UTC',''))) : '');
+    const ctx = document.getElementById('stab-chart').getContext('2d');
+    if (stabChart) stabChart.destroy();
+    stabChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: CAMERAS.map((cam, i) => ({
+          label: cam,
+          data: recent.map(r => parseInt(r[`${cam}_stabilizationLevel`]) || 0),
+          borderColor: COLORS[i], backgroundColor: 'transparent',
+          borderWidth: 1.5, pointRadius: 2, tension: 0.3,
+        }))
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#2a5a6a', font: { family: 'Share Tech Mono', size: 10 }, boxWidth: 12 } } },
+        scales: {
+          x: { ticks: { color: '#2a5a6a', font: { size: 9 } }, grid: { color: '#0a3a4a' } },
+          y: { ticks: { color: '#2a5a6a', font: { size: 9 } }, grid: { color: '#0a3a4a' }, beginAtZero: true }
+        }
+      }
+    });
+  }
+
+  function renderKillChart() {
+    if (!stateData.length) return;
+    const recent = stateData.slice(-30);
+    const ctx = document.getElementById('kill-chart').getContext('2d');
+    if (killChart) killChart.destroy();
+    killChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: recent.map(r => r.timestamp ? toESTTimeOnly(new Date(r.timestamp.replace(' UTC',''))) : ''),
+        datasets: [{ label: 'UESC Kill Count',
+          data: recent.map(r => parseInt(r.uescKillCount) || 0),
+          borderColor: '#ff2244', backgroundColor: 'rgba(255,34,68,0.05)',
+          borderWidth: 2, pointRadius: 2, fill: true, tension: 0.3 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#2a5a6a', font: { family: 'Share Tech Mono', size: 10 } } } },
+        scales: {
+          x: { ticks: { color: '#2a5a6a', font: { size: 9 } }, grid: { color: '#0a3a4a' } },
+          y: { ticks: { color: '#2a5a6a', font: { size: 9 } }, grid: { color: '#0a3a4a' } }
+        }
+      }
+    });
+  }
+
+  fetchAndRender();
+</script>
+</body>
+</html>
