@@ -1286,6 +1286,13 @@
   fetchDmCards();
   setInterval(fetchDmCards, 15 * 60 * 1000);
 
+  // Default Zone 3 (Algae Ponds → Bio Research) as active on load
+  window.addEventListener('DOMContentLoaded', () => {
+    activeDmZone = 'dm-route3';
+    setAllDmVisual('dm-route3', true);
+    showDmZoneInfo('dm-route3');
+  });
+
   // Sub-tab switching with URL hash
   function activateTab(tabId) {
     document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
