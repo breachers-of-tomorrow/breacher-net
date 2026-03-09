@@ -1096,15 +1096,29 @@
   fetchStabTime();
   setInterval(fetchStabTime, 60 * 1000);
 
-  // Sub-tab switching
+  // Sub-tab switching with URL hash
+  function activateTab(tabId) {
+    document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    const tab = document.querySelector(`.sub-tab[data-tab="${tabId}"]`);
+    const panel = document.getElementById('tab-' + tabId);
+    if (tab) tab.classList.add('active');
+    if (panel) panel.classList.add('active');
+  }
+
   document.querySelectorAll('.sub-tab').forEach(tab => {
     tab.addEventListener('click', () => {
-      document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      tab.classList.add('active');
-      document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+      const tabId = tab.dataset.tab;
+      activateTab(tabId);
+      history.replaceState(null, '', '#' + tabId);
     });
   });
+
+  // On load, read hash
+  const initialTab = location.hash.replace('#', '');
+  if (initialTab && document.getElementById('tab-' + initialTab)) {
+    activateTab(initialTab);
+  }
 
   // -------------------------------------------------------
   // CAMERA CONFIG — fill in camera names when known
