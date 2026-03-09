@@ -838,7 +838,7 @@
     <div class="alert-banner" style="border-color:rgba(255,107,53,0.25);background:rgba(255,107,53,0.06);color:var(--warn);text-shadow:none;">
       <span class="alert-banner-dot" style="background:var(--warn);box-shadow:0 0 6px var(--warn);animation:none"></span>
       DIRE MARSH TERMINALS INCOMPLETE
-      <span style="margin-left:auto;font-size:0.65rem;color:var(--dim)" id="dire-marsh-progress">LOADING...</span>
+      <span style="margin-left:auto;font-size:0.65rem;color:var(--dim)" id="dire-marsh-progress"></span>
       <span class="alert-banner-dot" style="background:var(--warn);box-shadow:0 0 6px var(--warn);animation:none"></span>
     </div>
 
@@ -1233,8 +1233,8 @@
   // stabilizationLevel of 0 = complete, higher = incomplete.
   // -------------------------------------------------------
   const MAP_CAMERAS = {
-    'dire-marsh': [null, null, null],  // e.g. ['cargo', 'revival', 'biostock']
-    'outpost':    [null, null, null],  // e.g. ['steerage', 'camera06', 'camera09']
+    'dire-marsh': ['biostock', 'steerage', 'camera09'],
+    'outpost':    [null, null, null],
   };
 
   async function fetchProgress() {
@@ -1246,6 +1246,8 @@
 
       for (const [mapId, cameras] of Object.entries(MAP_CAMERAS)) {
         const el = document.getElementById(mapId + '-progress');
+        const banner = document.querySelector(`#tab-${mapId} .alert-banner`);
+        const bannerText = banner?.querySelector('span:not(.alert-banner-dot)');
         if (!el) continue;
 
         const configured = cameras.filter(Boolean);
@@ -1254,20 +1256,39 @@
           continue;
         }
 
-        // Average stabilization level across assigned cameras (0 = stable/done)
         const levels = configured.map(cam => parseInt(stab[cam]?.stabilizationLevel) || 0);
         const avg = levels.reduce((a, b) => a + b, 0) / levels.length;
-        // Invert: 0 stab level = 100% complete
         const pct = Math.max(0, Math.round(100 - avg));
         el.textContent = `STABILITY: ${pct}%`;
         el.style.color = pct >= 100 ? 'var(--accent2)' : pct >= 50 ? 'var(--accent)' : 'var(--warn)';
+
+        // Flip banner to COMPLETE when all cameras are at 0 (fully stable)
+        if (bannerText) {
+          const allComplete = levels.every(l => l === 0);
+          if (allComplete) {
+            bannerText.textContent = `${mapId.replace('-', ' ').toUpperCase()} TERMINALS COMPLETE`;
+            banner.style.borderColor = 'rgba(0,255,157,0.25)';
+            banner.style.background = 'rgba(0,255,157,0.06)';
+            banner.style.color = 'var(--accent2)';
+            banner.querySelectorAll('.alert-banner-dot').forEach(d => {
+              d.style.background = 'var(--accent2)';
+              d.style.boxShadow = '0 0 6px var(--accent2)';
+              d.style.animation = '';
+            });
+          } else {
+            bannerText.textContent = `${mapId.replace('-', ' ').toUpperCase()} TERMINALS INCOMPLETE`;
+            banner.style.borderColor = 'rgba(255,107,53,0.25)';
+            banner.style.background = 'rgba(255,107,53,0.06)';
+            banner.style.color = 'var(--warn)';
+            banner.querySelectorAll('.alert-banner-dot').forEach(d => {
+              d.style.background = 'var(--warn)';
+              d.style.boxShadow = '0 0 6px var(--warn)';
+              d.style.animation = 'none';
+            });
+          }
+        }
       }
-    } catch (e) {
-      ['dire-marsh', 'outpost'].forEach(id => {
-        const el = document.getElementById(id + '-progress');
-        if (el) el.textContent = 'DATA UNAVAILABLE';
-      });
-    }
+    } catch (e) {}
   }
 
   fetchProgress();
