@@ -1156,7 +1156,17 @@
   document.getElementById('clock').textContent = toESTTimeOnly(new Date());
 
   // Fetch next stabilization time from API
-  const GITHUB_RAW = 'https://raw.githubusercontent.com/CrowdTypical/Marathon-arg/main/';
+  const GITHUB_API = 'https://api.github.com/repos/CrowdTypical/Marathon-arg/contents/';
+
+  async function fetchCSV(filename) {
+    const res = await fetch(GITHUB_API + filename, {
+      cache: 'no-store',
+      headers: { 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (!res.ok) throw new Error(`CSV file not found: ${filename}`);
+    const json = await res.json();
+    return atob(json.content.replace(/\n/g, ''));
+  }
 
   async function fetchStabTime() {
     try {
@@ -1179,9 +1189,7 @@
 
     // Fallback: try CSV
     try {
-      const csvRes = await fetch(GITHUB_RAW + 'stabilization_log.csv?t=' + Date.now(), { cache: 'no-store' });
-      if (!csvRes.ok) return;
-      const text = await csvRes.text();
+      const text = await fetchCSV('stabilization_log.csv');
       const lines = text.trim().split('\n');
       const headers = lines[0].split(',').map(h => h.trim());
       const last = lines[lines.length - 1].split(',');
@@ -1219,9 +1227,6 @@
     });
   }
 
-  function csvUrl(filename) {
-    return 'https://raw.githubusercontent.com/CrowdTypical/Marathon-arg/main/' + filename + '?t=' + Date.now();
-  }
 
   const OP_CAMERAS = ['revival', 'camera06', 'preservation'];
   const PER_CAMERAS = ['cargo', 'index', 'cryoHub'];
@@ -1255,9 +1260,8 @@
 
   async function fetchDmCards() {
     try {
-      const res = await fetch(csvUrl('stabilization_log.csv'), { cache: 'no-store' });
-      if (!res.ok) return;
-      dmStabData = parseCSV(await res.text());
+      const text = await fetchCSV('stabilization_log.csv');
+      dmStabData = parseCSV(text);
       renderDmCards();
       renderOpCards();
       renderPerCards();
