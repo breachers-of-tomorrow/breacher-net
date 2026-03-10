@@ -578,12 +578,9 @@
     });
   }
 
-  // Auto-detect whether running locally or on GitHub Pages
-  const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
   const GITHUB_RAW = 'https://raw.githubusercontent.com/CrowdTypical/Marathon-arg/main/';
 
   function csvUrl(filename) {
-    if (isLocal) return filename + '?t=' + Date.now();
     return GITHUB_RAW + filename + '?t=' + Date.now();
   }
 
@@ -679,7 +676,7 @@
     } catch (err) {
       document.getElementById('status-dot').classList.add('error');
       document.getElementById('error-box').innerHTML =
-        `<div class="error-msg">// ERROR: ${err.message} — ${isLocal ? 'make sure server.py is running in your Marathon_ARG folder' : 'make sure the CSV files have been pushed to GitHub'}</div>`;
+        `<div class="error-msg">// ERROR: ${err.message} — make sure the CSV files have been pushed to GitHub</div>`;
       document.getElementById('error-box').style.display = 'block';
       if (firstLoad) {
         document.getElementById('loading').style.opacity = '0';

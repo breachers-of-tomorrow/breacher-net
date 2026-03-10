@@ -1156,7 +1156,6 @@
   document.getElementById('clock').textContent = toESTTimeOnly(new Date());
 
   // Fetch next stabilization time from API
-  const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
   const GITHUB_RAW = 'https://raw.githubusercontent.com/CrowdTypical/Marathon-arg/main/';
 
   async function fetchStabTime() {
@@ -1180,7 +1179,7 @@
 
     // Fallback: try CSV
     try {
-      const csvRes = await fetch((isLocal ? '' : GITHUB_RAW) + 'stabilization_log.csv?t=' + Date.now(), { cache: 'no-store' });
+      const csvRes = await fetch(GITHUB_RAW + 'stabilization_log.csv?t=' + Date.now(), { cache: 'no-store' });
       if (!csvRes.ok) return;
       const text = await csvRes.text();
       const lines = text.trim().split('\n');
@@ -1221,9 +1220,7 @@
   }
 
   function csvUrl(filename) {
-    const isLoc = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-    const base = isLoc ? '' : 'https://raw.githubusercontent.com/CrowdTypical/Marathon-arg/main/';
-    return base + filename + '?t=' + Date.now();
+    return 'https://raw.githubusercontent.com/CrowdTypical/Marathon-arg/main/' + filename + '?t=' + Date.now();
   }
 
   const OP_CAMERAS = ['revival', 'camera06', 'preservation'];
