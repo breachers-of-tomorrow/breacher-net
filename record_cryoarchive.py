@@ -19,7 +19,7 @@ PAGES = ["cargo", "index", "revival", "biostock", "steerage", "preservation", "c
 FALLBACK_INTERVAL = 15 * 60  # 15 minutes fallback
 POLL_INTERVAL = 15          # seconds between polls during the update window
 POLL_WINDOW_EARLY = 2 * 60  # start polling this many seconds BEFORE expected update
-POLL_WINDOW_LATE = 5 * 60   # give up polling after this many seconds PAST expected update
+POLL_WINDOW_LATE = 14 * 60   # give up polling after this many seconds PAST expected update
 
 
 def get_timestamp():
