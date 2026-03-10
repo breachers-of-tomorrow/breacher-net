@@ -590,8 +590,8 @@
   async function fetchAndRender() {
     try {
       const [stabRes, stateRes] = await Promise.all([
-        fetch(csvUrl('stabilization_log.csv')),
-        fetch(csvUrl('state_log.csv'))
+        fetch(csvUrl('stabilization_log.csv'), { cache: 'no-store' }),
+        fetch(csvUrl('state_log.csv'), { cache: 'no-store' })
       ]);
       if (!stabRes.ok || !stateRes.ok) throw new Error('CSV files not found');
       const [stabText, stateText] = await Promise.all([stabRes.text(), stateRes.text()]);
@@ -601,7 +601,7 @@
       // Fetch nextStabilizationAt live from the API so it's always current
       let gotLiveTime = false;
       try {
-        const liveRes = await fetch('https://cryoarchive.systems/api/public/cctv-cameras/stabilization?t=' + Date.now());
+        const liveRes = await fetch('https://cryoarchive.systems/api/public/cctv-cameras/stabilization?t=' + Date.now(), { cache: 'no-store' });
         if (liveRes.ok) {
           const liveData = await liveRes.json();
           const nextStr = Object.values(liveData?.stabilization || {})

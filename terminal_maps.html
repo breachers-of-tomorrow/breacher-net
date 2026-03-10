@@ -1180,7 +1180,7 @@
 
     // Fallback: try CSV
     try {
-      const csvRes = await fetch((isLocal ? '' : GITHUB_RAW) + 'stabilization_log.csv?t=' + Date.now());
+      const csvRes = await fetch((isLocal ? '' : GITHUB_RAW) + 'stabilization_log.csv?t=' + Date.now(), { cache: 'no-store' });
       if (!csvRes.ok) return;
       const text = await csvRes.text();
       const lines = text.trim().split('\n');
@@ -1258,7 +1258,7 @@
 
   async function fetchDmCards() {
     try {
-      const res = await fetch(csvUrl('stabilization_log.csv'));
+      const res = await fetch(csvUrl('stabilization_log.csv'), { cache: 'no-store' });
       if (!res.ok) return;
       dmStabData = parseCSV(await res.text());
       renderDmCards();
