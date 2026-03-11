@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRYOARCHIVE // BUILD TRACKER</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+  :root {
+    --bg: #030a0f;
+    --panel: #060f17;
+    --border: #0a3a4a;
+    --accent: #00d4ff;
+    --accent2: #00ff9d;
+    --warn: #ff6b35;
+    --danger: #ff2244;
+    --text: #7ecfdf;
+    --dim: #2a5a6a;
+    --glow: 0 0 10px rgba(0,212,255,0.4);
+    --glow2: 0 0 10px rgba(0,255,157,0.4);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(90deg, rgba(0,212,255,0.05) 0%, transparent 100%);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .logo {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: var(--accent);
+    text-shadow: var(--glow);
+    letter-spacing: 4px;
+  }
+
+  .logo span { color: var(--accent2); }
+
+  .status-bar {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    font-size: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent2);
+    box-shadow: var(--glow2);
+    animation: pulse 2s infinite;
+  }
+
+  .status-dot.error { background: var(--danger); box-shadow: 0 0 10px rgba(255,34,68,0.4); animation: none; }
+
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  #clock { color: var(--accent); }
+
+  nav {
+    background: var(--bg);
+    border-bottom: 2px solid var(--border);
+    padding: 10px 30px 0;
+    display: flex;
+    gap: 6px;
+  }
+
+  nav a {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--dim);
+    text-decoration: none;
+    padding: 10px 22px;
+    border: 1px solid transparent;
+    border-bottom: none;
+    transition: color 0.2s, background 0.2s, border-color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    top: 2px;
+  }
+
+  nav a:hover {
+    color: var(--text);
+    background: rgba(0,212,255,0.05);
+    border-color: var(--border);
+  }
+
+  nav a.active {
+    color: var(--accent);
+    background: var(--panel);
+    border-color: var(--border);
+    border-bottom: 2px solid var(--panel);
+    text-shadow: var(--glow);
+  }
+
+  nav a .nav-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 6px currentColor;
+  }
+
+  main { padding: 30px; max-width: 1200px; margin: 0 auto; }
+
+  .section-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 6px;
+    color: var(--dim);
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Current build card */
+  .current-build {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 24px;
+    margin-bottom: 30px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .current-build::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+
+  .build-id-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 3px;
+    color: var(--dim);
+    margin-bottom: 8px;
+  }
+
+  .build-id-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: var(--accent);
+    text-shadow: var(--glow);
+    letter-spacing: 2px;
+    word-break: break-all;
+  }
+
+  .build-meta {
+    display: flex;
+    gap: 30px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+  .build-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .build-meta-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 2px;
+    color: var(--dim);
+  }
+
+  .build-meta-value {
+    font-size: 0.85rem;
+    color: var(--text);
+  }
+
+  /* Timeline */
+  .timeline {
+    position: relative;
+    padding-left: 32px;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--border);
+  }
+
+  .timeline-entry {
+    position: relative;
+    margin-bottom: 20px;
+    padding: 16px 20px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    transition: border-color 0.2s;
+  }
+
+  .timeline-entry:hover {
+    border-color: var(--accent);
+  }
+
+  .timeline-entry:first-child {
+    border-color: var(--accent2);
+  }
+
+  .timeline-entry::before {
+    content: '';
+    position: absolute;
+    left: -28px;
+    top: 20px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+    border: 2px solid var(--bg);
+  }
+
+  .timeline-entry:first-child::before {
+    background: var(--accent2);
+    box-shadow: var(--glow2);
+  }
+
+  .entry-time {
+    display: flex;
+    gap: 16px;
+    align-items: baseline;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  .entry-time-utc {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    color: var(--accent);
+  }
+
+  .entry-time-local {
+    font-size: 0.75rem;
+    color: var(--dim);
+  }
+
+  .entry-time-relative {
+    font-size: 0.7rem;
+    color: var(--warn);
+    margin-left: auto;
+  }
+
+  .entry-deployment {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 1px;
+    color: var(--text);
+    margin-bottom: 8px;
+    opacity: 0.8;
+  }
+
+  .entry-changes {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .change-item {
+    font-size: 0.8rem;
+    color: var(--text);
+    padding: 4px 10px;
+    border-left: 2px solid var(--accent);
+    background: rgba(0,212,255,0.03);
+  }
+
+  .change-item.added { border-color: var(--accent2); }
+  .change-item.removed { border-color: var(--danger); }
+  .change-item.initial { border-color: var(--warn); }
+
+  .entry-stats {
+    display: flex;
+    gap: 16px;
+    margin-top: 10px;
+    font-size: 0.7rem;
+    color: var(--dim);
+  }
+
+  /* Summary stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 30px;
+  }
+
+  .stat-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 16px;
+    text-align: center;
+  }
+
+  .stat-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 3px;
+    color: var(--dim);
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--accent);
+    text-shadow: var(--glow);
+  }
+
+  .stat-value.green { color: var(--accent2); text-shadow: var(--glow2); }
+
+  /* Loading / Error */
+  #loading {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 20px; z-index: 9999; transition: opacity 0.5s;
+  }
+
+  .loading-text {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 6px;
+    color: var(--accent);
+    animation: blink 1s infinite;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  .error-msg {
+    background: rgba(255,34,68,0.1);
+    border: 1px solid var(--danger);
+    padding: 12px 20px;
+    color: var(--danger);
+    font-size: 0.8rem;
+    margin-bottom: 20px;
+  }
+
+  .no-data {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--dim);
+    font-size: 0.85rem;
+  }
+
+  .no-data .icon {
+    font-size: 2rem;
+    margin-bottom: 16px;
+    color: var(--accent);
+  }
+
+  /* Timezone toggle */
+  .tz-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--dim);
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 20px;
+  }
+
+  .tz-toggle:hover { border-color: var(--accent); color: var(--text); }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    main { padding: 16px; }
+    .build-id-value { font-size: 0.9rem; }
+    .timeline { padding-left: 24px; }
+    .entry-time { flex-direction: column; gap: 4px; }
+    .entry-time-relative { margin-left: 0; }
+  }
+</style>
+<script data-goatcounter="https://crowdtypical.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</head>
+<body>
+
+<div id="loading">
+  <div class="logo">CRYO<span>ARCHIVE</span></div>
+  <div class="loading-text">SCANNING BUILD REGISTRY...</div>
+</div>
+
+<header>
+  <div class="logo">CRYO<span>ARCHIVE</span> // <span style="font-size:0.8rem;color:var(--text)">BUILD TRACKER</span></div>
+  <div class="status-bar">
+    <div class="status-dot" id="status-dot"></div>
+    <span id="clock">--:--:--</span>
+    <span id="tz-label" style="color:var(--dim);font-size:0.7rem"></span>
+  </div>
+</header>
+
+<nav>
+  <a href="dashboard.html"><span class="nav-dot"></span>Camera Monitoring</a>
+  <a href="terminal_maps.html"><span class="nav-dot"></span>Terminal Maps</a>
+  <a href="build_tracker.html" class="active"><span class="nav-dot"></span>Build Tracker</a>
+  <a href="https://docs.google.com/document/d/1mtUtDPvbh6ahiynYFVS7Z4O79Nw6y5PEOjweCpzWV_A/edit?tab=t.0" target="_blank"><span class="nav-dot"></span>Google Doc</a>
+</nav>
+
+<main>
+  <div id="error-box" style="display:none"></div>
+
+  <!-- Summary stats -->
+  <div class="section-title">BUILD OVERVIEW</div>
+  <div class="stats-grid" id="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">TOTAL BUILDS</div>
+      <div class="stat-value" id="stat-total">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">LAST CHANGE</div>
+      <div class="stat-value green" id="stat-last-change" style="font-size:0.9rem;letter-spacing:1px">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">CURRENT DEPLOYMENT</div>
+      <div class="stat-value" id="stat-deployment" style="font-size:0.7rem;letter-spacing:1px">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">CHUNKS</div>
+      <div class="stat-value" id="stat-chunks">--</div>
+    </div>
+  </div>
+
+  <!-- Current build details -->
+  <div class="section-title">CURRENT BUILD</div>
+  <div class="current-build" id="current-build">
+    <div class="build-id-label">VERCEL DEPLOYMENT ID</div>
+    <div class="build-id-value" id="current-deploy-id">--</div>
+    <div class="build-meta">
+      <div class="build-meta-item">
+        <span class="build-meta-label">ETAG</span>
+        <span class="build-meta-value" id="current-etag">--</span>
+      </div>
+      <div class="build-meta-item">
+        <span class="build-meta-label">PAGE HASH</span>
+        <span class="build-meta-value" id="current-hash">--</span>
+      </div>
+      <div class="build-meta-item">
+        <span class="build-meta-label">LAST CHECKED</span>
+        <span class="build-meta-value" id="current-checked">--</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change timeline -->
+  <div class="section-title">CHANGE HISTORY</div>
+  <div id="timeline-container"></div>
+</main>
+
+<script>
+  // -------------------------------------------------------
+  // Time formatting helpers
+  // -------------------------------------------------------
+  const userTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  function formatUTC(isoStr) {
+    const d = new Date(isoStr);
+    if (isNaN(d)) return '--';
+    return d.toLocaleString('en-US', {
+      timeZone: 'UTC',
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false
+    }) + ' UTC';
+  }
+
+  function formatLocal(isoStr) {
+    const d = new Date(isoStr);
+    if (isNaN(d)) return '--';
+    const tzAbbr = d.toLocaleString('en-US', { timeZoneName: 'short' }).split(' ').pop();
+    return d.toLocaleString('en-US', {
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: true
+    }) + ' ' + tzAbbr;
+  }
+
+  function formatTimeOnly(date) {
+    if (!date || isNaN(date)) return '--';
+    const tzAbbr = date.toLocaleString('en-US', { timeZoneName: 'short' }).split(' ').pop();
+    return date.toLocaleString('en-US', {
+      hour: 'numeric', minute: '2-digit', second: '2-digit',
+      hour12: true
+    }) + ' ' + tzAbbr;
+  }
+
+  function timeAgo(isoStr) {
+    const d = new Date(isoStr);
+    if (isNaN(d)) return '';
+    const secs = Math.floor((Date.now() - d.getTime()) / 1000);
+    if (secs < 60) return `${secs}s ago`;
+    if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+    if (secs < 86400) return `${Math.floor(secs / 3600)}h ${Math.floor((secs % 3600) / 60)}m ago`;
+    const days = Math.floor(secs / 86400);
+    return `${days}d ${Math.floor((secs % 86400) / 3600)}h ago`;
+  }
+
+  // -------------------------------------------------------
+  // Clock
+  // -------------------------------------------------------
+  function updateClock() {
+    document.getElementById('clock').textContent = formatTimeOnly(new Date());
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // Show user's timezone
+  document.getElementById('tz-label').textContent = userTZ;
+
+  // -------------------------------------------------------
+  // Data fetching — works both on GitHub Pages and locally
+  // -------------------------------------------------------
+  const GITHUB_API = 'https://api.github.com/repos/CrowdTypical/Marathon-arg/contents/';
+  const isLocal = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
+  async function fetchJSON(filename) {
+    if (isLocal) {
+      // Local preview: fetch the file directly from the same directory
+      const res = await fetch(filename, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`File not found: ${filename}`);
+      return res.json();
+    }
+    // GitHub Pages: fetch via API with conditional caching
+    const res = await fetch(GITHUB_API + filename, {
+      cache: 'no-store',
+      headers: { 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (!res.ok) throw new Error(`File not found: ${filename}`);
+    const json = await res.json();
+    return JSON.parse(atob(json.content.replace(/\n/g, '')));
+  }
+
+  // -------------------------------------------------------
+  // Rendering
+  // -------------------------------------------------------
+  function renderStats(log, state) {
+    document.getElementById('stat-total').textContent = log.length;
+
+    if (log.length > 0) {
+      const last = log[log.length - 1];
+      document.getElementById('stat-last-change').textContent = timeAgo(last.detected_at);
+      document.getElementById('stat-deployment').textContent =
+        (last.deployment_id || '--').replace('dpl_', '');
+      document.getElementById('stat-chunks').textContent = last.chunk_count || '--';
+    }
+  }
+
+  function renderCurrentBuild(state) {
+    document.getElementById('current-deploy-id').textContent = state.deployment_id || '--';
+    document.getElementById('current-etag').textContent = state.etag || '--';
+    document.getElementById('current-hash').textContent = state.page_hash || '--';
+    document.getElementById('current-checked').textContent =
+      state.last_checked ? formatLocal(state.last_checked) : '--';
+  }
+
+  function classifyChange(text) {
+    if (/^New chunks?:/i.test(text) || /added/i.test(text)) return 'added';
+    if (/^Removed chunks?:/i.test(text) || /removed/i.test(text)) return 'removed';
+    if (/^Initial/i.test(text)) return 'initial';
+    return '';
+  }
+
+  function renderTimeline(log) {
+    const container = document.getElementById('timeline-container');
+
+    if (!log.length) {
+      container.innerHTML = `<div class="no-data">
+        <div class="icon">&#x23F3;</div>
+        // NO BUILD CHANGES RECORDED YET<br>
+        <span style="font-size:0.75rem;color:var(--dim)">
+          The tracker checks every 5 minutes. Changes will appear here when Bungie deploys a new build.
+        </span>
+      </div>`;
+      return;
+    }
+
+    // Show newest first
+    const reversed = [...log].reverse();
+    let html = '<div class="timeline">';
+
+    for (const entry of reversed) {
+      const utc = formatUTC(entry.detected_at);
+      const local = formatLocal(entry.detected_at);
+      const ago = timeAgo(entry.detected_at);
+      const deployShort = entry.deployment_id
+        ? entry.deployment_id.replace('dpl_', '')
+        : 'unknown';
+
+      html += `<div class="timeline-entry">
+        <div class="entry-time">
+          <span class="entry-time-utc">${utc}</span>
+          <span class="entry-time-local">${local}</span>
+          <span class="entry-time-relative">${ago}</span>
+        </div>
+        <div class="entry-deployment">DEPLOY: ${deployShort}</div>
+        <div class="entry-changes">`;
+
+      if (entry.changes && entry.changes.length) {
+        for (const c of entry.changes) {
+          const cls = classifyChange(c);
+          html += `<div class="change-item ${cls}">${escapeHtml(c)}</div>`;
+        }
+      }
+
+      html += `</div>
+        <div class="entry-stats">
+          <span>CHUNKS: ${entry.chunk_count || '--'}</span>
+          <span>ASSETS: ${entry.asset_count || '--'}</span>
+          <span>ETAG: ${entry.etag || '--'}</span>
+          <span>HTTP: ${entry.http_status || '--'}</span>
+        </div>
+      </div>`;
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // -------------------------------------------------------
+  // Init
+  // -------------------------------------------------------
+  async function init() {
+    try {
+      const [log, state] = await Promise.all([
+        fetchJSON('build_log.json'),
+        fetchJSON('build_state.json')
+      ]);
+
+      renderStats(log, state);
+      renderCurrentBuild(state);
+      renderTimeline(log);
+
+      document.getElementById('loading').style.opacity = '0';
+      setTimeout(() => document.getElementById('loading').style.display = 'none', 500);
+
+    } catch (err) {
+      // If files don't exist yet, show a friendly message
+      if (err.message.includes('not found')) {
+        document.getElementById('loading').style.opacity = '0';
+        setTimeout(() => document.getElementById('loading').style.display = 'none', 500);
+        document.getElementById('stat-total').textContent = '0';
+        document.getElementById('stat-last-change').textContent = 'PENDING';
+        document.getElementById('timeline-container').innerHTML = `<div class="no-data">
+          <div class="icon">&#x1F6F0;</div>
+          // AWAITING FIRST SCAN<br>
+          <span style="font-size:0.75rem;color:var(--dim)">
+            The build tracker workflow hasn't run yet. It checks cryoarchive.systems every 5 minutes
+            and records deployment changes here. Check back soon!
+          </span>
+        </div>`;
+      } else {
+        document.getElementById('status-dot').classList.add('error');
+        document.getElementById('error-box').innerHTML =
+          `<div class="error-msg">// ERROR: ${escapeHtml(err.message)}</div>`;
+        document.getElementById('error-box').style.display = 'block';
+        document.getElementById('loading').style.opacity = '0';
+        setTimeout(() => document.getElementById('loading').style.display = 'none', 500);
+      }
+    }
+  }
+
+  // Auto-refresh every 5 minutes
+  init();
+  setInterval(init, 5 * 60 * 1000);
+</script>
+</body>
+</html>
