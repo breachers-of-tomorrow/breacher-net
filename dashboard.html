@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CRYOARCHIVE // MONITORING SYSTEM</title>
+<title>CRYOARCHIVE // DASHBOARD</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
 
@@ -30,8 +30,6 @@
     min-height: 100vh;
     overflow-x: hidden;
   }
-
-  
 
   header {
     border-bottom: 1px solid var(--border);
@@ -77,302 +75,6 @@
 
   #clock { color: var(--accent); }
   #last-updated { color: var(--dim); font-size: 0.7rem; }
-
-  .next-update-bar {
-    background: var(--panel);
-    border-bottom: 1px solid var(--border);
-    padding: 8px 30px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    font-size: 0.75rem;
-  }
-
-  .next-label {
-    font-family: 'Orbitron', monospace;
-    font-size: 0.6rem;
-    letter-spacing: 3px;
-    color: var(--dim);
-  }
-
-  #next-update-time { color: var(--accent); }
-  #next-update-countdown { color: var(--accent2); font-size: 0.8rem; }
-
-  .progress-bar {
-    flex: 1;
-    height: 3px;
-    background: var(--border);
-    margin-left: 10px;
-    overflow: hidden;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent2), var(--accent));
-    transition: width 1s linear;
-    box-shadow: var(--glow2);
-  }
-
-  main { padding: 30px; max-width: 1400px; margin: 0 auto; }
-
-  .section-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 0.7rem;
-    letter-spacing: 6px;
-    color: var(--dim);
-    margin-bottom: 15px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  #alerts-section { margin-bottom: 30px; }
-  #alerts-container { display: flex; flex-direction: column; gap: 8px; }
-
-  .alert {
-    padding: 10px 16px;
-    border-left: 3px solid var(--warn);
-    background: rgba(255,107,53,0.08);
-    font-size: 0.8rem;
-    color: var(--warn);
-    animation: slideIn 0.3s ease;
-  }
-
-  .alert.info { border-color: var(--accent); background: rgba(0,212,255,0.05); color: var(--accent); }
-
-  @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
-
-  .no-alerts { color: var(--dim); font-size: 0.8rem; }
-
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 30px; }
-
-  .card {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    padding: 18px;
-    position: relative;
-    overflow: visible;
-    transition: border-color 0.3s;
-  }
-
-  .card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0; height: 2px;
-    background: linear-gradient(90deg, var(--accent), transparent);
-  }
-
-  .card:hover { border-color: var(--accent); }
-
-  #bar-tooltip {
-    position: fixed;
-    background: #0a1a24;
-    border: 1px solid var(--accent);
-    padding: 6px 10px;
-    font-size: 0.7rem;
-    color: var(--text);
-    white-space: nowrap;
-    z-index: 9000;
-    pointer-events: none;
-    display: none;
-    line-height: 1.6;
-  }
-
-  .card-name {
-    font-family: 'Orbitron', monospace;
-    font-size: 0.65rem;
-    letter-spacing: 3px;
-    color: var(--dim);
-    margin-bottom: 10px;
-    text-transform: uppercase;
-  }
-
-  .card-value {
-    font-size: 2.5rem;
-    font-weight: bold;
-    line-height: 1;
-    margin-bottom: 6px;
-  }
-
-  .card-value.level-0 { color: var(--accent2); text-shadow: var(--glow2); }
-  .card-value.level-1 { color: var(--accent); text-shadow: var(--glow); }
-  .card-value.level-2 { color: var(--warn); text-shadow: 0 0 10px rgba(255,107,53,0.4); }
-  .card-value.level-high { color: var(--danger); text-shadow: 0 0 10px rgba(255,34,68,0.4); }
-
-  .card-sub { font-size: 0.7rem; color: var(--dim); }
-
-  .mini-chart { margin-top: 12px; height: 40px; display: flex; align-items: flex-end; gap: 2px; }
-
-  .mini-bar {
-    flex: 1;
-    height: 100%;
-    position: relative;
-    cursor: crosshair;
-  }
-
-  .mini-bar-fill {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    min-height: 2px;
-    transition: opacity 0.2s;
-  }
-
-  .mini-bar:hover .mini-bar-fill { opacity: 0.7; }
-
-  .state-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 30px; }
-
-  .state-card { background: var(--panel); border: 1px solid var(--border); padding: 14px; text-align: center; }
-
-  .state-name {
-    font-family: 'Orbitron', monospace;
-    font-size: 0.6rem;
-    letter-spacing: 2px;
-    color: var(--dim);
-    margin-bottom: 8px;
-    text-transform: uppercase;
-  }
-
-  .state-badges { display: flex; gap: 6px; justify-content: center; }
-
-  .badge { font-size: 0.6rem; padding: 3px 8px; border: 1px solid var(--border); color: var(--dim); letter-spacing: 1px; }
-
-  .badge.on { border-color: var(--accent2); color: var(--accent2); background: rgba(0,255,157,0.08); box-shadow: var(--glow2); }
-
-  .kill-panel {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    padding: 20px 24px;
-    margin-bottom: 30px;
-    display: flex;
-    align-items: center;
-    gap: 30px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .kill-panel::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0; height: 2px;
-    background: linear-gradient(90deg, var(--danger), transparent);
-  }
-
-  .kill-label { font-family: 'Orbitron', monospace; font-size: 0.65rem; letter-spacing: 3px; color: var(--dim); }
-
-  .kill-value {
-    font-family: 'Orbitron', monospace;
-    font-size: 2rem;
-    font-weight: 900;
-    color: var(--danger);
-    text-shadow: 0 0 15px rgba(255,34,68,0.5);
-    letter-spacing: 2px;
-  }
-
-  .kill-delta { font-size: 0.8rem; color: var(--warn); }
-
-  .chart-section { margin-bottom: 30px; }
-
-  .chart-container { background: var(--panel); border: 1px solid var(--border); padding: 20px; height: 220px; }
-
-  .chart-controls {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-top: none;
-    padding: 12px 20px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .chart-controls label {
-    font-family: 'Orbitron', monospace;
-    font-size: 0.6rem;
-    letter-spacing: 2px;
-    color: var(--dim);
-    white-space: nowrap;
-  }
-
-  .chart-controls span {
-    font-size: 0.75rem;
-    color: var(--accent);
-    white-space: nowrap;
-    min-width: 120px;
-  }
-
-  input[type=range] {
-    flex: 1;
-    -webkit-appearance: none;
-    appearance: none;
-    height: 4px;
-    background: var(--border);
-    outline: none;
-    cursor: pointer;
-    border-radius: 2px;
-  }
-
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 16px; height: 16px;
-    border-radius: 50%;
-    background: var(--accent);
-    box-shadow: var(--glow), 0 0 0 3px rgba(0,212,255,0.15);
-    cursor: pointer;
-    transition: box-shadow 0.2s;
-  }
-
-  input[type=range]::-webkit-slider-thumb:hover {
-    box-shadow: var(--glow), 0 0 0 6px rgba(0,212,255,0.2);
-  }
-
-  input[type=range]::-moz-range-thumb {
-    width: 16px; height: 16px;
-    border-radius: 50%;
-    background: var(--accent);
-    box-shadow: var(--glow);
-    cursor: pointer;
-    border: none;
-  }
-
-  canvas { width: 100% !important; }
-
-  #loading {
-    position: fixed; inset: 0; background: var(--bg);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 20px; z-index: 9999; transition: opacity 0.5s;
-  }
-
-  .loading-text {
-    font-family: 'Orbitron', monospace;
-    font-size: 0.8rem;
-    letter-spacing: 6px;
-    color: var(--accent);
-    animation: blink 1s infinite;
-  }
-
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
-
-  .error-msg {
-    background: rgba(255,34,68,0.1);
-    border: 1px solid var(--danger);
-    padding: 12px 20px;
-    color: var(--danger);
-    font-size: 0.8rem;
-    margin-bottom: 20px;
-  }
-
-  #flash {
-    position: fixed; top: 110px; right: 20px;
-    background: rgba(0,212,255,0.1);
-    border: 1px solid var(--accent);
-    color: var(--accent);
-    padding: 8px 16px;
-    font-size: 0.75rem;
-    opacity: 0;
-    transition: opacity 0.3s;
-    z-index: 500;
-  }
 
   nav {
     background: var(--bg);
@@ -420,6 +122,296 @@
     background: currentColor;
     box-shadow: 0 0 6px currentColor;
   }
+
+  main { padding: 30px; max-width: 1200px; margin: 0 auto; }
+
+  .section-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 6px;
+    color: var(--dim);
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* --- CTA Banner --- */
+  .cta-banner {
+    background: linear-gradient(135deg, rgba(0,212,255,0.08) 0%, rgba(0,255,157,0.05) 100%);
+    border: 1px solid var(--accent);
+    padding: 24px 30px;
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .cta-banner:hover {
+    border-color: var(--accent2);
+    background: linear-gradient(135deg, rgba(0,212,255,0.12) 0%, rgba(0,255,157,0.08) 100%);
+  }
+
+  .cta-banner::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+
+  .cta-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 8px rgba(0,212,255,0.4));
+  }
+
+  .cta-content { flex: 1; }
+
+  .cta-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-shadow: var(--glow);
+    margin-bottom: 6px;
+  }
+
+  .cta-desc {
+    font-size: 0.8rem;
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  .cta-arrow {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.2rem;
+    color: var(--accent2);
+    flex-shrink: 0;
+    transition: transform 0.2s;
+  }
+
+  .cta-banner:hover .cta-arrow { transform: translateX(4px); }
+
+  /* --- Sector State --- */
+  .sector-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+    margin-bottom: 30px;
+  }
+
+  .sector-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+
+  .sector-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+  }
+
+  .sector-card.completed::before { background: linear-gradient(90deg, var(--accent2), transparent); }
+  .sector-card.unlocked::before  { background: linear-gradient(90deg, var(--accent), transparent); }
+  .sector-card.locked::before    { background: linear-gradient(90deg, var(--border), transparent); }
+
+  .sector-card.completed { border-color: rgba(0,255,157,0.3); }
+  .sector-card.unlocked  { border-color: rgba(0,212,255,0.3); }
+  .sector-card.locked    { border-color: var(--border); opacity: 0.6; }
+
+  .sector-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .sector-card.completed .sector-name { color: var(--accent2); text-shadow: var(--glow2); }
+  .sector-card.unlocked .sector-name  { color: var(--accent); text-shadow: var(--glow); }
+  .sector-card.locked .sector-name    { color: var(--dim); }
+
+  .sector-badges { display: flex; gap: 8px; }
+
+  .sector-badge {
+    font-size: 0.6rem;
+    padding: 4px 10px;
+    letter-spacing: 1px;
+    border: 1px solid var(--border);
+    color: var(--dim);
+  }
+
+  .sector-badge.on {
+    border-color: var(--accent2);
+    color: var(--accent2);
+    background: rgba(0,255,157,0.08);
+    box-shadow: var(--glow2);
+  }
+
+  .sector-badge.partial {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,212,255,0.05);
+  }
+
+  /* --- Kill Count --- */
+  .kill-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 24px 30px;
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    position: relative;
+    overflow: hidden;
+    flex-wrap: wrap;
+  }
+
+  .kill-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--danger), transparent);
+  }
+
+  .kill-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 3px;
+    color: var(--dim);
+  }
+
+  .kill-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: var(--danger);
+    text-shadow: 0 0 15px rgba(255,34,68,0.5);
+    letter-spacing: 2px;
+  }
+
+  .kill-delta { font-size: 0.8rem; color: var(--warn); }
+
+  .kill-meta { font-size: 0.7rem; color: var(--dim); }
+
+  .live-badge {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 2px;
+    padding: 3px 8px;
+    border: 1px solid var(--accent2);
+    color: var(--accent2);
+    background: rgba(0,255,157,0.08);
+    animation: pulse 2s infinite;
+    vertical-align: middle;
+    margin-left: 10px;
+  }
+
+  .csv-badge {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 2px;
+    padding: 3px 8px;
+    border: 1px solid var(--dim);
+    color: var(--dim);
+    vertical-align: middle;
+    margin-left: 10px;
+  }
+
+  /* --- Chart --- */
+  .chart-section { margin-bottom: 30px; }
+
+  .chart-container {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 20px;
+    height: 240px;
+  }
+
+  canvas { width: 100% !important; }
+
+  /* --- Loading / Flash --- */
+  #loading {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 20px; z-index: 9999; transition: opacity 0.5s;
+  }
+
+  .loading-text {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 6px;
+    color: var(--accent);
+    animation: blink 1s infinite;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  .error-msg {
+    background: rgba(255,34,68,0.1);
+    border: 1px solid var(--danger);
+    padding: 12px 20px;
+    color: var(--danger);
+    font-size: 0.8rem;
+    margin-bottom: 20px;
+  }
+
+  #flash {
+    position: fixed; top: 110px; right: 20px;
+    background: rgba(0,212,255,0.1);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 8px 16px;
+    font-size: 0.75rem;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 500;
+  }
+
+  /* --- Next Update Bar --- */
+  .next-update-bar {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 30px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 0.75rem;
+  }
+
+  .next-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 3px;
+    color: var(--dim);
+  }
+
+  #next-update-time { color: var(--accent); }
+  #next-update-countdown { color: var(--accent2); font-size: 0.8rem; }
+
+  .progress-bar {
+    flex: 1; height: 3px;
+    background: var(--border);
+    margin-left: 10px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    transition: width 1s linear;
+    box-shadow: var(--glow2);
+  }
 </style>
 <script data-goatcounter="https://crowdtypical.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
@@ -430,12 +422,10 @@
   <div class="loading-text">CONNECTING TO DATA FEED...</div>
 </div>
 
-<div id="bar-tooltip"></div>
-
 <div id="flash">// DATA REFRESHED</div>
 
 <header>
-  <div class="logo">CRYO<span>ARCHIVE</span> // <span style="font-size:0.8rem;color:var(--text)">MONITORING</span></div>
+  <div class="logo">CRYO<span>ARCHIVE</span> // <span style="font-size:0.8rem;color:var(--text)">DASHBOARD</span></div>
   <div class="status-bar">
     <div class="status-dot" id="status-dot"></div>
     <span id="clock">--:--:--</span>
@@ -444,15 +434,16 @@
 </header>
 
 <nav>
-  <a href="dashboard.html" class="active"><span class="nav-dot"></span>Camera Monitoring</a>
+  <a href="dashboard.html" class="active"><span class="nav-dot"></span>Dashboard</a>
+  <a href="camera_monitoring.html"><span class="nav-dot"></span>Camera Monitoring</a>
   <a href="terminal_maps.html"><span class="nav-dot"></span>Terminal Maps</a>
   <a href="build_tracker.html"><span class="nav-dot"></span>Build Tracker</a>
   <a href="https://docs.google.com/document/d/1mtUtDPvbh6ahiynYFVS7Z4O79Nw6y5PEOjweCpzWV_A/edit?tab=t.0" target="_blank"><span class="nav-dot"></span>Google Doc</a>
 </nav>
 
 <div class="next-update-bar">
-  <span class="next-label">NEXT STABILIZATION</span>
-  <span id="next-update-time">--:--:-- UTC</span>
+  <span class="next-label">NEXT KILL COUNT UPDATE</span>
+  <span id="next-update-time">--:--:-- ET</span>
   <span id="next-update-countdown" style="color:var(--accent2)">-- --s</span>
   <div class="progress-bar">
     <div class="progress-fill" id="progress-fill" style="width:0%"></div>
@@ -462,59 +453,57 @@
 <main>
   <div id="error-box" style="display:none"></div>
 
-  <div id="dashboard">
-    <div class="section-title">STABILIZATION HISTORY</div>
-    <div class="chart-section" style="margin-bottom:30px">
-      <div class="chart-container" style="height:260px"><canvas id="stab-chart"></canvas></div>
-      <div class="chart-controls">
-        <label>TIME WINDOW</label>
-        <input type="range" id="stab-slider" min="1" max="192" value="20" step="1">
-        <span id="stab-slider-label">LAST 24H</span>
-        <span id="stab-slider-range" style="font-size:0.65rem;color:var(--dim);min-width:200px;text-align:right"></span>
-      </div>
+  <!-- HOW CAN I HELP BANNER -->
+  <a class="cta-banner" href="https://docs.google.com/document/d/1mtUtDPvbh6ahiynYFVS7Z4O79Nw6y5PEOjweCpzWV_A/edit?tab=t.0#heading=h.5j4qeuoxhabo" target="_blank" rel="noopener">
+    <div class="cta-icon">📡</div>
+    <div class="cta-content">
+      <div class="cta-title">HOW CAN I HELP?</div>
+      <div class="cta-desc">View current community objectives and contribute to the Breach Protocol effort. Updated by community managers.</div>
     </div>
+    <div class="cta-arrow">→</div>
+  </a>
 
-    <div id="alerts-section">
-      <div class="section-title">SYSTEM ALERTS</div>
-      <div id="alerts-container"><span class="no-alerts">// LOADING...</span></div>
+  <!-- SECTOR STATE -->
+  <div class="section-title">SECTOR STATE</div>
+  <div class="sector-grid" id="sector-cards"></div>
+
+  <!-- UESC KILL COUNT -->
+  <div class="section-title">UESC KILL COUNT</div>
+  <div class="kill-panel">
+    <div>
+      <div class="kill-label">TOTAL KILLS <span id="data-source-badge"></span></div>
+      <div class="kill-value" id="kill-count">--</div>
     </div>
-
-    <div class="section-title">UESC KILL COUNT</div>
-    <div class="kill-panel">
-      <div>
-        <div class="kill-label">TOTAL KILLS</div>
-        <div class="kill-value" id="kill-count">--</div>
-      </div>
-      <div class="kill-delta" id="kill-delta"></div>
-      <div style="margin-left:auto;font-size:0.7rem;color:var(--dim)" id="kill-next"></div>
+    <div class="kill-delta" id="kill-delta"></div>
+    <div style="margin-left:auto;text-align:right">
+      <div class="kill-meta" id="kill-next"></div>
+      <div class="kill-meta" id="kill-ship-date"></div>
     </div>
+  </div>
 
-    <div class="section-title">CAMERA STABILIZATION LEVELS</div>
-    <div class="grid" id="stab-cards"></div>
-
-    <div class="section-title">SECTOR STATE</div>
-    <div class="state-grid" id="state-cards"></div>
-
-    <div class="section-title">KILL COUNT OVER TIME</div>
-    <div class="chart-section">
-      <div class="chart-container"><canvas id="kill-chart"></canvas></div>
-    </div>
+  <!-- KILL COUNT OVER TIME -->
+  <div class="section-title">KILL COUNT OVER TIME</div>
+  <div class="chart-section">
+    <div class="chart-container"><canvas id="kill-chart"></canvas></div>
   </div>
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script>
-  let stabData = [], stateData = [];
-  let stabChart, killChart;
+  let stateData = [];
+  let killChart;
   let prevKillCount = null;
   let firstLoad = true;
-  let nextStabilizationAt = null;
-  let intervalTotal = 15 * 60; // default 15 min in seconds
+  let nextUpdateAt = null;
+  let intervalTotal = 15 * 60;
   let refreshScheduled = false;
+  let liveSource = false;
 
-  const CAMERAS = ['cargo','index','revival','biostock','steerage','preservation','cryoHub','camera06','camera09'];
   const PAGES = ['cargo','index','revival','biostock','steerage','preservation','cryoHub'];
-  const COLORS = ['#00d4ff','#00ff9d','#ff6b35','#c084fc','#fbbf24','#f472b6','#34d399','#60a5fa','#a78bfa'];
+
+  const isLocal = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  const GITHUB_API = 'https://api.github.com/repos/CrowdTypical/Marathon-arg/contents/';
+  const STATE_API = 'https://cryoarchive.systems/api/public/state';
 
   function toEST(date) {
     if (!date) return '--';
@@ -539,30 +528,24 @@
     }) + ' ET';
   }
 
-  // Clock + countdown ticker
+  // Clock + countdown
   setInterval(() => {
     const now = new Date();
     document.getElementById('clock').textContent = toESTTimeOnly(now);
 
-    if (nextStabilizationAt) {
-      const secsLeft = Math.max(0, (nextStabilizationAt - now) / 1000);
+    if (nextUpdateAt) {
+      const secsLeft = Math.max(0, (nextUpdateAt - now) / 1000);
       const mins = Math.floor(secsLeft / 60);
       const secs = Math.floor(secsLeft % 60);
       document.getElementById('next-update-countdown').textContent =
         secsLeft > 0 ? `IN ${mins}m ${secs}s` : `UPDATING...`;
-
-      // Progress bar — how far through the interval are we (fills left to right as time passes)
       const elapsed = intervalTotal - secsLeft;
       const pct = Math.min(100, Math.max(0, (elapsed / intervalTotal) * 100));
       document.getElementById('progress-fill').style.width = pct + '%';
 
-      // Schedule a refresh 10s after the next stabilization time
       if (secsLeft <= 5 && !refreshScheduled) {
         refreshScheduled = true;
-        setTimeout(() => {
-          fetchAndRender();
-          refreshScheduled = false;
-        }, 10000);
+        setTimeout(() => { fetchAndRender(); refreshScheduled = false; }, 10000);
       }
     }
   }, 1000);
@@ -579,9 +562,11 @@
     });
   }
 
-  const GITHUB_API = 'https://api.github.com/repos/CrowdTypical/Marathon-arg/contents/';
-
   async function fetchCSV(filename) {
+    if (isLocal) {
+      const res = await fetch(filename);
+      return await res.text();
+    }
     const res = await fetch(GITHUB_API + filename, {
       cache: 'no-store',
       headers: { 'Accept': 'application/vnd.github.v3+json' }
@@ -591,81 +576,76 @@
     return atob(json.content.replace(/\n/g, ''));
   }
 
+  async function fetchLiveState() {
+    try {
+      const res = await fetch(STATE_API + '?t=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data?.state || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   async function fetchAndRender() {
     try {
-      const [stabText, stateText] = await Promise.all([
-        fetchCSV('stabilization_log.csv'),
-        fetchCSV('state_log.csv')
-      ]);
-      stabData = parseCSV(stabText);
+      // Always fetch CSV for history (kill chart needs time-series data)
+      const stateText = await fetchCSV('state_log.csv');
       stateData = parseCSV(stateText);
 
-      // Fetch nextStabilizationAt live from the API so it's always current
-      let gotLiveTime = false;
-      try {
-        const liveRes = await fetch('https://cryoarchive.systems/api/public/cctv-cameras/stabilization?t=' + Date.now(), { cache: 'no-store' });
-        if (liveRes.ok) {
-          const liveData = await liveRes.json();
-          const nextStr = Object.values(liveData?.stabilization || {})
-            .map(c => c?.nextStabilizationAt)
-            .find(v => v != null);
-          if (nextStr) {
-            const newNext = new Date(nextStr);
-            if (newNext > new Date()) {
-              const secsUntil = (newNext - new Date()) / 1000;
-              intervalTotal = secsUntil;
-              nextStabilizationAt = newNext;
-              document.getElementById('next-update-time').textContent = toESTTimeOnly(nextStabilizationAt);
-              gotLiveTime = true;
-            }
-          }
-        }
-      } catch (e) { /* CORS or network failure, fall through */ }
+      // Try live API for current snapshot — prefer it over stale CSV
+      // State API may lack CORS headers; fetch will fail gracefully → CSV fallback
+      let liveState = await fetchLiveState();
 
-      if (!gotLiveTime && stabData.length) {
-        // CSV value is likely stale — project forward from the latest timestamp in 15-min steps
-        const latest = stabData[stabData.length - 1];
-        const nextStr = CAMERAS
-          .map(cam => latest[`${cam}_nextStabilizationAt`])
-          .find(v => v && v !== 'N/A' && v !== 'null' && v !== '');
-        if (nextStr) {
-          let candidate = new Date(nextStr);
-          const now = new Date();
-          // Advance in 15-min increments until we find the next future time
-          while (candidate <= now) {
-            candidate = new Date(candidate.getTime() + 15 * 60 * 1000);
-          }
-          intervalTotal = (candidate - now) / 1000;
-          nextStabilizationAt = candidate;
-          document.getElementById('next-update-time').textContent = toESTTimeOnly(nextStabilizationAt);
+      let currentKillCount, currentSectors, currentNextUpdate, currentShipDate;
+
+      if (liveState) {
+        liveSource = true;
+        currentKillCount = liveState.uescKillCount;
+        currentNextUpdate = liveState.uescKillCountNextUpdateAt;
+        currentShipDate = liveState.shipDate;
+        currentSectors = {};
+        PAGES.forEach(p => {
+          currentSectors[p] = {
+            unlocked: liveState.pages?.[p]?.unlocked ?? false,
+            completed: liveState.pages?.[p]?.completed ?? false
+          };
+        });
+      } else if (stateData.length) {
+        liveSource = false;
+        const latest = stateData[stateData.length - 1];
+        currentKillCount = parseInt(latest.uescKillCount) || 0;
+        currentNextUpdate = latest.uescKillCountNextUpdateAt;
+        currentShipDate = latest.shipDate;
+        currentSectors = {};
+        PAGES.forEach(p => {
+          currentSectors[p] = {
+            unlocked: latest[`${p}_unlocked`] === 'True',
+            completed: latest[`${p}_completed`] === 'True'
+          };
+        });
+      }
+
+      // Next update countdown
+      if (currentNextUpdate && currentNextUpdate !== 'N/A') {
+        const nextDt = new Date(currentNextUpdate);
+        if (nextDt > new Date()) {
+          intervalTotal = (nextDt - new Date()) / 1000;
+          nextUpdateAt = nextDt;
+        } else {
+          let candidate = new Date(nextDt);
+          while (candidate <= new Date()) candidate = new Date(candidate.getTime() + 15 * 60 * 1000);
+          intervalTotal = (candidate - new Date()) / 1000;
+          nextUpdateAt = candidate;
         }
+        document.getElementById('next-update-time').textContent = toESTTimeOnly(nextUpdateAt);
       }
 
       document.getElementById('status-dot').classList.remove('error');
       document.getElementById('error-box').style.display = 'none';
-      document.getElementById('last-updated').textContent =
-        'UPDATED ' + toESTTimeOnly(new Date());
+      document.getElementById('last-updated').textContent = 'UPDATED ' + toESTTimeOnly(new Date());
 
-      // Set slider max based on oldest data point
-      if (stabData.length) {
-        const oldest = stabData[0];
-        if (oldest.timestamp) {
-          const oldestTime = new Date(oldest.timestamp.replace(' UTC','') + 'Z');
-          const nowTime = new Date();
-          const totalIntervals = Math.ceil((nowTime - oldestTime) / (15 * 60 * 1000));
-          const slider = document.getElementById('stab-slider');
-          if (slider) {
-            slider.max = Math.max(totalIntervals, 96);
-            // Only reset to 96 on first load, not on refresh
-            if (firstLoad) slider.value = Math.min(20, slider.max);
-          }
-        }
-      }
-
-      render();
-
-      const slider = document.getElementById('stab-slider');
-      if (slider) updateSliderTrack(slider);
+      render(currentKillCount, currentSectors, currentShipDate);
 
       if (!firstLoad) {
         const flash = document.getElementById('flash');
@@ -681,7 +661,7 @@
     } catch (err) {
       document.getElementById('status-dot').classList.add('error');
       document.getElementById('error-box').innerHTML =
-        `<div class="error-msg">// ERROR: ${err.message} — make sure the CSV files have been pushed to GitHub</div>`;
+        `<div class="error-msg">// ERROR: ${err.message} — make sure data files have been pushed to GitHub</div>`;
       document.getElementById('error-box').style.display = 'block';
       if (firstLoad) {
         document.getElementById('loading').style.opacity = '0';
@@ -691,217 +671,79 @@
     }
   }
 
-  function render() {
-    renderAlerts();
-    renderStabCards();
-    renderStateCards();
-    renderKillCount();
-    renderStabChart();
+  function render(killCount, sectors, shipDate) {
+    renderSectors(sectors);
+    renderKillCount(killCount, shipDate);
     renderKillChart();
   }
 
-  function renderAlerts() {
-    const alerts = [];
-    if (stateData.length >= 2) {
-      const prev = stateData[stateData.length - 2];
-      const curr = stateData[stateData.length - 1];
-      const diff = parseInt(curr.uescKillCount) - parseInt(prev.uescKillCount);
-      if (!isNaN(diff) && diff !== 0)
-        alerts.push({ msg: `UESC kill count changed by ${diff > 0 ? '+' : ''}${diff.toLocaleString()}`, type: 'info' });
-      PAGES.forEach(p => {
-        if (prev[`${p}_unlocked`] === 'False' && curr[`${p}_unlocked`] === 'True')
-          alerts.push({ msg: `SECTOR ${p.toUpperCase()} UNLOCKED`, type: 'info' });
-        if (prev[`${p}_completed`] === 'False' && curr[`${p}_completed`] === 'True')
-          alerts.push({ msg: `SECTOR ${p.toUpperCase()} COMPLETED`, type: 'info' });
-      });
-    }
-    document.getElementById('alerts-container').innerHTML = alerts.length
-      ? alerts.map(a => `<div class="alert ${a.type === 'info' ? 'info' : ''}">// ${a.msg}</div>`).join('')
-      : '<span class="no-alerts">// NO ACTIVE ALERTS</span>';
-  }
-
-  function renderStabCards() {
-    if (!stabData.length) return;
-    const latest = stabData[stabData.length - 1];
-    document.getElementById('stab-cards').innerHTML = CAMERAS.map(cam => {
-      const level = parseInt(latest[`${cam}_stabilizationLevel`]) || 0;
-      const next = latest[`${cam}_nextStabilizationAt`] || '--';
-      const history = stabData.slice(-20).map(r => parseInt(r[`${cam}_stabilizationLevel`]) || 0);
-      const timestamps = stabData.slice(-20).map(r => r.timestamp ? toESTTimeOnly(new Date(r.timestamp.replace(' UTC',''))) : '');
-      const levelClass = level === 0 ? 'level-0' : level === 1 ? 'level-1' : level === 2 ? 'level-2' : 'level-high';
-      const bars = history.map((v, i) => {
-        const pct = Math.round((v / 100) * 100);
-        const color = v === 0 ? 'var(--accent2)' : v === 1 ? 'var(--accent)' : v === 2 ? 'var(--warn)' : 'var(--danger)';
-        return `<div class="mini-bar" data-tip="${timestamps[i]}: ${v}%">
-          <div class="mini-bar-fill" style="height:${Math.max(pct,4)}%;background:${color}"></div>
-        </div>`;
-      }).join('');
-      return `<div class="card">
-        <div class="card-name">${cam}</div>
-        <div class="card-value ${levelClass}">${level}</div>
-        <div class="card-sub">NEXT: ${next !== '--' ? toEST(next) : '--'}</div>
-        <div class="mini-chart">${bars}</div>
-      </div>`;
-    }).join('');
-  }
-
-  function renderStateCards() {
-    if (!stateData.length) return;
-    const latest = stateData[stateData.length - 1];
-    document.getElementById('state-cards').innerHTML = PAGES.map(p => {
-      const unlocked = latest[`${p}_unlocked`] === 'True';
-      const completed = latest[`${p}_completed`] === 'True';
-      return `<div class="state-card">
-        <div class="state-name">${p}</div>
-        <div class="state-badges">
-          <div class="badge ${unlocked ? 'on' : ''}">UNLOCKED</div>
-          <div class="badge ${completed ? 'on' : ''}">DONE</div>
+  function renderSectors(sectors) {
+    if (!sectors) return;
+    document.getElementById('sector-cards').innerHTML = PAGES.map(p => {
+      const s = sectors[p];
+      const status = s.completed ? 'completed' : s.unlocked ? 'unlocked' : 'locked';
+      return `<div class="sector-card ${status}">
+        <div class="sector-name">${p.toUpperCase()}</div>
+        <div class="sector-badges">
+          <div class="sector-badge ${s.unlocked ? 'on' : ''}">UNLOCKED</div>
+          <div class="sector-badge ${s.completed ? 'on' : s.unlocked ? 'partial' : ''}">COMPLETED</div>
         </div>
       </div>`;
     }).join('');
   }
 
-  function renderKillCount() {
-    if (!stateData.length) return;
-    const latest = stateData[stateData.length - 1];
-    const count = parseInt(latest.uescKillCount) || 0;
-    document.getElementById('kill-count').textContent = count.toLocaleString();
-    document.getElementById('kill-next').textContent =
-      latest.uescKillCountNextUpdateAt
-        ? `NEXT UPDATE: ${toEST(latest.uescKillCountNextUpdateAt)}` : '';
-    if (prevKillCount !== null && count !== prevKillCount) {
-      const diff = count - prevKillCount;
-      document.getElementById('kill-delta').textContent =
-        `${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toLocaleString()} since last check`;
+  function renderKillCount(count, shipDate) {
+    if (count == null) return;
+    const countNum = typeof count === 'number' ? count : parseInt(count) || 0;
+    document.getElementById('kill-count').textContent = countNum.toLocaleString();
+
+    document.getElementById('data-source-badge').innerHTML = liveSource
+      ? '<span class="live-badge">LIVE</span>'
+      : '<span class="csv-badge">CACHED</span>';
+
+    if (nextUpdateAt) {
+      document.getElementById('kill-next').textContent = `NEXT UPDATE: ${toEST(nextUpdateAt)}`;
     }
-    prevKillCount = count;
-  }
 
-  function getSliderWindow() {
-    // slider value = number of 15-min intervals; 96 = 24h
-    const intervals = parseInt(document.getElementById('stab-slider').value);
-    return intervals;
-  }
-
-  function updateSliderLabel(intervals) {
-    const totalMins = intervals * 15;
-    const hours = totalMins / 60;
-    let label;
-    if (hours >= 24 && Number.isInteger(hours / 24)) {
-      label = `LAST ${hours / 24}D`;
-    } else if (hours >= 1) {
-      label = Number.isInteger(hours) ? `LAST ${hours}H` : `LAST ${hours.toFixed(1)}H`;
-    } else {
-      label = `LAST ${totalMins}MIN`;
-    }
-    document.getElementById('stab-slider-label').textContent = label;
-
-    // Also update the range indicator
-    const rangeEl = document.getElementById('stab-slider-range');
-    if (rangeEl && stabData.length) {
-      const now = new Date();
-      const cutoff = new Date(now.getTime() - intervals * 15 * 60 * 1000);
-      const count = stabData.filter(r => {
-        if (!r.timestamp) return false;
-        const t = new Date(r.timestamp.replace(' UTC','') + 'Z');
-        return t >= cutoff;
-      }).length;
-      rangeEl.textContent = `${count} DATA POINTS`;
-    }
-  }
-
-  function renderStabChart() {
-    if (!stabData.length) return;
-    const intervals = getSliderWindow();
-    updateSliderLabel(intervals);
-
-    // Filter to entries within the selected window
-    const now = new Date();
-    const cutoff = new Date(now.getTime() - intervals * 15 * 60 * 1000);
-    const windowed = stabData.filter(r => {
-      if (!r.timestamp) return false;
-      const t = new Date(r.timestamp.replace(' UTC', '') + 'Z');
-      return t >= cutoff;
-    });
-    const recent = windowed.length ? windowed : stabData.slice(-intervals);
-
-    const labels = recent.map(r => {
-      if (!r.timestamp) return '';
-      const d = new Date(r.timestamp.replace(' UTC','') + 'Z');
-      return d.toLocaleString('en-US', {
-        timeZone: 'America/New_York',
-        month: 'short', day: 'numeric',
-        hour: 'numeric', minute: '2-digit',
-        hour12: true
-      }) + ' ET';
-    });
-
-    const ctx = document.getElementById('stab-chart').getContext('2d');
-    if (stabChart) stabChart.destroy();
-    stabChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: CAMERAS.map((cam, i) => ({
-          label: cam,
-          data: recent.map(r => parseInt(r[`${cam}_stabilizationLevel`]) || 0),
-          borderColor: COLORS[i], backgroundColor: 'transparent',
-          borderWidth: 1.5, pointRadius: 2, tension: 0.3,
-        }))
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: { labels: { color: '#2a5a6a', font: { family: 'Share Tech Mono', size: 10 }, boxWidth: 12 } },
-          tooltip: {
-            backgroundColor: '#0a1a24',
-            borderColor: '#0a3a4a',
-            borderWidth: 1,
-            titleColor: '#00d4ff',
-            bodyColor: '#7ecfdf',
-            titleFont: { family: 'Share Tech Mono', size: 11 },
-            bodyFont: { family: 'Share Tech Mono', size: 10 },
-            padding: 10,
-          }
-        },
-        scales: {
-          x: { ticks: { color: '#2a5a6a', font: { size: 9 }, maxRotation: 30, autoSkip: true, maxTicksLimit: 12 }, grid: { color: '#0a3a4a' } },
-          y: { ticks: { color: '#2a5a6a', font: { size: 9 } }, grid: { color: '#0a3a4a' }, beginAtZero: true, max: 100 }
-        }
+    if (shipDate && shipDate !== 'N/A') {
+      const d = new Date(shipDate);
+      if (!isNaN(d)) {
+        document.getElementById('kill-ship-date').textContent =
+          `SHIP DATE: ${d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}`;
       }
-    });
-  }
+    }
 
-  function updateSliderTrack(slider) {
-    const pct = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
-    slider.style.background = `linear-gradient(to right, var(--accent) ${pct}%, var(--border) ${pct}%)`;
+    if (prevKillCount !== null && countNum !== prevKillCount) {
+      const diff = countNum - prevKillCount;
+      document.getElementById('kill-delta').textContent =
+        `${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toLocaleString()} since last refresh`;
+    }
+    prevKillCount = countNum;
   }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    const slider = document.getElementById('stab-slider');
-    updateSliderTrack(slider);
-    slider.addEventListener('input', () => {
-      updateSliderLabel(parseInt(slider.value));
-      updateSliderTrack(slider);
-      renderStabChart();
-    });
-    updateSliderLabel(parseInt(slider.value));
-  });
 
   function renderKillChart() {
     if (!stateData.length) return;
-    const recent = stateData.slice(-30);
+    const recent = stateData.slice(-48);
+    const labels = recent.map(r => {
+      if (!r.timestamp) return '';
+      return toESTTimeOnly(new Date(r.timestamp.replace(' UTC', '') + 'Z'));
+    });
     const ctx = document.getElementById('kill-chart').getContext('2d');
     if (killChart) killChart.destroy();
     killChart = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: recent.map(r => r.timestamp ? toESTTimeOnly(new Date(r.timestamp.replace(' UTC',''))) : ''),
-        datasets: [{ label: 'UESC Kill Count',
+        labels,
+        datasets: [{
+          label: 'UESC Kill Count',
           data: recent.map(r => parseInt(r.uescKillCount) || 0),
-          borderColor: '#ff2244', backgroundColor: 'rgba(255,34,68,0.05)',
-          borderWidth: 2, pointRadius: 2, fill: true, tension: 0.3 }]
+          borderColor: '#ff2244',
+          backgroundColor: 'rgba(255,34,68,0.05)',
+          borderWidth: 2,
+          pointRadius: 2,
+          fill: true,
+          tension: 0.3
+        }]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
@@ -909,48 +751,23 @@
         plugins: {
           legend: { labels: { color: '#2a5a6a', font: { family: 'Share Tech Mono', size: 10 } } },
           tooltip: {
-            backgroundColor: '#0a1a24',
-            borderColor: '#0a3a4a',
-            borderWidth: 1,
-            titleColor: '#00d4ff',
-            bodyColor: '#7ecfdf',
+            backgroundColor: '#0a1a24', borderColor: '#0a3a4a', borderWidth: 1,
+            titleColor: '#00d4ff', bodyColor: '#7ecfdf',
             titleFont: { family: 'Share Tech Mono', size: 11 },
-            bodyFont: { family: 'Share Tech Mono', size: 10 },
-            padding: 10,
-            callbacks: {
-              label: ctx => ` ${ctx.parsed.y.toLocaleString()} kills`
-            }
+            bodyFont: { family: 'Share Tech Mono', size: 10 }, padding: 10,
+            callbacks: { label: ctx => ` ${ctx.parsed.y.toLocaleString()} kills` }
           }
         },
         scales: {
           x: { ticks: { color: '#2a5a6a', font: { size: 9 } }, grid: { color: '#0a3a4a' } },
-          y: { ticks: { color: '#2a5a6a', font: { size: 9 } }, grid: { color: '#0a3a4a' } }
+          y: { ticks: { color: '#2a5a6a', font: { size: 9 }, callback: v => (v / 1e6).toFixed(0) + 'M' }, grid: { color: '#0a3a4a' } }
         }
       }
     });
   }
 
-  // Floating bar tooltip
-  const barTip = document.getElementById('bar-tooltip');
-  document.addEventListener('mouseover', e => {
-    if (e.target.classList.contains('mini-bar') && e.target.dataset.tip) {
-      barTip.innerHTML = e.target.dataset.tip;
-      barTip.style.display = 'block';
-    }
-  });
-  document.addEventListener('mouseout', e => {
-    if (e.target.classList.contains('mini-bar')) {
-      barTip.style.display = 'none';
-    }
-  });
-  document.addEventListener('mousemove', e => {
-    if (barTip.style.display === 'block') {
-      barTip.style.left = (e.clientX + 12) + 'px';
-      barTip.style.top = (e.clientY - 30) + 'px';
-    }
-  });
-
   fetchAndRender();
+  setInterval(fetchAndRender, 60 * 1000);
 </script>
 </body>
 </html>
