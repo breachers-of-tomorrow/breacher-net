@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 """
-Bungie Build Tracker for cryoarchive.systems
+Cryoarchive Monitor for cryoarchive.systems
 
-Fetches the Marathon ARG site, extracts the Vercel deployment ID and
-chunk hashes, and logs changes to build_log.json when a new build is
-detected.  Designed to run in GitHub Actions on a schedule.
+Combines two functions that run every 5 minutes via GitHub Actions:
+  1. Build Tracker — detects Vercel deployment changes (deployment ID, chunks)
+  2. Data Recorder — snapshots the public state and stabilization APIs to CSV
+
+Build changes are recorded to build_state.json / build_log.json.
+API data is appended to state_log.csv / stabilization_log.csv every ~15 min
+(matching the site's API refresh cadence) or immediately on value change.
 """
 
+import csv
 import hashlib
 import json
 import os
@@ -20,9 +25,24 @@ from urllib.error import URLError, HTTPError
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SITE_URL = "https://cryoarchive.systems"
-STATE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build_state.json")
-LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build_log.json")
+STABILIZATION_URL = "https://cryoarchive.systems/api/public/cctv-cameras/stabilization"
+STATE_API_URL = "https://cryoarchive.systems/api/public/state"
+
+# Build tracker files
+BUILD_STATE_FILE = os.path.join(BASE_DIR, "build_state.json")
+BUILD_LOG_FILE = os.path.join(BASE_DIR, "build_log.json")
+
+# API data CSV files (append-only history)
+STABILIZATION_CSV = os.path.join(BASE_DIR, "stabilization_log.csv")
+STATE_CSV = os.path.join(BASE_DIR, "state_log.csv")
+
+CAMERAS = ["cargo", "index", "revival", "biostock", "steerage", "preservation", "cryoHub", "camera06", "camera09"]
+PAGES = ["cargo", "index", "revival", "biostock", "steerage", "preservation", "cryoHub"]
+
+# Only record API data when >=14 min have passed OR a value changed
+RECORD_INTERVAL_SECS = 14 * 60
 
 
 # ---------------------------------------------------------------------------
@@ -87,25 +107,185 @@ def save_json(path: str, data):
         f.write("\n")
 
 
-def git_push():
-    """Commit and push updated build tracker files."""
+def git_push(data_updated: bool = False):
+    """Commit and push updated tracker + data files."""
     base = os.path.dirname(os.path.abspath(__file__))
+    files_to_add = ["build_state.json", "build_log.json"]
+    if data_updated:
+        files_to_add.extend(["stabilization_log.csv", "state_log.csv"])
     try:
-        subprocess.run(
-            ["git", "add", "build_state.json", "build_log.json"],
-            cwd=base, check=True,
-        )
+        subprocess.run(["git", "add"] + files_to_add, cwd=base, check=True)
         result = subprocess.run(
-            ["git", "commit", "-m", f"build: site change detected {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}"],
+            ["git", "commit", "-m", f"data: update {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}"],
             cwd=base, capture_output=True, text=True,
         )
         if "nothing to commit" in result.stdout:
             print("  No changes to commit.")
             return
         subprocess.run(["git", "push"], cwd=base, check=True)
-        print("  Pushed build change to GitHub.")
+        print("  Pushed changes to GitHub.")
     except subprocess.CalledProcessError as exc:
         print(f"[WARN] Git push failed: {exc}")
+
+
+# ---------------------------------------------------------------------------
+# API data recording (state + stabilization → CSV)
+# ---------------------------------------------------------------------------
+def fetch_json(url: str, timeout: int = 15) -> dict | None:
+    """Fetch a JSON API endpoint, return parsed dict or None on failure."""
+    req = Request(url, headers={"User-Agent": "Marathon-ARG-Monitor/1.0"})
+    try:
+        with urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except Exception as exc:
+        print(f"[WARN] API fetch failed ({url}): {exc}")
+        return None
+
+
+def get_timestamp() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+
+
+def last_csv_row(filepath: str) -> dict:
+    """Read the last data row of a CSV file as a dict. Returns {} if empty/missing."""
+    if not os.path.isfile(filepath):
+        return {}
+    try:
+        with open(filepath, newline="") as f:
+            rows = list(csv.DictReader(f))
+        return rows[-1] if rows else {}
+    except Exception:
+        return {}
+
+
+def last_csv_timestamp(filepath: str) -> datetime | None:
+    """Parse the timestamp from the last CSV row."""
+    row = last_csv_row(filepath)
+    ts = row.get("timestamp", "")
+    if not ts:
+        return None
+    try:
+        return datetime.strptime(ts, "%Y-%m-%d %H:%M:%S UTC").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
+def append_stabilization(stab_data: dict):
+    """Append one row to stabilization_log.csv."""
+    timestamp = get_timestamp()
+    file_exists = os.path.isfile(STABILIZATION_CSV)
+    with open(STABILIZATION_CSV, mode="a", newline="") as f:
+        writer = csv.writer(f)
+        if not file_exists:
+            header = ["timestamp"]
+            for cam in CAMERAS:
+                header.extend([f"{cam}_stabilizationLevel", f"{cam}_nextStabilizationAt"])
+            writer.writerow(header)
+        row = [timestamp]
+        for cam in CAMERAS:
+            cam_data = stab_data.get(cam, {})
+            row.append(cam_data.get("stabilizationLevel", "N/A"))
+            row.append(cam_data.get("nextStabilizationAt", "N/A"))
+        writer.writerow(row)
+    print(f"  [{timestamp}] Stabilization data recorded.")
+
+
+def append_state(state_data: dict):
+    """Append one row to state_log.csv."""
+    timestamp = get_timestamp()
+    file_exists = os.path.isfile(STATE_CSV)
+    with open(STATE_CSV, mode="a", newline="") as f:
+        writer = csv.writer(f)
+        if not file_exists:
+            header = ["timestamp", "shipDate", "memoryUnlocked", "memoryCompleted",
+                      "uescKillCount", "uescKillCountNextUpdateAt"]
+            for page in PAGES:
+                header.extend([f"{page}_unlocked", f"{page}_completed"])
+            writer.writerow(header)
+        pages = state_data.get("pages", {})
+        row = [
+            timestamp,
+            state_data.get("shipDate", "N/A"),
+            state_data.get("memoryUnlocked", "N/A"),
+            state_data.get("memoryCompleted", "N/A"),
+            state_data.get("uescKillCount", "N/A"),
+            state_data.get("uescKillCountNextUpdateAt", "N/A"),
+        ]
+        for page in PAGES:
+            page_data = pages.get(page, {})
+            row.append(page_data.get("unlocked", "N/A"))
+            row.append(page_data.get("completed", "N/A"))
+        writer.writerow(row)
+    print(f"  [{timestamp}] State data recorded.")
+
+
+def state_changed(state_data: dict) -> bool:
+    """Check if kill count or any sector status differs from last CSV entry."""
+    prev = last_csv_row(STATE_CSV)
+    if not prev:
+        return True
+    if str(state_data.get("uescKillCount", "")) != prev.get("uescKillCount", ""):
+        return True
+    pages = state_data.get("pages", {})
+    for page in PAGES:
+        page_data = pages.get(page, {})
+        if str(page_data.get("unlocked", "")) != prev.get(f"{page}_unlocked", ""):
+            return True
+        if str(page_data.get("completed", "")) != prev.get(f"{page}_completed", ""):
+            return True
+    return False
+
+
+def stab_changed(stab_data: dict) -> bool:
+    """Check if any stabilization level differs from last CSV entry."""
+    prev = last_csv_row(STABILIZATION_CSV)
+    if not prev:
+        return True
+    for cam in CAMERAS:
+        cam_data = stab_data.get(cam, {})
+        if str(cam_data.get("stabilizationLevel", "")) != prev.get(f"{cam}_stabilizationLevel", ""):
+            return True
+    return False
+
+
+def record_api_data() -> bool:
+    """Fetch state + stabilization APIs and append to CSVs if needed.
+
+    Records when: data changed, OR >= 14 min since last entry.
+    Returns True if data was written.
+    """
+    stab_raw = fetch_json(STABILIZATION_URL)
+    state_raw = fetch_json(STATE_API_URL)
+
+    stab_data = stab_raw.get("stabilization", {}) if stab_raw else {}
+    state_data = state_raw.get("state", {}) if state_raw else {}
+
+    if not stab_data and not state_data:
+        print("  [WARN] Both API calls failed — skipping data recording.")
+        return False
+
+    # Determine if we should record
+    last_ts = last_csv_timestamp(STATE_CSV) or last_csv_timestamp(STABILIZATION_CSV)
+    elapsed = None
+    if last_ts:
+        elapsed = (datetime.now(timezone.utc) - last_ts).total_seconds()
+
+    time_due = elapsed is None or elapsed >= RECORD_INTERVAL_SECS
+    value_changed = (state_data and state_changed(state_data)) or (stab_data and stab_changed(stab_data))
+
+    if not time_due and not value_changed:
+        print(f"  API data unchanged, {int(RECORD_INTERVAL_SECS - (elapsed or 0))}s until next recording.")
+        return False
+
+    reason = "value change" if value_changed else "scheduled interval"
+    print(f"  Recording API data ({reason})...")
+
+    if stab_data:
+        append_stabilization(stab_data)
+    if state_data:
+        append_state(state_data)
+
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -113,12 +293,19 @@ def git_push():
 # ---------------------------------------------------------------------------
 def run():
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    print(f"[{now}] Checking {SITE_URL} for build changes...")
+    print(f"[{now}] Checking {SITE_URL} ...")
 
-    # 1. Fetch the main page
+    # ----- Part 1: API data recording (state + stabilization) -----
+    data_updated = record_api_data()
+
+    # ----- Part 2: Build change detection -----
+    print(f"  Checking for build changes...")
     status, headers, body = fetch(SITE_URL)
     if status != 200:
         print(f"[ERROR] Got HTTP {status} from {SITE_URL}")
+        # Still push data if we recorded any
+        if data_updated:
+            git_push(data_updated=True)
         sys.exit(1)
 
     # 2. Extract build fingerprints
@@ -135,8 +322,8 @@ def run():
     print(f"  Page hash     : {page_hash}")
 
     # 3. Load previous state
-    prev = load_json(STATE_FILE, {})
-    log = load_json(LOG_FILE, [])
+    prev = load_json(BUILD_STATE_FILE, {})
+    log = load_json(BUILD_LOG_FILE, [])
 
     # 4. Detect changes — only deployment ID and chunks are stable signals.
     #    ETag and page_hash vary per CDN edge/request and would cause false positives.
@@ -185,7 +372,7 @@ def run():
             entry["chunks_removed"] = removed_chunks
 
         log.append(entry)
-        save_json(LOG_FILE, log)
+        save_json(BUILD_LOG_FILE, log)
 
         state = {
             "deployment_id": deployment_id,
@@ -196,14 +383,18 @@ def run():
             "last_checked": now,
             "last_changed": now,
         }
-        save_json(STATE_FILE, state)
-
-        git_push()
+        save_json(BUILD_STATE_FILE, state)
+        build_changed = True
     else:
         print("  No build changes detected.")
         # Update last_checked timestamp even if no change
         prev["last_checked"] = now
-        save_json(STATE_FILE, prev)
+        save_json(BUILD_STATE_FILE, prev)
+        build_changed = False
+
+    # ----- Commit & push if anything changed -----
+    if build_changed or data_updated:
+        git_push(data_updated=data_updated)
 
 
 if __name__ == "__main__":
