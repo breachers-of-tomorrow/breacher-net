@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Cryoarchive theme — dark sci-fi terminal aesthetic
+   Colors ported from CrowdTypical's original dashboard.html
+   ============================================================ */
+
+@theme inline {
+  /* Core palette */
+  --color-cryo-bg: #030a0f;
+  --color-cryo-panel: #060f17;
+  --color-cryo-border: #0a3a4a;
+  --color-cryo-accent: #00d4ff;
+  --color-cryo-accent2: #00ff9d;
+  --color-cryo-warn: #ff6b35;
+  --color-cryo-danger: #ff2244;
+  --color-cryo-text: #7ecfdf;
+  --color-cryo-dim: #2a5a6a;
+
+  /* Semantic aliases */
+  --color-background: #030a0f;
+  --color-foreground: #7ecfdf;
+  --color-panel: #060f17;
+  --color-border: #0a3a4a;
+  --color-accent: #00d4ff;
+  --color-accent2: #00ff9d;
+  --color-warn: #ff6b35;
+  --color-danger: #ff2244;
+  --color-dim: #2a5a6a;
+
+  /* Font family */
+  --font-mono: "Share Tech Mono", ui-monospace, monospace;
+  --font-display: "Orbitron", ui-monospace, monospace;
+}
+
+/* ---- Base styles ---- */
+
+body {
+  background: var(--color-cryo-bg);
+  color: var(--color-cryo-text);
+  font-family: var(--font-mono);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ---- Animations ---- */
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+.animate-pulse-slow {
+  animation: pulse-glow 2s infinite;
+}
+
+.animate-blink {
+  animation: blink 1s infinite;
+}
+
+/* ---- Glow effects ---- */
+
+.glow-accent {
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.4);
+}
+
+.glow-accent2 {
+  text-shadow: 0 0 10px rgba(0, 255, 157, 0.4);
+}
+
+.glow-danger {
+  text-shadow: 0 0 15px rgba(255, 34, 68, 0.5);
+}
+
+.box-glow-accent {
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.4);
+}
+
+.box-glow-accent2 {
+  box-shadow: 0 0 10px rgba(0, 255, 157, 0.4);
+}
+
+/* ---- Panel styling ---- */
+
+.cryo-panel {
+  background: var(--color-cryo-panel);
+  border: 1px solid var(--color-cryo-border);
+  position: relative;
+  overflow: hidden;
+}
+
+.cryo-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-cryo-border), transparent);
+}
+
+/* ---- Section titles ---- */
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 6px;
+  color: var(--color-cryo-dim);
+  margin-bottom: 15px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-cryo-border);
+}
+
+/* ---- Scrollbar ---- */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-cryo-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-cryo-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-cryo-dim);
+}
