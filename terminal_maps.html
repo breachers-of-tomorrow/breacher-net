@@ -653,6 +653,7 @@
   <div class="logo">CRYO<span>ARCHIVE</span> // <span style="font-size:0.8rem;color:var(--text)">TERMINAL MAPS</span></div>
   <div class="status-bar">
     <span id="clock">--:--:--</span>
+    <span id="clock-utc" style="color:var(--dim);font-size:0.7rem;margin-left:6px"></span>
   </div>
 </header>
 
@@ -660,13 +661,14 @@
   <a href="dashboard.html"><span class="nav-dot"></span>Dashboard</a>
   <a href="camera_monitoring.html"><span class="nav-dot"></span>Camera Monitoring</a>
   <a href="terminal_maps.html" class="active"><span class="nav-dot"></span>Terminal Maps</a>
-  <a href="build_tracker.html"><span class="nav-dot"></span>Build Tracker</a>
-  <a href="https://docs.google.com/document/d/1mtUtDPvbh6ahiynYFVS7Z4O79Nw6y5PEOjweCpzWV_A/edit?tab=t.0" target="_blank"><span class="nav-dot"></span>Google Doc</a>
+  <a href="build_tracker.html"><span class="nav-dot"></span>Cryoarchive Changes</a>
+  <a href="https://docs.google.com/document/d/1mtUtDPvbh6ahiynYFVS7Z4O79Nw6y5PEOjweCpzWV_A/edit?tab=t.0" target="_blank" rel="noopener noreferrer"><span class="nav-dot"></span>Google Doc</a>
+  <a href="https://discord.gg/sGeg5Gx2yM" target="_blank" rel="noopener noreferrer"><span class="nav-dot"></span>Discord</a>
 </nav>
 
 <div class="next-update-bar">
-  <span class="next-label">NEXT STABILIZATION</span>
-  <span id="next-update-time">--:--:-- ET</span>
+  <span class="next-label">NEXT UPDATE</span>
+  <span id="next-update-time">--:--:--</span><span id="next-update-time-utc" style="color:var(--dim);font-size:0.65rem;margin-left:6px"></span>
   <span id="next-update-countdown">-- --s</span>
   <div class="progress-bar">
     <div class="progress-fill" id="progress-fill" style="width:0%"></div>
@@ -1267,26 +1269,46 @@
   });
 
   // Clock
-  function toESTTimeOnly(date) {
+  // Detect user's timezone abbreviation
+  const userTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const tzAbbr = (() => {
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' }).formatToParts(new Date());
+      return parts.find(p => p.type === 'timeZoneName')?.value || '';
+    } catch { return ''; }
+  })();
+
+  function toLocalTimeOnly(date) {
     if (!date) return '--';
     const d = typeof date === 'string' ? new Date(date) : date;
     if (isNaN(d)) return '--';
     return d.toLocaleString('en-US', {
-      timeZone: 'America/New_York',
       hour: 'numeric', minute: '2-digit', second: '2-digit',
       hour12: true
-    }) + ' ET';
+    }) + ' ' + tzAbbr;
   }
 
-  let nextStabilizationAt = null;
+  function toUTCTimeOnly(date) {
+    if (!date) return '--';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d)) return '--';
+    return d.toLocaleString('en-US', {
+      timeZone: 'UTC',
+      hour: 'numeric', minute: '2-digit', second: '2-digit',
+      hour12: true
+    }) + ' UTC';
+  }
+
+  let nextUpdateAt = null;
   let intervalTotal = 15 * 60;
 
   setInterval(() => {
     const now = new Date();
-    document.getElementById('clock').textContent = toESTTimeOnly(now);
+    document.getElementById('clock').textContent = toLocalTimeOnly(now);
+    document.getElementById('clock-utc').textContent = toUTCTimeOnly(now);
 
-    if (nextStabilizationAt) {
-      const secsLeft = Math.max(0, (nextStabilizationAt - now) / 1000);
+    if (nextUpdateAt) {
+      const secsLeft = Math.max(0, (nextUpdateAt - now) / 1000);
       const mins = Math.floor(secsLeft / 60);
       const secs = Math.floor(secsLeft % 60);
       document.getElementById('next-update-countdown').textContent =
@@ -1296,9 +1318,32 @@
       document.getElementById('progress-fill').style.width = pct + '%';
     }
   }, 1000);
-  document.getElementById('clock').textContent = toESTTimeOnly(new Date());
+  document.getElementById('clock').textContent = toLocalTimeOnly(new Date());
+  document.getElementById('clock-utc').textContent = toUTCTimeOnly(new Date());
 
-  // Fetch next stabilization time from API
+  // Fetch next update time from latest_state.json
+  async function fetchUpdateTime() {
+    try {
+      const res = await fetch('latest_state.json', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data?.uescKillCountNextUpdateAt) {
+        let next = new Date(data.uescKillCountNextUpdateAt);
+        if (isNaN(next.getTime())) return;
+        const now = new Date();
+        while (next <= now) next = new Date(next.getTime() + 15 * 60 * 1000);
+        intervalTotal = 15 * 60;
+        nextUpdateAt = next;
+        document.getElementById('next-update-time').textContent = toLocalTimeOnly(next);
+        document.getElementById('next-update-time-utc').textContent = toUTCTimeOnly(next);
+      }
+    } catch (e) {}
+  }
+
+  fetchUpdateTime();
+  setInterval(fetchUpdateTime, 60 * 1000);
+
+  // CSV fetch helper (for stabilization card data)
   const GITHUB_API = 'https://api.github.com/repos/CrowdTypical/Marathon-arg/contents/';
 
   async function fetchCSV(filename) {
@@ -1310,49 +1355,6 @@
     const json = await res.json();
     return atob(json.content.replace(/\n/g, ''));
   }
-
-  async function fetchStabTime() {
-    try {
-      const res = await fetch('https://cryoarchive.systems/api/public/cctv-cameras/stabilization?t=' + Date.now());
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      const nextStr = Object.values(data?.stabilization || {})
-        .map(c => c?.nextStabilizationAt)
-        .find(v => v != null);
-      if (nextStr) {
-        const newNext = new Date(nextStr);
-        if (newNext > new Date()) {
-          intervalTotal = (newNext - new Date()) / 1000;
-          nextStabilizationAt = newNext;
-          document.getElementById('next-update-time').textContent = toESTTimeOnly(nextStabilizationAt);
-          return;
-        }
-      }
-    } catch (e) {}
-
-    // Fallback: try CSV
-    try {
-      const text = await fetchCSV('stabilization_log.csv');
-      const lines = text.trim().split('\n');
-      const headers = lines[0].split(',').map(h => h.trim());
-      const last = lines[lines.length - 1].split(',');
-      const obj = {};
-      headers.forEach((h, i) => obj[h] = (last[i] || '').trim());
-      const CAMERAS = ['cargo','index','revival','biostock','steerage','preservation','cryoHub','camera06','camera09'];
-      const nextStr = CAMERAS.map(c => obj[`${c}_nextStabilizationAt`]).find(v => v && v !== 'N/A' && v !== 'null' && v !== '');
-      if (nextStr) {
-        let candidate = new Date(nextStr);
-        const now = new Date();
-        while (candidate <= now) candidate = new Date(candidate.getTime() + 15 * 60 * 1000);
-        intervalTotal = (candidate - now) / 1000;
-        nextStabilizationAt = candidate;
-        document.getElementById('next-update-time').textContent = toESTTimeOnly(nextStabilizationAt);
-      }
-    } catch (e) {}
-  }
-
-  fetchStabTime();
-  setInterval(fetchStabTime, 60 * 1000);
 
   // Dire Marsh stabilization cards
   const DM_CAMERAS = ['biostock', 'steerage', 'camera09'];
@@ -1388,7 +1390,7 @@
       if (!valEl) return;
       valEl.textContent = level;
       valEl.className = `card-value ${levelClass}`;
-      nextEl.textContent = next !== '--' ? `NEXT: ${toESTTimeOnly(new Date(next))}` : 'NEXT: --';
+      nextEl.textContent = next !== '--' ? `NEXT: ${toLocalTimeOnly(new Date(next))}` : 'NEXT: --';
       barsEl.innerHTML = history.map(v => {
         const pct = Math.round((v / 100) * 100);
         const color = v === 0 ? 'var(--accent2)' : v === 1 ? 'var(--accent)' : v === 2 ? 'var(--warn)' : 'var(--danger)';
@@ -1697,4 +1699,5 @@
   });
 </script>
 </body>
+</html>
 </html>

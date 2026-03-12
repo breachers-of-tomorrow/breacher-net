@@ -304,6 +304,114 @@
 
   .kill-meta { font-size: 0.7rem; color: var(--dim); }
 
+  .kill-kpm {
+    font-size: 0.75rem;
+    color: var(--warn);
+    margin-top: 4px;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  /* --- Flags & Ship Date Row --- */
+  .flags-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-bottom: 30px;
+  }
+
+  .flag-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 18px 22px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .flag-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--border), transparent);
+  }
+
+  .flag-card.flag-on::before { background: linear-gradient(90deg, var(--accent2), transparent); }
+  .flag-card.flag-on { border-color: rgba(0,255,157,0.3); }
+
+  .flag-card.flag-off::before { background: linear-gradient(90deg, var(--dim), transparent); }
+
+  .flag-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 3px;
+    color: var(--dim);
+    margin-bottom: 8px;
+  }
+
+  .flag-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+  }
+
+  .flag-card.flag-on .flag-value { color: var(--accent2); text-shadow: var(--glow2); }
+  .flag-card.flag-off .flag-value { color: var(--dim); }
+
+  .ship-date-card::before { background: linear-gradient(90deg, var(--accent), transparent); }
+  .ship-date-card { border-color: rgba(0,212,255,0.2); }
+
+  .ship-date-countdown {
+    font-size: 0.9rem !important;
+    color: var(--accent) !important;
+    text-shadow: var(--glow) !important;
+    letter-spacing: 1px !important;
+  }
+
+  .flag-sub {
+    font-size: 0.65rem;
+    color: var(--dim);
+    margin-top: 4px;
+  }
+
+  /* --- State Flags (inline under sector grid) --- */
+  .state-flags-row {
+    display: flex;
+    gap: 20px;
+    margin: 12px 0 30px 0;
+    flex-wrap: wrap;
+  }
+  .state-flag {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    position: relative;
+  }
+  .state-flag::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--border), transparent);
+  }
+  .state-flag.flag-on { border-color: rgba(0,255,157,0.3); }
+  .state-flag.flag-on::before { background: linear-gradient(90deg, var(--accent2), transparent); }
+  .state-flag-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 3px;
+    color: var(--dim);
+  }
+  .state-flag-val {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+  }
+  .state-flag.flag-on .state-flag-val { color: var(--accent2); text-shadow: var(--glow2); }
+  .state-flag.flag-off .state-flag-val { color: var(--dim); }
+
   .live-badge {
     font-family: 'Orbitron', monospace;
     font-size: 0.55rem;
@@ -335,7 +443,7 @@
     background: var(--panel);
     border: 1px solid var(--border);
     padding: 20px;
-    height: 240px;
+    height: 300px;
   }
 
   canvas { width: 100% !important; }
@@ -429,6 +537,7 @@
   <div class="status-bar">
     <div class="status-dot" id="status-dot"></div>
     <span id="clock">--:--:--</span>
+    <span id="clock-utc" style="color:var(--dim);font-size:0.7rem;margin-left:6px"></span>
     <span id="last-updated"></span>
   </div>
 </header>
@@ -437,13 +546,14 @@
   <a href="dashboard.html" class="active"><span class="nav-dot"></span>Dashboard</a>
   <a href="camera_monitoring.html"><span class="nav-dot"></span>Camera Monitoring</a>
   <a href="terminal_maps.html"><span class="nav-dot"></span>Terminal Maps</a>
-  <a href="build_tracker.html"><span class="nav-dot"></span>Build Tracker</a>
-  <a href="https://docs.google.com/document/d/1mtUtDPvbh6ahiynYFVS7Z4O79Nw6y5PEOjweCpzWV_A/edit?tab=t.0" target="_blank"><span class="nav-dot"></span>Google Doc</a>
+  <a href="build_tracker.html"><span class="nav-dot"></span>Cryoarchive Changes</a>
+  <a href="https://docs.google.com/document/d/1mtUtDPvbh6ahiynYFVS7Z4O79Nw6y5PEOjweCpzWV_A/edit?tab=t.0" target="_blank" rel="noopener noreferrer"><span class="nav-dot"></span>Google Doc</a>
+  <a href="https://discord.gg/sGeg5Gx2yM" target="_blank" rel="noopener noreferrer"><span class="nav-dot"></span>Discord</a>
 </nav>
 
 <div class="next-update-bar">
-  <span class="next-label">NEXT KILL COUNT UPDATE</span>
-  <span id="next-update-time">--:--:-- ET</span>
+  <span class="next-label">NEXT UPDATE</span>
+  <span id="next-update-time">--:--:--</span><span id="next-update-time-utc" style="color:var(--dim);font-size:0.65rem;margin-left:6px"></span>
   <span id="next-update-countdown" style="color:var(--accent2)">-- --s</span>
   <div class="progress-bar">
     <div class="progress-fill" id="progress-fill" style="width:0%"></div>
@@ -466,6 +576,16 @@
   <!-- SECTOR STATE -->
   <div class="section-title">SECTOR STATE</div>
   <div class="sector-grid" id="sector-cards"></div>
+  <div class="state-flags-row">
+    <div class="state-flag" id="flag-memory-unlocked">
+      <span class="state-flag-label">MEMORY UNLOCKED</span>
+      <span class="state-flag-val" id="memory-unlocked-val">--</span>
+    </div>
+    <div class="state-flag" id="flag-memory-completed">
+      <span class="state-flag-label">MEMORY COMPLETED</span>
+      <span class="state-flag-val" id="memory-completed-val">--</span>
+    </div>
+  </div>
 
   <!-- UESC KILL COUNT -->
   <div class="section-title">UESC KILL COUNT</div>
@@ -473,11 +593,21 @@
     <div>
       <div class="kill-label">TOTAL KILLS <span id="data-source-badge"></span></div>
       <div class="kill-value" id="kill-count">--</div>
+      <div class="kill-kpm" id="kill-kpm"></div>
     </div>
     <div class="kill-delta" id="kill-delta"></div>
     <div style="margin-left:auto;text-align:right">
       <div class="kill-meta" id="kill-next"></div>
-      <div class="kill-meta" id="kill-ship-date"></div>
+      <div class="kill-meta" id="kill-updated-ago" style="color:var(--dim);font-size:0.65rem;margin-top:4px"></div>
+    </div>
+  </div>
+
+  <!-- SHIP DATE -->
+  <div class="flags-row">
+    <div class="flag-card ship-date-card">
+      <div class="flag-label">SHIP DATE</div>
+      <div class="flag-value ship-date-countdown" id="ship-date-countdown">--</div>
+      <div class="flag-sub" id="ship-date-raw"></div>
     </div>
   </div>
 
@@ -498,6 +628,8 @@
   let intervalTotal = 15 * 60;
   let refreshScheduled = false;
   let liveSource = false;
+  let lastFetchTime = null;
+  let shipDateTarget = null;
 
   const PAGES = ['cargo','index','revival','biostock','steerage','preservation','cryoHub'];
 
@@ -505,34 +637,87 @@
   const GITHUB_API = 'https://api.github.com/repos/CrowdTypical/Marathon-arg/contents/';
   const STATE_API = 'https://cryoarchive.systems/api/public/state';
 
-  function toEST(date) {
+  // Detect user's timezone abbreviation
+  const userTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const tzAbbr = (() => {
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' }).formatToParts(new Date());
+      return parts.find(p => p.type === 'timeZoneName')?.value || '';
+    } catch { return ''; }
+  })();
+
+  function toLocal(date) {
     if (!date) return '--';
     const d = typeof date === 'string' ? new Date(date) : date;
     if (isNaN(d)) return '--';
     return d.toLocaleString('en-US', {
-      timeZone: 'America/New_York',
       month: 'short', day: 'numeric',
       hour: 'numeric', minute: '2-digit', second: '2-digit',
       hour12: true
-    }) + ' ET';
+    }) + ' ' + tzAbbr;
   }
 
-  function toESTTimeOnly(date) {
+  function toLocalTimeOnly(date) {
     if (!date) return '--';
     const d = typeof date === 'string' ? new Date(date) : date;
     if (isNaN(d)) return '--';
     return d.toLocaleString('en-US', {
-      timeZone: 'America/New_York',
       hour: 'numeric', minute: '2-digit', second: '2-digit',
       hour12: true
-    }) + ' ET';
+    }) + ' ' + tzAbbr;
   }
 
-  // Clock + countdown
+  function toUTCTimeOnly(date) {
+    if (!date) return '--';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d)) return '--';
+    return d.toLocaleString('en-US', {
+      timeZone: 'UTC',
+      hour: 'numeric', minute: '2-digit', second: '2-digit',
+      hour12: true
+    }) + ' UTC';
+  }
+
+  function formatShipCountdown(targetDate) {
+    const now = new Date();
+    let diff = targetDate - now;
+    if (diff <= 0) return 'ARRIVED';
+    const secs = Math.floor(diff / 1000);
+    const mins = Math.floor(secs / 60);
+    const hrs  = Math.floor(mins / 60);
+    const days = Math.floor(hrs / 24);
+    const years = Math.floor(days / 365.25);
+    const remDays = Math.floor(days - years * 365.25);
+    const remHrs  = hrs % 24;
+    const remMins = mins % 60;
+    const remSecs = secs % 60;
+    let parts = [];
+    if (years > 0)   parts.push(years + 'y');
+    if (remDays > 0)  parts.push(remDays + 'd');
+    parts.push(String(remHrs).padStart(2,'0') + 'h');
+    parts.push(String(remMins).padStart(2,'0') + 'm');
+    parts.push(String(remSecs).padStart(2,'0') + 's');
+    return parts.join(' ');
+  }
+
+  function timeAgo(date) {
+    if (!date) return '';
+    const secs = Math.floor((new Date() - date) / 1000);
+    if (secs < 5) return 'just now';
+    if (secs < 60) return secs + 's ago';
+    const mins = Math.floor(secs / 60);
+    if (mins < 60) return mins + 'm ago';
+    const hrs = Math.floor(mins / 60);
+    return hrs + 'h ' + (mins % 60) + 'm ago';
+  }
+
+  // Clock + countdown + ship date ticker
   setInterval(() => {
     const now = new Date();
-    document.getElementById('clock').textContent = toESTTimeOnly(now);
+    document.getElementById('clock').textContent = toLocalTimeOnly(now);
+    document.getElementById('clock-utc').textContent = toUTCTimeOnly(now);
 
+    // Next update countdown
     if (nextUpdateAt) {
       const secsLeft = Math.max(0, (nextUpdateAt - now) / 1000);
       const mins = Math.floor(secsLeft / 60);
@@ -547,6 +732,16 @@
         refreshScheduled = true;
         setTimeout(() => { fetchAndRender(); refreshScheduled = false; }, 10000);
       }
+    }
+
+    // Ship date countdown (live tick)
+    if (shipDateTarget) {
+      document.getElementById('ship-date-countdown').textContent = formatShipCountdown(shipDateTarget);
+    }
+
+    // Updated ago
+    if (lastFetchTime) {
+      document.getElementById('kill-updated-ago').textContent = 'Updated ' + timeAgo(lastFetchTime);
     }
   }, 1000);
 
@@ -565,6 +760,7 @@
   async function fetchCSV(filename) {
     if (isLocal) {
       const res = await fetch(filename);
+      if (!res.ok) throw new Error(`Local file not found: ${filename}`);
       return await res.text();
     }
     const res = await fetch(GITHUB_API + filename, {
@@ -587,6 +783,31 @@
     }
   }
 
+  function computeKPM(data) {
+    if (data.length < 2) return null;
+    // Use the last two readings with different kill counts
+    for (let i = data.length - 1; i >= 1; i--) {
+      const curr = parseInt(data[i].uescKillCount) || 0;
+      const prev = parseInt(data[i-1].uescKillCount) || 0;
+      if (curr !== prev && data[i].timestamp && data[i-1].timestamp) {
+        const t1 = new Date(data[i-1].timestamp.replace(' UTC', '') + 'Z');
+        const t2 = new Date(data[i].timestamp.replace(' UTC', '') + 'Z');
+        const diffMins = (t2 - t1) / 60000;
+        if (diffMins > 0) {
+          return Math.round((curr - prev) / diffMins);
+        }
+      }
+    }
+    return null;
+  }
+
+  function computeDelta(data) {
+    if (data.length < 2) return null;
+    const curr = parseInt(data[data.length - 1].uescKillCount) || 0;
+    const prev = parseInt(data[data.length - 2].uescKillCount) || 0;
+    return curr - prev;
+  }
+
   async function fetchAndRender() {
     try {
       // Always fetch CSV for history (kill chart needs time-series data)
@@ -594,16 +815,18 @@
       stateData = parseCSV(stateText);
 
       // Try live API for current snapshot — prefer it over stale CSV
-      // State API may lack CORS headers; fetch will fail gracefully → CSV fallback
       let liveState = await fetchLiveState();
 
       let currentKillCount, currentSectors, currentNextUpdate, currentShipDate;
+      let memoryUnlocked = null, memoryCompleted = null;
 
       if (liveState) {
         liveSource = true;
         currentKillCount = liveState.uescKillCount;
         currentNextUpdate = liveState.uescKillCountNextUpdateAt;
         currentShipDate = liveState.shipDate;
+        memoryUnlocked = liveState.memoryUnlocked ?? null;
+        memoryCompleted = liveState.memoryCompleted ?? null;
         currentSectors = {};
         PAGES.forEach(p => {
           currentSectors[p] = {
@@ -617,6 +840,8 @@
         currentKillCount = parseInt(latest.uescKillCount) || 0;
         currentNextUpdate = latest.uescKillCountNextUpdateAt;
         currentShipDate = latest.shipDate;
+        memoryUnlocked = latest.memoryUnlocked === 'True' ? true : latest.memoryUnlocked === 'False' ? false : null;
+        memoryCompleted = latest.memoryCompleted === 'True' ? true : latest.memoryCompleted === 'False' ? false : null;
         currentSectors = {};
         PAGES.forEach(p => {
           currentSectors[p] = {
@@ -629,23 +854,35 @@
       // Next update countdown
       if (currentNextUpdate && currentNextUpdate !== 'N/A') {
         const nextDt = new Date(currentNextUpdate);
-        if (nextDt > new Date()) {
+        if (isNaN(nextDt.getTime())) {
+          // Invalid date — skip countdown setup
+        } else if (nextDt > new Date()) {
           intervalTotal = (nextDt - new Date()) / 1000;
           nextUpdateAt = nextDt;
+          document.getElementById('next-update-time').textContent = toLocalTimeOnly(nextUpdateAt);
+          document.getElementById('next-update-time-utc').textContent = toUTCTimeOnly(nextUpdateAt);
         } else {
           let candidate = new Date(nextDt);
           while (candidate <= new Date()) candidate = new Date(candidate.getTime() + 15 * 60 * 1000);
           intervalTotal = (candidate - new Date()) / 1000;
           nextUpdateAt = candidate;
+          document.getElementById('next-update-time').textContent = toLocalTimeOnly(nextUpdateAt);
+          document.getElementById('next-update-time-utc').textContent = toUTCTimeOnly(nextUpdateAt);
         }
-        document.getElementById('next-update-time').textContent = toESTTimeOnly(nextUpdateAt);
       }
 
+      // Ship date target
+      if (currentShipDate && currentShipDate !== 'N/A') {
+        const sd = new Date(currentShipDate);
+        if (!isNaN(sd)) shipDateTarget = sd;
+      }
+
+      lastFetchTime = new Date();
       document.getElementById('status-dot').classList.remove('error');
       document.getElementById('error-box').style.display = 'none';
-      document.getElementById('last-updated').textContent = 'UPDATED ' + toESTTimeOnly(new Date());
+      document.getElementById('last-updated').textContent = 'UPDATED ' + toLocalTimeOnly(new Date());
 
-      render(currentKillCount, currentSectors, currentShipDate);
+      render(currentKillCount, currentSectors, currentShipDate, memoryUnlocked, memoryCompleted);
 
       if (!firstLoad) {
         const flash = document.getElementById('flash');
@@ -671,9 +908,10 @@
     }
   }
 
-  function render(killCount, sectors, shipDate) {
+  function render(killCount, sectors, shipDate, memUnlocked, memCompleted) {
     renderSectors(sectors);
-    renderKillCount(killCount, shipDate);
+    renderKillCount(killCount);
+    renderFlags(memUnlocked, memCompleted, shipDate);
     renderKillChart();
   }
 
@@ -692,7 +930,7 @@
     }).join('');
   }
 
-  function renderKillCount(count, shipDate) {
+  function renderKillCount(count) {
     if (count == null) return;
     const countNum = typeof count === 'number' ? count : parseInt(count) || 0;
     document.getElementById('kill-count').textContent = countNum.toLocaleString();
@@ -702,23 +940,56 @@
       : '<span class="csv-badge">CACHED</span>';
 
     if (nextUpdateAt) {
-      document.getElementById('kill-next').textContent = `NEXT UPDATE: ${toEST(nextUpdateAt)}`;
+      document.getElementById('kill-next').textContent = `NEXT UPDATE: ${toLocal(nextUpdateAt)}`;
     }
 
-    if (shipDate && shipDate !== 'N/A') {
-      const d = new Date(shipDate);
-      if (!isNaN(d)) {
-        document.getElementById('kill-ship-date').textContent =
-          `SHIP DATE: ${d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}`;
-      }
-    }
-
-    if (prevKillCount !== null && countNum !== prevKillCount) {
+    // Delta since last API reading (from CSV history)
+    const delta = computeDelta(stateData);
+    if (delta !== null && delta !== 0) {
+      document.getElementById('kill-delta').textContent =
+        `${delta > 0 ? '▲' : '▼'} ${Math.abs(delta).toLocaleString()} since last reading`;
+    } else if (prevKillCount !== null && countNum !== prevKillCount) {
       const diff = countNum - prevKillCount;
       document.getElementById('kill-delta').textContent =
         `${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toLocaleString()} since last refresh`;
     }
+
+    // Kills per minute
+    const kpm = computeKPM(stateData);
+    if (kpm !== null) {
+      document.getElementById('kill-kpm').textContent =
+        `${kpm.toLocaleString()} KILLS/MIN`;
+    }
+
     prevKillCount = countNum;
+  }
+
+  function renderFlags(memUnlocked, memCompleted, shipDate) {
+    // Memory flags
+    const muCard = document.getElementById('flag-memory-unlocked');
+    const mcCard = document.getElementById('flag-memory-completed');
+
+    if (memUnlocked !== null) {
+      muCard.classList.toggle('flag-on', memUnlocked);
+      muCard.classList.toggle('flag-off', !memUnlocked);
+      document.getElementById('memory-unlocked-val').textContent = memUnlocked ? 'TRUE' : 'FALSE';
+    }
+
+    if (memCompleted !== null) {
+      mcCard.classList.toggle('flag-on', memCompleted);
+      mcCard.classList.toggle('flag-off', !memCompleted);
+      document.getElementById('memory-completed-val').textContent = memCompleted ? 'TRUE' : 'FALSE';
+    }
+
+    // Ship date
+    if (shipDate && shipDate !== 'N/A') {
+      const d = new Date(shipDate);
+      if (!isNaN(d)) {
+        document.getElementById('ship-date-raw').textContent =
+          d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        document.getElementById('ship-date-countdown').textContent = formatShipCountdown(d);
+      }
+    }
   }
 
   function renderKillChart() {
@@ -726,8 +997,21 @@
     const recent = stateData.slice(-48);
     const labels = recent.map(r => {
       if (!r.timestamp) return '';
-      return toESTTimeOnly(new Date(r.timestamp.replace(' UTC', '') + 'Z'));
+      return toLocalTimeOnly(new Date(r.timestamp.replace(' UTC', '') + 'Z'));
     });
+
+    // Calculate kills per minute for each interval
+    const kpmData = recent.map((r, i) => {
+      if (i === 0) return null;
+      const curr = parseInt(r.uescKillCount) || 0;
+      const prev = parseInt(recent[i-1].uescKillCount) || 0;
+      if (!r.timestamp || !recent[i-1].timestamp) return null;
+      const t1 = new Date(recent[i-1].timestamp.replace(' UTC', '') + 'Z');
+      const t2 = new Date(r.timestamp.replace(' UTC', '') + 'Z');
+      const diffMins = (t2 - t1) / 60000;
+      return diffMins > 0 ? Math.round((curr - prev) / diffMins) : null;
+    });
+
     const ctx = document.getElementById('kill-chart').getContext('2d');
     if (killChart) killChart.destroy();
     killChart = new Chart(ctx, {
@@ -738,29 +1022,93 @@
           label: 'UESC Kill Count',
           data: recent.map(r => parseInt(r.uescKillCount) || 0),
           borderColor: '#ff2244',
-          backgroundColor: 'rgba(255,34,68,0.05)',
+          backgroundColor: 'rgba(255,34,68,0.08)',
           borderWidth: 2,
-          pointRadius: 2,
+          pointRadius: 3,
+          pointBackgroundColor: '#ff2244',
+          pointBorderColor: '#ff2244',
+          pointHoverRadius: 5,
           fill: true,
-          tension: 0.3
+          tension: 0.3,
+          yAxisID: 'y'
+        }, {
+          label: 'Kills/min',
+          data: kpmData,
+          borderColor: '#ff6b35',
+          backgroundColor: 'rgba(255,107,53,0.05)',
+          borderWidth: 1.5,
+          pointRadius: 2,
+          pointBackgroundColor: '#ff6b35',
+          pointHoverRadius: 4,
+          borderDash: [4, 2],
+          fill: false,
+          tension: 0.3,
+          yAxisID: 'y1',
+          spanGaps: true
         }]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
         plugins: {
-          legend: { labels: { color: '#2a5a6a', font: { family: 'Share Tech Mono', size: 10 } } },
+          legend: {
+            labels: {
+              color: '#5a8a9a',
+              font: { family: 'Share Tech Mono', size: 11 },
+              usePointStyle: true,
+              pointStyle: 'line',
+              padding: 16
+            }
+          },
           tooltip: {
-            backgroundColor: '#0a1a24', borderColor: '#0a3a4a', borderWidth: 1,
-            titleColor: '#00d4ff', bodyColor: '#7ecfdf',
-            titleFont: { family: 'Share Tech Mono', size: 11 },
-            bodyFont: { family: 'Share Tech Mono', size: 10 }, padding: 10,
-            callbacks: { label: ctx => ` ${ctx.parsed.y.toLocaleString()} kills` }
+            backgroundColor: 'rgba(10,26,36,0.95)',
+            borderColor: '#0a4a5a',
+            borderWidth: 1,
+            titleColor: '#00d4ff',
+            bodyColor: '#b0dfe8',
+            titleFont: { family: 'Share Tech Mono', size: 12 },
+            bodyFont: { family: 'Share Tech Mono', size: 11 },
+            padding: 12,
+            cornerRadius: 0,
+            displayColors: true,
+            callbacks: {
+              label: ctx => {
+                if (ctx.datasetIndex === 0) return ` ${ctx.parsed.y.toLocaleString()} kills`;
+                if (ctx.parsed.y != null) return ` ${ctx.parsed.y.toLocaleString()} kills/min`;
+                return '';
+              }
+            }
           }
         },
         scales: {
-          x: { ticks: { color: '#2a5a6a', font: { size: 9 } }, grid: { color: '#0a3a4a' } },
-          y: { ticks: { color: '#2a5a6a', font: { size: 9 }, callback: v => (v / 1e6).toFixed(0) + 'M' }, grid: { color: '#0a3a4a' } }
+          x: {
+            ticks: {
+              color: '#3a6a7a',
+              font: { family: 'Share Tech Mono', size: 9 },
+              maxRotation: 45,
+              autoSkip: true,
+              maxTicksLimit: 16
+            },
+            grid: { color: 'rgba(10,58,74,0.5)' }
+          },
+          y: {
+            position: 'left',
+            ticks: {
+              color: '#3a6a7a',
+              font: { family: 'Share Tech Mono', size: 10 },
+              callback: v => (v / 1e6).toFixed(0) + 'M'
+            },
+            grid: { color: 'rgba(10,58,74,0.4)' }
+          },
+          y1: {
+            position: 'right',
+            ticks: {
+              color: '#ff6b35',
+              font: { family: 'Share Tech Mono', size: 10 },
+              callback: v => v.toLocaleString() + '/m'
+            },
+            grid: { drawOnChartArea: false }
+          }
         }
       }
     });

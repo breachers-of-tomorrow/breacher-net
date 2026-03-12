@@ -385,6 +385,7 @@
   <div class="status-bar">
     <div class="status-dot" id="status-dot"></div>
     <span id="clock">--:--:--</span>
+    <span id="clock-utc" style="color:var(--dim);font-size:0.7rem;margin-left:6px"></span>
     <span id="last-updated"></span>
   </div>
 </header>
@@ -393,13 +394,14 @@
   <a href="dashboard.html"><span class="nav-dot"></span>Dashboard</a>
   <a href="camera_monitoring.html" class="active"><span class="nav-dot"></span>Camera Monitoring</a>
   <a href="terminal_maps.html"><span class="nav-dot"></span>Terminal Maps</a>
-  <a href="build_tracker.html"><span class="nav-dot"></span>Build Tracker</a>
-  <a href="https://docs.google.com/document/d/1mtUtDPvbh6ahiynYFVS7Z4O79Nw6y5PEOjweCpzWV_A/edit?tab=t.0" target="_blank"><span class="nav-dot"></span>Google Doc</a>
+  <a href="build_tracker.html"><span class="nav-dot"></span>Cryoarchive Changes</a>
+  <a href="https://docs.google.com/document/d/1mtUtDPvbh6ahiynYFVS7Z4O79Nw6y5PEOjweCpzWV_A/edit?tab=t.0" target="_blank" rel="noopener noreferrer"><span class="nav-dot"></span>Google Doc</a>
+  <a href="https://discord.gg/sGeg5Gx2yM" target="_blank" rel="noopener noreferrer"><span class="nav-dot"></span>Discord</a>
 </nav>
 
 <div class="next-update-bar">
-  <span class="next-label">NEXT STABILIZATION</span>
-  <span id="next-update-time">--:--:-- ET</span>
+  <span class="next-label">NEXT UPDATE</span>
+  <span id="next-update-time">--:--:--</span><span id="next-update-time-utc" style="color:var(--dim);font-size:0.65rem;margin-left:6px"></span>
   <span id="next-update-countdown" style="color:var(--accent2)">-- --s</span>
   <div class="progress-bar">
     <div class="progress-fill" id="progress-fill" style="width:0%"></div>
@@ -434,42 +436,60 @@
   let stabData = [];
   let stabChart;
   let firstLoad = true;
-  let nextStabilizationAt = null;
+  let nextUpdateAt = null;
   let intervalTotal = 15 * 60;
 
   const CAMERAS = ['cargo','index','revival','biostock','steerage','preservation','cryoHub','camera06','camera09'];
   const COLORS = ['#00d4ff','#00ff9d','#ff6b35','#c084fc','#fbbf24','#f472b6','#34d399','#60a5fa','#a78bfa'];
 
-  function toEST(date) {
+  const userTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const tzAbbr = (() => {
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' }).formatToParts(new Date());
+      return parts.find(p => p.type === 'timeZoneName')?.value || '';
+    } catch { return ''; }
+  })();
+
+  function toLocal(date) {
     if (!date) return '--';
     const d = typeof date === 'string' ? new Date(date) : date;
     if (isNaN(d)) return '--';
     return d.toLocaleString('en-US', {
-      timeZone: 'America/New_York',
       month: 'short', day: 'numeric',
       hour: 'numeric', minute: '2-digit', second: '2-digit',
       hour12: true
-    }) + ' ET';
+    }) + ' ' + tzAbbr;
   }
 
-  function toESTTimeOnly(date) {
+  function toLocalTimeOnly(date) {
     if (!date) return '--';
     const d = typeof date === 'string' ? new Date(date) : date;
     if (isNaN(d)) return '--';
     return d.toLocaleString('en-US', {
-      timeZone: 'America/New_York',
       hour: 'numeric', minute: '2-digit', second: '2-digit',
       hour12: true
-    }) + ' ET';
+    }) + ' ' + tzAbbr;
+  }
+
+  function toUTCTimeOnly(date) {
+    if (!date) return '--';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d)) return '--';
+    return d.toLocaleString('en-US', {
+      timeZone: 'UTC',
+      hour: 'numeric', minute: '2-digit', second: '2-digit',
+      hour12: true
+    }) + ' UTC';
   }
 
   // Clock + countdown
   setInterval(() => {
     const now = new Date();
-    document.getElementById('clock').textContent = toESTTimeOnly(now);
+    document.getElementById('clock').textContent = toLocalTimeOnly(now);
+    document.getElementById('clock-utc').textContent = toUTCTimeOnly(now);
 
-    if (nextStabilizationAt) {
-      const secsLeft = Math.max(0, (nextStabilizationAt - now) / 1000);
+    if (nextUpdateAt) {
+      const secsLeft = Math.max(0, (nextUpdateAt - now) / 1000);
       const mins = Math.floor(secsLeft / 60);
       const secs = Math.floor(secsLeft % 60);
       document.getElementById('next-update-countdown').textContent =
@@ -479,6 +499,26 @@
       document.getElementById('progress-fill').style.width = pct + '%';
     }
   }, 1000);
+
+  async function fetchCountdown() {
+    try {
+      const res = await fetch('latest_state.json', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data?.uescKillCountNextUpdateAt) {
+        let next = new Date(data.uescKillCountNextUpdateAt);
+        if (isNaN(next.getTime())) return;
+        const now = new Date();
+        while (next <= now) next = new Date(next.getTime() + 15 * 60 * 1000);
+        intervalTotal = 15 * 60;
+        nextUpdateAt = next;
+        document.getElementById('next-update-time').textContent = toLocalTimeOnly(next);
+        document.getElementById('next-update-time-utc').textContent = toUTCTimeOnly(next);
+      }
+    } catch (e) {}
+  }
+  fetchCountdown();
+  setInterval(fetchCountdown, 60 * 1000);
 
   function parseCSV(text) {
     const lines = text.trim().split('\n');
@@ -498,6 +538,7 @@
   async function fetchCSV(filename) {
     if (isLocal) {
       const res = await fetch(filename);
+      if (!res.ok) throw new Error(`Local file not found: ${filename}`);
       return await res.text();
     }
     const res = await fetch(GITHUB_API + filename, {
@@ -514,33 +555,20 @@
       const stabText = await fetchCSV('stabilization_log.csv');
       stabData = parseCSV(stabText);
 
-      // Try live API for next stabilization time
+      // Try live API for current stabilization values
       try {
         const liveRes = await fetch('https://cryoarchive.systems/api/public/cctv-cameras/stabilization?t=' + Date.now(), { cache: 'no-store' });
         if (liveRes.ok) {
           const liveData = await liveRes.json();
-          const nextStr = Object.values(liveData?.stabilization || {})
-            .map(c => c?.nextStabilizationAt)
-            .find(v => v != null);
-          if (nextStr) {
-            const newNext = new Date(nextStr);
-            if (newNext > new Date()) {
-              intervalTotal = (newNext - new Date()) / 1000;
-              nextStabilizationAt = newNext;
-              document.getElementById('next-update-time').textContent = toESTTimeOnly(nextStabilizationAt);
-            }
-          }
-          // Also use live data for current card values if available
+          // Use live data for current card values if available
           const liveStab = liveData?.stabilization;
           if (liveStab) {
-            // Merge live data as a synthetic "latest" row for the cards
             const now = new Date().toISOString();
             const liveRow = { timestamp: now };
             CAMERAS.forEach(cam => {
               liveRow[`${cam}_stabilizationLevel`] = String(liveStab[cam]?.stabilizationLevel ?? 'N/A');
               liveRow[`${cam}_nextStabilizationAt`] = liveStab[cam]?.nextStabilizationAt ?? 'N/A';
             });
-            // Only add if different from last CSV row
             if (stabData.length === 0 || CAMERAS.some(cam =>
               liveRow[`${cam}_stabilizationLevel`] !== stabData[stabData.length - 1][`${cam}_stabilizationLevel`]
             )) {
@@ -549,21 +577,6 @@
           }
         }
       } catch (e) { /* CORS or network, use CSV data */ }
-
-      if (!nextStabilizationAt && stabData.length) {
-        const latest = stabData[stabData.length - 1];
-        const nextStr = CAMERAS
-          .map(cam => latest[`${cam}_nextStabilizationAt`])
-          .find(v => v && v !== 'N/A' && v !== 'null' && v !== '');
-        if (nextStr) {
-          let candidate = new Date(nextStr);
-          const now = new Date();
-          while (candidate <= now) candidate = new Date(candidate.getTime() + 15 * 60 * 1000);
-          intervalTotal = (candidate - now) / 1000;
-          nextStabilizationAt = candidate;
-          document.getElementById('next-update-time').textContent = toESTTimeOnly(nextStabilizationAt);
-        }
-      }
 
       if (stabData.length) {
         const slider = document.getElementById('stab-slider');
@@ -579,7 +592,7 @@
 
       document.getElementById('status-dot').classList.remove('error');
       document.getElementById('error-box').style.display = 'none';
-      document.getElementById('last-updated').textContent = 'UPDATED ' + toESTTimeOnly(new Date());
+      document.getElementById('last-updated').textContent = 'UPDATED ' + toLocalTimeOnly(new Date());
 
       render();
 
@@ -637,7 +650,7 @@
       const level = parseInt(latest[`${cam}_stabilizationLevel`]) || 0;
       const next = latest[`${cam}_nextStabilizationAt`] || '--';
       const history = stabData.slice(-20).map(r => parseInt(r[`${cam}_stabilizationLevel`]) || 0);
-      const timestamps = stabData.slice(-20).map(r => r.timestamp ? toESTTimeOnly(new Date(r.timestamp.replace(' UTC',''))) : '');
+      const timestamps = stabData.slice(-20).map(r => r.timestamp ? toLocalTimeOnly(new Date(r.timestamp.replace(' UTC','') + 'Z')) : '');
       const levelClass = level === 0 ? 'level-0' : level === 1 ? 'level-1' : level === 2 ? 'level-2' : 'level-high';
       const bars = history.map((v, i) => {
         const pct = Math.round((v / 100) * 100);
@@ -649,7 +662,7 @@
       return `<div class="card">
         <div class="card-name">${cam}</div>
         <div class="card-value ${levelClass}">${level}</div>
-        <div class="card-sub">NEXT: ${next !== '--' && next !== 'N/A' && next !== 'null' ? toEST(next) : 'STABLE'}</div>
+        <div class="card-sub">NEXT: ${next !== '--' && next !== 'N/A' && next !== 'null' ? toLocal(next) : 'STABLE'}</div>
         <div class="mini-chart">${bars}</div>
       </div>`;
     }).join('');
@@ -692,9 +705,9 @@
       if (!r.timestamp) return '';
       const d = new Date(r.timestamp.replace(' UTC','') + 'Z');
       return d.toLocaleString('en-US', {
-        timeZone: 'America/New_York', month: 'short', day: 'numeric',
+        month: 'short', day: 'numeric',
         hour: 'numeric', minute: '2-digit', hour12: true
-      }) + ' ET';
+      }) + ' ' + tzAbbr;
     });
     const ctx = document.getElementById('stab-chart').getContext('2d');
     if (stabChart) stabChart.destroy();

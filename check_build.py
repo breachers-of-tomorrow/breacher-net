@@ -38,6 +38,9 @@ BUILD_LOG_FILE = os.path.join(BASE_DIR, "build_log.json")
 STABILIZATION_CSV = os.path.join(BASE_DIR, "stabilization_log.csv")
 STATE_CSV = os.path.join(BASE_DIR, "state_log.csv")
 
+# Lightweight JSON snapshot for client-side countdown bars
+LATEST_STATE_FILE = os.path.join(BASE_DIR, "latest_state.json")
+
 CAMERAS = ["cargo", "index", "revival", "biostock", "steerage", "preservation", "cryoHub", "camera06", "camera09"]
 PAGES = ["cargo", "index", "revival", "biostock", "steerage", "preservation", "cryoHub"]
 
@@ -112,7 +115,7 @@ def git_push(data_updated: bool = False):
     base = os.path.dirname(os.path.abspath(__file__))
     files_to_add = ["build_state.json", "build_log.json"]
     if data_updated:
-        files_to_add.extend(["stabilization_log.csv", "state_log.csv"])
+        files_to_add.extend(["stabilization_log.csv", "state_log.csv", "latest_state.json"])
     try:
         subprocess.run(["git", "add"] + files_to_add, cwd=base, check=True)
         result = subprocess.run(
@@ -219,6 +222,17 @@ def append_state(state_data: dict):
     print(f"  [{timestamp}] State data recorded.")
 
 
+def write_latest_state(state_data: dict):
+    """Write a lightweight JSON snapshot for client-side consumption."""
+    save_json(LATEST_STATE_FILE, {
+        "uescKillCount": state_data.get("uescKillCount"),
+        "uescKillCountNextUpdateAt": state_data.get("uescKillCountNextUpdateAt"),
+        "shipDate": state_data.get("shipDate"),
+        "lastRecorded": get_timestamp(),
+    })
+    print(f"  latest_state.json updated.")
+
+
 def state_changed(state_data: dict) -> bool:
     """Check if kill count or any sector status differs from last CSV entry."""
     prev = last_csv_row(STATE_CSV)
@@ -284,6 +298,7 @@ def record_api_data() -> bool:
         append_stabilization(stab_data)
     if state_data:
         append_state(state_data)
+        write_latest_state(state_data)
 
     return True
 
