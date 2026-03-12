@@ -1,0 +1,48 @@
+services:
+  # ---- Next.js Application ----
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://breacher:breacher@db:5432/breacher
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ---- PostgreSQL ----
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: breacher
+      POSTGRES_USER: breacher
+      POSTGRES_PASSWORD: breacher
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U breacher"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # ---- Poller Service ----
+  poller:
+    build:
+      context: ./poller
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://breacher:breacher@db:5432/breacher
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
