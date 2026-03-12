@@ -1,0 +1,5 @@
+# State + stabilization snapshot every 5 minutes
+*/5 * * * * /usr/local/bin/python /app/poll_state.py
+
+# Build change detection every 60 seconds
+* * * * * /usr/local/bin/python /app/poll_build.py

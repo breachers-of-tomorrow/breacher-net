@@ -148,6 +148,25 @@ export default async function HomePage() {
             →
           </div>
         </a>
+        <a
+          href="https://marathon.winnower.garden/cryoarchive"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="cryo-panel p-6 flex items-center gap-4 hover:border-accent transition-colors no-underline group"
+        >
+          <div className="text-3xl">🌱</div>
+          <div>
+            <div className="font-[var(--font-display)] text-xs tracking-[3px] text-accent group-hover:glow-accent mb-1">
+              WINNOWER GARDEN
+            </div>
+            <div className="text-sm text-dim">
+              Historical ARG data archive — full history from day one
+            </div>
+          </div>
+          <div className="ml-auto text-accent2 font-[var(--font-display)] text-lg group-hover:translate-x-1 transition-transform">
+            →
+          </div>
+        </a>
       </div>
 
       {/* Footer */}
@@ -172,6 +191,17 @@ export default async function HomePage() {
             className="text-accent hover:glow-accent"
           >
             CROWDTYPICAL
+          </a>
+        </p>
+        <p className="mt-2">
+          HISTORICAL DATA BY{" "}
+          <a
+            href="https://marathon.winnower.garden/cryoarchive"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent hover:glow-accent"
+          >
+            WINNOWER GARDEN
           </a>
         </p>
         <p className="mt-2 text-dim/50">NOT AFFILIATED WITH BUNGIE</p>

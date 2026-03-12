@@ -180,10 +180,18 @@ export function CamerasClient({ initialData }: Props) {
 
       {/* Chart placeholder */}
       <div className="section-title">STABILIZATION OVER TIME</div>
-      <div className="cryo-panel p-5 h-[300px] flex items-center justify-center">
+      <div className="cryo-panel p-5 h-[300px] flex flex-col items-center justify-center gap-4">
         <div className="text-dim text-sm tracking-[2px]">
           CHART AVAILABLE AFTER DATABASE MIGRATION
         </div>
+        <a
+          href="https://marathon.winnower.garden/cryoarchive"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-accent text-xs tracking-[2px] hover:glow-accent"
+        >
+          VIEW HISTORICAL DATA AT WINNOWER GARDEN →
+        </a>
       </div>
     </div>
   );
