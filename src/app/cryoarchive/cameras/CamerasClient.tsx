@@ -121,7 +121,7 @@ export function CamerasClient({ initialData }: Props) {
       {/* Error */}
       {error && (
         <div className="bg-danger/10 border border-danger p-3 text-danger text-sm mb-5">
-          // ERROR: {error}
+          {/* ERROR */} {error}
         </div>
       )}
 

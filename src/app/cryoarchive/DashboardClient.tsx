@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   formatNumber,
   toLocalTimeOnly,
@@ -124,13 +124,13 @@ export function DashboardClient({ initialData }: Props) {
       {/* Error banner */}
       {error && (
         <div className="bg-danger/10 border border-danger p-3 text-danger text-sm mb-5">
-          // ERROR: {error}
+          {/* ERROR */} {error}
         </div>
       )}
 
       {/* Next Update Bar */}
       {nextUpdate && (
-        <NextUpdateBar nextUpdate={nextUpdate} lastFetch={lastFetch} />
+        <NextUpdateBar nextUpdate={nextUpdate} />
       )}
 
       {/* CTA Banner */}
@@ -261,12 +261,17 @@ export function DashboardClient({ initialData }: Props) {
 
 function NextUpdateBar({
   nextUpdate,
-  lastFetch,
 }: {
   nextUpdate: Date;
-  lastFetch: Date | null;
 }) {
-  const secsLeft = Math.max(0, (nextUpdate.getTime() - Date.now()) / 1000);
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const secsLeft = Math.max(0, (nextUpdate.getTime() - now) / 1000);
   const intervalTotal = 15 * 60; // 15 minutes
   const elapsed = intervalTotal - secsLeft;
   const pct = Math.min(100, Math.max(0, (elapsed / intervalTotal) * 100));
