@@ -38,12 +38,16 @@ def poll_state():
         return
 
     state = data.get("state", {})
-    sectors = state.get("sectors", {})
-    kill_count = state.get("killCount")
+    pages = state.get("pages", {})
+    kill_count = state.get("uescKillCount")
     ship_date = state.get("shipDate")
-    next_update = state.get("nextUpdate")
-    build_version = state.get("version")
-    memory_flags = state.get("memoryFlags", {})
+    next_update = state.get("uescKillCountNextUpdateAt")
+    memory_flags = {
+        "memoryUnlocked": state.get("memoryUnlocked", False),
+        "memoryCompleted": state.get("memoryCompleted", False),
+    }
+    # Flatten pages into sector states for storage
+    sectors = {name: info for name, info in pages.items()}
 
     try:
         conn = get_db()
@@ -52,14 +56,13 @@ def poll_state():
                 cur.execute(
                     """
                     INSERT INTO state_snapshots
-                        (kill_count, ship_date, next_update, build_version, sectors, memory_flags, raw_response)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        (kill_count, ship_date, next_update, sectors, memory_flags, raw_response)
+                    VALUES (%s, %s, %s, %s, %s, %s)
                     """,
                     (
                         kill_count,
                         ship_date,
                         next_update,
-                        build_version,
                         json.dumps(sectors),
                         json.dumps(memory_flags),
                         json.dumps(data),
@@ -81,8 +84,14 @@ def poll_stabilization():
         log.exception("Failed to fetch stabilization API")
         return
 
-    cameras = data.get("cameras", {})
-    next_stab = data.get("nextStabilization")
+    cameras = data.get("stabilization", {})
+    # Find the earliest next stabilization time across all cameras
+    next_stab_times = [
+        cam.get("nextStabilizationAt")
+        for cam in cameras.values()
+        if isinstance(cam, dict) and cam.get("nextStabilizationAt")
+    ]
+    next_stab = min(next_stab_times) if next_stab_times else None
 
     try:
         conn = get_db()
