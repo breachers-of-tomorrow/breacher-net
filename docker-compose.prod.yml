@@ -1,0 +1,17 @@
+# Production overrides — uses pre-built images from ghcr.io
+#
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  app:
+    build: !reset null
+    image: ghcr.io/breachers-of-tomorrow/breacher-net:latest
+    restart: always
+
+  poller:
+    build: !reset null
+    image: ghcr.io/breachers-of-tomorrow/breacher-net/poller:latest
+    restart: always
+
+  db:
+    restart: always

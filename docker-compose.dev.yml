@@ -1,0 +1,27 @@
+# Development overrides — run with: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# This mounts source code for hot reload and runs Next.js in dev mode.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: deps  # Only install deps, don't build
+    command: npm run dev
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./next.config.ts:/app/next.config.ts
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./postcss.config.mjs:/app/postcss.config.mjs
+      - ./eslint.config.mjs:/app/eslint.config.mjs
+    environment:
+      - DATABASE_URL=postgresql://breacher:breacher@db:5432/breacher
+      - NODE_ENV=development
+
+  poller:
+    volumes:
+      - ./poller:/app
+    environment:
+      - DATABASE_URL=postgresql://breacher:breacher@db:5432/breacher
