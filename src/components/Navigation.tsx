@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface NavLink {
   href: string;
@@ -138,11 +138,10 @@ export function Navigation() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`block px-6 py-3 text-xs tracking-[2px] uppercase border-b border-border/50 ${
-                  isActive
-                    ? "text-accent bg-accent/5"
-                    : "text-dim hover:text-accent hover:bg-accent/5"
-                }`}
+                className={`block px-6 py-3 text-xs tracking-[2px] uppercase border-b border-border/50 ${isActive
+                  ? "text-accent bg-accent/5"
+                  : "text-dim hover:text-accent hover:bg-accent/5"
+                  }`}
                 onClick={() => setMobileOpen(false)}
               >
                 {link.label}
@@ -162,16 +161,14 @@ function StatusDot() {
 }
 
 function Clock() {
-  // Client-rendered clock
   return <ClientClock />;
 }
 
 function ClientClock() {
-  const [time, setTime] = useState("");
+  const [time, setTime] = useState("--:--:--");
   const [utc, setUtc] = useState("");
 
-  // Only run on client
-  if (typeof window !== "undefined" && !time) {
+  useEffect(() => {
     const tick = () => {
       const now = new Date();
       const tz = (() => {
@@ -191,8 +188,8 @@ function ClientClock() {
           second: "2-digit",
           hour12: true,
         }) +
-          " " +
-          tz
+        " " +
+        tz
       );
       setUtc(
         now.toLocaleString("en-US", {
@@ -205,12 +202,13 @@ function ClientClock() {
       );
     };
     tick();
-    setInterval(tick, 1000);
-  }
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <>
-      <span className="text-accent">{time || "--:--:--"}</span>
+      <span className="text-accent">{time}</span>
       <span className="text-dim text-[0.7rem] ml-1.5">{utc}</span>
     </>
   );

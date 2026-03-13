@@ -1,23 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface BuildEvent {
   detected_at: string;
-  deployment_id: string;
-  etag?: string;
-  page_hash?: string;
-  chunk_count: number;
-  asset_count: number;
-  changes: string[];
+  build_hash?: string;
+  summary?: string;
+  details?: Record<string, unknown>;
+  headers?: Record<string, string>;
+  // Legacy fields from static data
+  deployment_id?: string;
+  chunk_count?: number;
+  asset_count?: number;
+  changes?: string[];
   http_status?: number;
   chunks_added?: string[];
   chunks_removed?: string[];
 }
 
-// Static build data from the original build_log.json
-// This will be replaced by PostgreSQL API once the poller is running
-const INITIAL_BUILDS: BuildEvent[] = [
+// Static build data — shown when no database is available
+const FALLBACK_BUILDS: BuildEvent[] = [
   {
     detected_at: "2026-03-11T19:31:55Z",
     deployment_id: "dpl_7g7D8wvGDVuayN7ysUh2tjZUG2sL",
@@ -39,14 +41,63 @@ const INITIAL_BUILDS: BuildEvent[] = [
   },
 ];
 
+const BUILDS_API = "/api/builds";
+const REFRESH_INTERVAL = 5 * 60_000; // 5 minutes
+
 export function ChangesClient() {
-  const [builds] = useState<BuildEvent[]>(INITIAL_BUILDS);
+  const [builds, setBuilds] = useState<BuildEvent[]>(FALLBACK_BUILDS);
+  const [source, setSource] = useState<string>("static");
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
 
-  const latest = builds.length > 0 ? builds[builds.length - 1] : null;
+  // Fetch on mount + periodic refresh
+  useEffect(() => {
+    let cancelled = false;
+
+    const doFetch = async () => {
+      try {
+        const res = await fetch(`${BUILDS_API}?limit=100&t=${Date.now()}`, {
+          cache: "no-store",
+        });
+        if (!res.ok || cancelled) return;
+        const json = await res.json();
+        if (!cancelled && json.source === "database" && json.data?.length > 0) {
+          setBuilds(json.data);
+          setSource("database");
+        }
+      } catch {
+        // Keep static data on error
+      }
+    };
+
+    doFetch();
+    const interval = setInterval(doFetch, REFRESH_INTERVAL);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Sort builds oldest-first for display (timeline is reversed below)
+  const sortedBuilds = [...builds].sort(
+    (a, b) =>
+      new Date(a.detected_at).getTime() - new Date(b.detected_at).getTime()
+  );
+
+  const latest =
+    sortedBuilds.length > 0 ? sortedBuilds[sortedBuilds.length - 1] : null;
 
   return (
     <div>
+      {/* Source indicator */}
+      <div className="flex items-center gap-2 mb-6 text-xs text-dim">
+        <span className="font-[var(--font-display)] tracking-[3px]">
+          DATA SOURCE:
+        </span>
+        <span className={source === "database" ? "text-accent2" : "text-warn"}>
+          {source === "database" ? "LIVE DATABASE" : "STATIC SNAPSHOT"}
+        </span>
+      </div>
+
       {/* Latest Build Banner */}
       {latest && (
         <a
@@ -63,7 +114,7 @@ export function ChangesClient() {
                 WEBSITE UPDATED
               </div>
               <div className="text-sm text-foreground">
-                {latest.changes.join(" • ")}
+                {getBuildDescription(latest)}
               </div>
               <div className="text-xs text-dim mt-1">
                 {formatDate(latest.detected_at)}
@@ -83,7 +134,7 @@ export function ChangesClient() {
             TOTAL CHANGES
           </div>
           <div className="font-[var(--font-display)] text-2xl font-bold text-accent glow-accent">
-            {builds.length}
+            {sortedBuilds.length}
           </div>
         </div>
         {latest && (
@@ -99,10 +150,14 @@ export function ChangesClient() {
         {latest && (
           <div className="cryo-panel p-5 text-center">
             <div className="font-[var(--font-display)] text-[0.6rem] tracking-[3px] text-dim mb-2">
-              CHUNKS / ASSETS
+              IDENTIFIER
             </div>
-            <div className="text-sm text-accent">
-              {latest.chunk_count} / {latest.asset_count}
+            <div className="text-sm text-accent font-mono">
+              {latest.build_hash
+                ? latest.build_hash.slice(0, 12)
+                : latest.deployment_id
+                  ? latest.deployment_id.slice(0, 16)
+                  : "--"}
             </div>
           </div>
         )}
@@ -111,8 +166,8 @@ export function ChangesClient() {
       {/* Timeline */}
       <div className="section-title">CHANGE TIMELINE</div>
       <div className="space-y-3">
-        {[...builds].reverse().map((build, i) => {
-          const realIdx = builds.length - 1 - i;
+        {[...sortedBuilds].reverse().map((build, i) => {
+          const realIdx = sortedBuilds.length - 1 - i;
           const isExpanded = expandedIdx === realIdx;
           return (
             <div key={realIdx} className="cryo-panel p-5">
@@ -130,11 +185,11 @@ export function ChangesClient() {
                       {formatDate(build.detected_at)}
                     </span>
                     <span className="text-xs text-accent font-[var(--font-display)] tracking-[2px]">
-                      BUILD #{builds.length - i}
+                      BUILD #{sortedBuilds.length - i}
                     </span>
                   </div>
                   <div className="text-sm text-foreground">
-                    {build.changes.join(" • ")}
+                    {getBuildDescription(build)}
                   </div>
                 </div>
                 <div className="text-dim text-sm shrink-0">
@@ -145,32 +200,57 @@ export function ChangesClient() {
               {/* Technical details */}
               {isExpanded && (
                 <div className="mt-4 ml-6 pl-4 border-l border-border space-y-1 text-xs text-dim">
-                  <div>
-                    Deployment:{" "}
-                    <span className="text-accent">{build.deployment_id}</span>
-                  </div>
-                  {build.page_hash && (
+                  {build.build_hash && (
                     <div>
-                      Page Hash:{" "}
-                      <span className="text-accent">{build.page_hash}</span>
+                      Build Hash:{" "}
+                      <span className="text-accent font-mono">
+                        {build.build_hash}
+                      </span>
                     </div>
                   )}
-                  <div>
-                    Chunks: {build.chunk_count} • Assets: {build.asset_count}
-                  </div>
+                  {build.deployment_id && (
+                    <div>
+                      Deployment:{" "}
+                      <span className="text-accent">
+                        {build.deployment_id}
+                      </span>
+                    </div>
+                  )}
+                  {build.chunk_count != null && (
+                    <div>
+                      Chunks: {build.chunk_count} • Assets:{" "}
+                      {build.asset_count}
+                    </div>
+                  )}
                   {build.http_status && (
                     <div>HTTP Status: {build.http_status}</div>
                   )}
-                  {build.chunks_added && build.chunks_added.length > 0 && (
-                    <div className="text-accent2">
-                      + {build.chunks_added.join(", ")}
+                  {build.details && (
+                    <div className="mt-1">
+                      {Object.entries(
+                        build.details as Record<string, unknown>
+                      ).map(([k, v]) => (
+                        <div key={k}>
+                          <span className="text-dim/70">{k}:</span>{" "}
+                          <span className="text-accent/70">
+                            {String(v)}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   )}
-                  {build.chunks_removed && build.chunks_removed.length > 0 && (
-                    <div className="text-danger">
-                      - {build.chunks_removed.join(", ")}
-                    </div>
-                  )}
+                  {build.chunks_added &&
+                    build.chunks_added.length > 0 && (
+                      <div className="text-accent2">
+                        + {build.chunks_added.join(", ")}
+                      </div>
+                    )}
+                  {build.chunks_removed &&
+                    build.chunks_removed.length > 0 && (
+                      <div className="text-danger">
+                        - {build.chunks_removed.join(", ")}
+                      </div>
+                    )}
                 </div>
               )}
             </div>
@@ -178,12 +258,21 @@ export function ChangesClient() {
         })}
       </div>
 
-      {/* Note about database */}
-      <div className="mt-8 text-center text-xs text-dim tracking-[2px]">
-        LIVE BUILD MONITORING COMING SOON — POLLER SERVICE IN DEVELOPMENT
-      </div>
+      {source !== "database" && (
+        <div className="mt-8 text-center text-xs text-dim tracking-[2px]">
+          LIVE BUILD MONITORING AVAILABLE WITH DATABASE — RUN WITH DOCKER
+          COMPOSE
+        </div>
+      )}
     </div>
   );
+}
+
+function getBuildDescription(build: BuildEvent): string {
+  if (build.summary) return build.summary;
+  if (build.changes && build.changes.length > 0)
+    return build.changes.join(" • ");
+  return "Build change detected";
 }
 
 function formatDate(iso: string): string {
