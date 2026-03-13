@@ -1,16 +1,15 @@
 import type { Metadata } from "next";
-import { Share_Tech_Mono, Orbitron } from "next/font/google";
+import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Navigation } from "@/components/Navigation";
 
-const shareTechMono = Share_Tech_Mono({
-  weight: "400",
-  variable: "--font-share-tech-mono",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
   subsets: ["latin"],
 });
 
-const orbitron = Orbitron({
-  variable: "--font-orbitron",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
 });
 
@@ -32,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${shareTechMono.variable} ${orbitron.variable} antialiased`}
+        className={`${jetbrainsMono.variable} ${spaceGrotesk.variable} antialiased`}
       >
         <Navigation />
         {children}

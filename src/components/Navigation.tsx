@@ -25,6 +25,11 @@ const NAV_LINKS: NavLink[] = [
     label: "Discord",
     external: true,
   },
+  {
+    href: "https://wiki.breacher.net",
+    label: "Wiki",
+    external: true,
+  },
 ];
 
 export function Navigation() {
@@ -37,7 +42,7 @@ export function Navigation() {
       <header className="border-b border-border px-4 sm:px-8 py-5 flex justify-between items-center bg-gradient-to-r from-accent/5 to-transparent flex-wrap gap-2.5">
         <Link href="/" className="no-underline">
           <div className="font-[var(--font-display)] text-lg sm:text-xl font-black text-accent glow-accent tracking-[4px]">
-            CRYO<span className="text-accent2">ARCHIVE</span>
+            BREACHER<span className="text-accent2">.NET</span>
           </div>
         </Link>
         <div className="flex gap-5 items-center text-xs flex-wrap">
