@@ -167,6 +167,25 @@ export default async function HomePage() {
             →
           </div>
         </a>
+        <a
+          href="https://tauceti.world"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="cryo-panel p-6 flex items-center gap-4 hover:border-accent transition-colors no-underline group"
+        >
+          <div className="text-3xl">🌐</div>
+          <div>
+            <div className="font-[var(--font-display)] text-xs tracking-[3px] text-accent group-hover:glow-accent mb-1">
+              TAU CETI WORLD
+            </div>
+            <div className="text-sm text-dim">
+              Interactive colony map — Perimeter, Dire Marsh, and Outpost
+            </div>
+          </div>
+          <div className="ml-auto text-accent2 font-[var(--font-display)] text-lg group-hover:translate-x-1 transition-transform">
+            →
+          </div>
+        </a>
       </div>
 
       {/* Footer */}
