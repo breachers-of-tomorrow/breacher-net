@@ -33,7 +33,7 @@ export default async function HomePage() {
       {/* Hero */}
       <div className="text-center mb-12 sm:mb-16">
         <h1 className="font-[var(--font-display)] text-3xl sm:text-5xl font-black text-accent glow-accent tracking-[6px] mb-4">
-          BREACHER<span className="text-accent2">//</span>NET
+          BREACHER<span className="text-accent2">{"//"}</span>NET
         </h1>
         <p className="font-[var(--font-display)] text-lg sm:text-xl font-bold text-text-heading tracking-[4px] mb-2">
           BREACHERS OF TOMORROW

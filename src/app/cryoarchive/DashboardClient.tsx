@@ -377,22 +377,19 @@ function StateFlag({ label, value }: { label: string; value: boolean }) {
   const on = value;
   return (
     <div
-      className={`flex items-center gap-2.5 px-4 py-2 bg-panel border relative ${
-        on ? "border-accent2/30" : "border-border"
-      }`}
+      className={`flex items-center gap-2.5 px-4 py-2 bg-panel border relative ${on ? "border-accent2/30" : "border-border"
+        }`}
     >
       <div
-        className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${
-          on ? "from-accent2" : "from-border"
-        } to-transparent`}
+        className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${on ? "from-accent2" : "from-border"
+          } to-transparent`}
       />
       <span className="font-[var(--font-display)] text-[0.55rem] tracking-[3px] text-dim">
         {label}
       </span>
       <span
-        className={`font-[var(--font-display)] text-sm font-bold tracking-wider ${
-          on ? "text-accent2 glow-accent2" : "text-dim"
-        }`}
+        className={`font-[var(--font-display)] text-sm font-bold tracking-wider ${on ? "text-accent2 glow-accent2" : "text-dim"
+          }`}
       >
         {value ? "TRUE" : "FALSE"}
       </span>
