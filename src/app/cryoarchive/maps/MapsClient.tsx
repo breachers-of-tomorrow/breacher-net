@@ -605,7 +605,7 @@ function MapPanel({
 
       {/* Camera cards */}
       <div className="section-title mt-6">
-        {config.displayName.toUpperCase()} // STABILIZATION LEVELS
+        {config.displayName.toUpperCase()} {/* STABILIZATION LEVELS */}
       </div>
       <div className="grid grid-cols-3 gap-3 mb-6">
         {config.cameras.map((cam) => (
@@ -615,7 +615,7 @@ function MapPanel({
 
       {/* Map + info panel */}
       <div className="section-title">
-        {config.displayName.toUpperCase()} // TERMINAL MAP
+        {config.displayName.toUpperCase()} {/* TERMINAL MAP */}
       </div>
       <div className="flex flex-col lg:flex-row gap-5 items-start">
         {/* Map container */}
@@ -734,24 +734,24 @@ export function MapsClient() {
   const [lightbox, setLightbox] = useState<{ src: string; label: string } | null>(null);
 
   // Fetch camera data
-  const fetchCameras = useCallback(async () => {
-    try {
-      const res = await fetch("/api/stabilization/latest", { cache: "no-store" });
-      if (!res.ok) return;
-      const json = await res.json();
-      if (json.data?.cameras) {
-        setCameras(json.data.cameras);
-      }
-    } catch {
-      // Silently fail — cards show "--"
-    }
-  }, []);
-
   useEffect(() => {
-    fetchCameras();
-    const interval = setInterval(fetchCameras, 60_000);
-    return () => clearInterval(interval);
-  }, [fetchCameras]);
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/stabilization/latest", { cache: "no-store" });
+        if (!res.ok || cancelled) return;
+        const json = await res.json();
+        if (!cancelled && json.data?.cameras) {
+          setCameras(json.data.cameras);
+        }
+      } catch {
+        // Silently fail — cards show "--"
+      }
+    };
+    load();
+    const interval = setInterval(load, 60_000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, []);
 
   const openLightbox = useCallback((src: string, label: string) => {
     setLightbox({ src, label });
