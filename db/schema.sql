@@ -126,5 +126,14 @@ CREATE TABLE IF NOT EXISTS index_snapshots (
 CREATE INDEX IF NOT EXISTS idx_index_snapshots_captured
     ON index_snapshots (captured_at DESC);
 
+-- ============================================================
+-- Session cache (shared auth cookies between poller + app)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS session_cache (
+    service_name    TEXT PRIMARY KEY,
+    cookie          TEXT NOT NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Migration: Add content_data column (v0.4.0)
 ALTER TABLE index_entries ADD COLUMN IF NOT EXISTS content_data JSONB;

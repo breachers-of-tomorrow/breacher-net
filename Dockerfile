@@ -42,6 +42,9 @@ COPY --from=builder /app/public ./public/
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Copy DAC auth file for live-scrape fallback
+COPY --from=builder --chown=nextjs:nodejs /app/poller/dac ./poller/dac
+
 USER nextjs
 
 EXPOSE 3000
