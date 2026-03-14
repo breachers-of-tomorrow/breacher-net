@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-03-14
+
+### Added
+
+- **Index Archive page** — scrapes cryoarchive.systems/indx and displays entry index with type/status counts, filter tabs, and terminal-styled entry list
+- Index entry poller (`poller/poll_index.py`) with DB storage and periodic snapshot tracking
+- New `index_entries` and `index_snapshots` database tables
+- API routes: `/api/index-entries` (DB-backed) and `/api/index-entries/scrape` (live fallback)
+- Signal Mint glow utilities (`.glow-mint`, `.box-glow-mint`)
+
+### Changed
+
+- **Revised color palette** — migrated from faction cyan/green (#00E5CC/#39FF14) to Breacher Blue/Cyan/Mint (#038ADF/#00D4EB/#00FF9D) with teal-dark backgrounds (#031A22 series)
+- **Navigation restructured** — renamed tabs (Cameras, Maps, Site Changes), added Index Archive, reordered external links (Wiki first)
+- **Landing page redesigned** — new BREACH//NET hero branding, updated nav cards to include Index Archive, reorganized community links (Wiki, Discord, Community Doc, Winnower Garden)
+- **Build tracker fix** — rewrote `poll_build.py` fingerprinting to use Vercel deployment ID (`dpl_XXXX`) and static asset hashes instead of body content, eliminating false positives from dynamic page content
+- Header branding changed from `BREACHER.NET` to `BREACH//NET`
+- Status dot uses Signal Mint (#00FF9D) for online indicator
+- Panel top borders now include blue accent gradient
+- Updated all page metadata titles for consistency
+- Map zone colors updated to new palette
+
 ## [0.3.0] - 2026-03-14
 
 ### Added

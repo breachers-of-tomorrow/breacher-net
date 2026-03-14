@@ -1,9 +1,17 @@
-"""Poll cryoarchive.systems for build/deployment changes, store detected changes in PostgreSQL."""
+"""Poll cryoarchive.systems for build/deployment changes, store detected changes in PostgreSQL.
+
+Fingerprinting strategy:
+- Extract the Vercel deployment ID from Next.js chunk URLs (dpl=dpl_XXXX)
+- Track static asset fingerprints (hashed filenames in chunk URLs)
+- These only change when an actual deployment occurs, avoiding false
+  positives from dynamic page content (kill counts, timestamps, etc.)
+"""
 
 import hashlib
 import json
 import logging
 import os
+import re
 import sys
 from datetime import datetime, timezone
 
@@ -20,6 +28,12 @@ log = logging.getLogger("poll_build")
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://breacher:breacher@db:5432/breacher")
 TARGET_URL = "https://cryoarchive.systems"
 REQUEST_TIMEOUT = 15
+
+# Regex patterns for deployment fingerprinting
+DPL_PATTERN = re.compile(r"dpl=(dpl_[a-zA-Z0-9]+)")
+CHUNK_PATTERN = re.compile(r'/_next/static/chunks/([a-f0-9]{12,}\.js)')
+CSS_PATTERN = re.compile(r'/_next/static/chunks/([a-f0-9]{12,}\.css)')
+BUILD_ID_PATTERN = re.compile(r'/_next/static/([a-zA-Z0-9_-]{20,})/')
 
 
 def get_db():
@@ -43,19 +57,54 @@ def get_last_build_hash() -> str | None:
         return None
 
 
-def compute_build_hash(headers: dict, body_snippet: str) -> str:
-    """Compute a hash representing the current build state."""
-    # Use a combination of key headers and body content
+def extract_deployment_id(html: str) -> str | None:
+    """Extract Vercel deployment ID from chunk URL params (dpl=dpl_XXXX)."""
+    match = DPL_PATTERN.search(html)
+    return match.group(1) if match else None
+
+
+def extract_static_assets(html: str) -> list[str]:
+    """Extract hashed static asset filenames from chunk/CSS URLs."""
+    chunks = sorted(set(CHUNK_PATTERN.findall(html)))
+    css = sorted(set(CSS_PATTERN.findall(html)))
+    return chunks + css
+
+
+def extract_build_id(html: str) -> str | None:
+    """Extract Next.js build ID from static asset paths."""
+    match = BUILD_ID_PATTERN.search(html)
+    return match.group(1) if match else None
+
+
+def compute_build_hash(html: str) -> str:
+    """Compute a hash based on deployment-stable signals only.
+
+    Uses deployment ID, build ID, and static asset fingerprints — none of
+    which change unless an actual deployment occurs.
+    """
     fingerprint_parts = []
 
-    for header in ["etag", "last-modified", "x-build-id", "x-version"]:
-        val = headers.get(header, "")
-        if val:
-            fingerprint_parts.append(f"{header}:{val}")
+    # Primary signal: Vercel deployment ID
+    dpl_id = extract_deployment_id(html)
+    if dpl_id:
+        fingerprint_parts.append(f"dpl:{dpl_id}")
 
-    # Hash first 2KB of body for content change detection
-    body_hash = hashlib.sha256(body_snippet[:2048].encode()).hexdigest()[:16]
-    fingerprint_parts.append(f"body:{body_hash}")
+    # Secondary signal: Next.js build ID
+    build_id = extract_build_id(html)
+    if build_id:
+        fingerprint_parts.append(f"build:{build_id}")
+
+    # Tertiary signal: static asset fingerprints
+    assets = extract_static_assets(html)
+    if assets:
+        asset_hash = hashlib.sha256("|".join(assets).encode()).hexdigest()[:16]
+        fingerprint_parts.append(f"assets:{asset_hash}")
+
+    # Fallback: if no deployment signals found, the site structure changed fundamentally
+    if not fingerprint_parts:
+        log.warning("No deployment signals found — falling back to full page hash")
+        page_hash = hashlib.sha256(html.encode()).hexdigest()[:16]
+        fingerprint_parts.append(f"fallback:{page_hash}")
 
     combined = "|".join(fingerprint_parts)
     return hashlib.sha256(combined.encode()).hexdigest()[:32]
@@ -81,23 +130,36 @@ def poll_build():
         return
 
     headers = {k.lower(): v for k, v in resp.headers.items()}
-    body_snippet = resp.text[:4096]
+    html = resp.text
 
-    current_hash = compute_build_hash(headers, body_snippet)
+    current_hash = compute_build_hash(html)
     last_hash = get_last_build_hash()
 
     if current_hash == last_hash:
         log.debug("No build change detected (hash=%s)", current_hash[:12])
         return
 
-    # New build detected
+    # New build detected — gather details
     interesting_headers = extract_headers_of_interest(headers)
+    dpl_id = extract_deployment_id(html)
+    build_id = extract_build_id(html)
+    assets = extract_static_assets(html)
 
     details = {
         "status_code": resp.status_code,
-        "content_length": len(resp.text),
+        "content_length": len(html),
         "previous_hash": last_hash,
+        "deployment_id": dpl_id,
+        "build_id": build_id,
+        "asset_count": len(assets),
     }
+
+    summary_parts = []
+    if dpl_id:
+        summary_parts.append(f"deployment {dpl_id}")
+    if build_id:
+        summary_parts.append(f"build {build_id[:12]}")
+    summary = f"Build change detected: {', '.join(summary_parts) or current_hash[:12]}"
 
     try:
         conn = get_db()
@@ -113,13 +175,15 @@ def poll_build():
                     """,
                     (
                         current_hash,
-                        f"Build change detected (hash: {current_hash[:12]})",
+                        summary,
                         json.dumps(details),
                         json.dumps(interesting_headers),
                     ),
                 )
         conn.close()
-        log.info("BUILD CHANGE DETECTED — hash=%s (previous=%s)", current_hash[:12], last_hash[:12] if last_hash else "none")
+        log.info("BUILD CHANGE DETECTED — hash=%s dpl=%s (previous=%s)",
+                 current_hash[:12], dpl_id or "unknown",
+                 last_hash[:12] if last_hash else "none")
     except Exception:
         log.exception("Failed to save build event")
 

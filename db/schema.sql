@@ -93,3 +93,38 @@ CREATE TABLE IF NOT EXISTS poller_heartbeats (
 
 CREATE INDEX IF NOT EXISTS idx_heartbeats_poller
     ON poller_heartbeats (poller_name, heartbeat_at DESC);
+
+-- ============================================================
+-- Index entries (scraped from cryoarchive.systems/indx)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS index_entries (
+    entry_id        TEXT PRIMARY KEY,          -- e.g. "Entry_0012"
+    entry_type      TEXT,                      -- IMAGE, TEXT, VIDEO, AUDIO (NULL if locked)
+    status          TEXT NOT NULL DEFAULT 'locked',  -- locked / unlocked
+    content_data    JSONB,                     -- Content payload (URL, text, YouTube ID, etc.)
+    first_seen      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_updated    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_index_entries_status
+    ON index_entries (status);
+
+CREATE INDEX IF NOT EXISTS idx_index_entries_type
+    ON index_entries (entry_type) WHERE entry_type IS NOT NULL;
+
+-- ============================================================
+-- Index snapshots (periodic summary of index state)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS index_snapshots (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    captured_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    total_entries   INTEGER NOT NULL,
+    unlocked_count  INTEGER NOT NULL DEFAULT 0,
+    type_counts     JSONB NOT NULL DEFAULT '{}'
+);
+
+CREATE INDEX IF NOT EXISTS idx_index_snapshots_captured
+    ON index_snapshots (captured_at DESC);
+
+-- Migration: Add content_data column (v0.4.0)
+ALTER TABLE index_entries ADD COLUMN IF NOT EXISTS content_data JSONB;
