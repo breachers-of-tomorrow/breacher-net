@@ -311,9 +311,8 @@ function EntryRow({ entry, isNew, isExpanded, onToggle }: {
             <button
                 type="button"
                 onClick={hasContent ? onToggle : undefined}
-                className={`w-full text-left py-1 flex items-center leading-relaxed transition-colors ${
-                    hasContent ? "hover:bg-accent/5 cursor-pointer" : "cursor-default"
-                }`}
+                className={`w-full text-left py-1 flex items-center leading-relaxed transition-colors ${hasContent ? "hover:bg-accent/5 cursor-pointer" : "cursor-default"
+                    }`}
             >
                 {isNew && (
                     <span className="text-warn glow-warn animate-pulse-slow mr-2 text-[0.65rem] font-bold tracking-[1px]">
@@ -391,7 +390,6 @@ function EntryContent({ data: cd, entryId }: { data: EntryContentData; entryId: 
     if (cd.url && cd.mimeType?.startsWith("audio/")) {
         return (
             <div className="py-2">
-                {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
                 <audio controls src={cd.url} className="w-full max-w-lg" preload="none" />
                 {(cd.altFilename || cd.alt) && (
                     <div className="text-dim text-[0.6rem] mt-1.5 tracking-[1px]">
@@ -415,7 +413,6 @@ function EntryContent({ data: cd, entryId }: { data: EntryContentData; entryId: 
     if (cd.url && cd.mimeType?.startsWith("video/")) {
         return (
             <div className="py-2">
-                {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
                 <video controls src={cd.url} className="max-w-2xl w-full border border-border" preload="none" />
             </div>
         );

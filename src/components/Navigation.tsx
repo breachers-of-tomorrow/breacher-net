@@ -58,7 +58,7 @@ export function Navigation() {
         <div className="flex items-center gap-4">
           <Link href="/" className="no-underline">
             <div className="font-[var(--font-display)] text-lg sm:text-xl font-black text-accent glow-accent tracking-[4px]">
-              BREACHER<span className="text-accent2">//</span>NET
+              BREACHER<span className="text-accent2">{"//"}</span>NET
             </div>
           </Link>
         </div>
@@ -74,8 +74,8 @@ export function Navigation() {
         <Link
           href="/"
           className={`font-[var(--font-display)] text-[0.65rem] tracking-[3px] uppercase no-underline px-3 py-2.5 border border-transparent border-b-0 transition-all flex items-center gap-1.5 relative top-[2px] mr-2 ${pathname === "/"
-              ? "text-accent bg-panel border-border border-b-2 border-b-panel glow-accent"
-              : "text-dim hover:text-foreground hover:bg-accent/5 hover:border-border"
+            ? "text-accent bg-panel border-border border-b-2 border-b-panel glow-accent"
+            : "text-dim hover:text-foreground hover:bg-accent/5 hover:border-border"
             }`}
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -84,7 +84,7 @@ export function Navigation() {
           HOME
         </Link>
 
-        {NAV_SECTIONS.map((section, sIdx) => (
+        {NAV_SECTIONS.map((section) => (
           <div key={section.label} className="flex items-end">
             {/* Section divider */}
             <div className="h-5 w-px bg-border mx-1.5 mb-2.5" />
@@ -164,8 +164,8 @@ export function Navigation() {
           <Link
             href="/"
             className={`block px-6 py-3 text-xs tracking-[2px] uppercase border-b border-border/50 ${pathname === "/"
-                ? "text-accent bg-accent/5"
-                : "text-dim hover:text-accent hover:bg-accent/5"
+              ? "text-accent bg-accent/5"
+              : "text-dim hover:text-accent hover:bg-accent/5"
               }`}
             onClick={() => setMobileOpen(false)}
           >
@@ -199,8 +199,8 @@ export function Navigation() {
                     key={link.href}
                     href={link.href}
                     className={`block px-8 py-3 text-xs tracking-[2px] uppercase border-b border-border/50 ${isActive
-                        ? "text-accent bg-accent/5"
-                        : "text-dim hover:text-accent hover:bg-accent/5"
+                      ? "text-accent bg-accent/5"
+                      : "text-dim hover:text-accent hover:bg-accent/5"
                       }`}
                     onClick={() => setMobileOpen(false)}
                   >
