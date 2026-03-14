@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-03-13
+
+### Added
+
+- Latest-data API routes (`/api/state/latest`, `/api/stabilization/latest`, `/api/builds/latest`) with DB-first, live-API fallback
+- Multi-platform container builds (amd64/arm64) via QEMU + Buildx
+- Docker Compose dev/prod overrides with health checks
+- Tau Ceti World link in community section
+- `.env.example` for local development setup
+
+### Changed
+
+- Rewrote Changes page with live DB fetch and structured event display
+- Migrated to faction palette (dark cyan/green theme refinement)
+- Added wiki navigation link
+
+### Fixed
+
+- Poller field mappings: `uescKillCount`, `pages`, `uescKillCountNextUpdateAt`, `stabilization` now correctly parsed from API response
+- Clock component memory leak (proper `useEffect` cleanup for `setInterval`)
+- Removed non-existent `build_version` column from state poller INSERT
+
 ## [0.1.0] - 2026-03-12
 
 ### Added
