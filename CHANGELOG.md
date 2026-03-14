@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-03-14
+
+### Added
+
+- Interactive terminal maps with zone inspection and lightbox galleries
+- Three fully mapped areas: Perimeter, Dire Marsh, and Outpost
+- SVG overlay circles with hover/click interactivity for each terminal zone
+- Zone info panels with route details, terminal photos (exterior + interior), and stabilization data
+- Fullscreen lightbox for terminal photo viewing
+- Live camera stabilization data integration on map pages
+- Sub-tab navigation between map areas
+- 39 map assets (3 background maps + 36 terminal photos from upstream)
+
 ## [0.2.0] - 2026-03-13
 
 ### Added
