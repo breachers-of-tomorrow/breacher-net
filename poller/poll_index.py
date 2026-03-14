@@ -51,24 +51,82 @@ def get_db():
     return psycopg2.connect(DATABASE_URL)
 
 
+def load_cached_cookie() -> str | None:
+    """Load a cached session cookie from the database."""
+    try:
+        conn = get_db()
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT cookie, created_at FROM session_cache WHERE service_name = 'cryoarchive'"
+            )
+            row = cur.fetchone()
+        conn.close()
+        if row:
+            log.info("Loaded cached cookie from DB (created %s)", row[1])
+            return row[0]
+    except Exception:
+        log.exception("Failed to load cached cookie")
+    return None
+
+
+def save_cached_cookie(cookie: str) -> None:
+    """Save a session cookie to the database for reuse."""
+    try:
+        conn = get_db()
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO session_cache (service_name, cookie, created_at)
+                    VALUES ('cryoarchive', %s, NOW())
+                    ON CONFLICT (service_name)
+                    DO UPDATE SET cookie = EXCLUDED.cookie, created_at = NOW()
+                    """,
+                    (cookie,),
+                )
+        conn.close()
+        log.info("Saved session cookie to DB")
+    except Exception:
+        log.exception("Failed to save cached cookie")
+
+
+def clear_cached_cookie() -> None:
+    """Clear the cached cookie when it's known to be expired."""
+    try:
+        conn = get_db()
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM session_cache WHERE service_name = 'cryoarchive'")
+        conn.close()
+    except Exception:
+        pass
+
+
 def authenticate(session: requests.Session) -> bool:
     """Authenticate with cryoarchive: session -> DAC -> password.
 
-    Checks if the session already has valid credentials before
-    performing the full auth flow (avoids failing on duplicate login).
+    Loads cached cookie from DB first; only performs full auth when needed.
+    Saves successful cookies back to DB for reuse across CronJob runs.
     """
-    # Try fetching /indx directly — if the session is still valid, skip auth
-    try:
-        probe = session.get(
-            f"{BASE_URL}/indx",
-            timeout=REQUEST_TIMEOUT,
-            allow_redirects=False,
-        )
-        if probe.status_code == 200 and "slotId" in probe.text:
-            log.info("Existing session still valid, skipping auth")
-            return True
-    except Exception:
-        pass  # No existing session, proceed with full auth
+    # Try DB-cached cookie first
+    cached = load_cached_cookie()
+    if cached:
+        session.headers["Cookie"] = cached
+        try:
+            probe = session.get(
+                f"{BASE_URL}/indx",
+                timeout=REQUEST_TIMEOUT,
+                allow_redirects=False,
+            )
+            if probe.status_code == 200 and "slotId" in probe.text:
+                log.info("DB-cached session still valid, skipping auth")
+                return True
+        except Exception:
+            pass
+        # Cookie expired — clear it and fall through to full auth
+        log.info("Cached cookie expired, performing full auth")
+        clear_cached_cookie()
+        del session.headers["Cookie"]
 
     # Step 1: Create session
     try:
@@ -112,6 +170,12 @@ def authenticate(session: requests.Session) -> bool:
             log.error("Index auth failed: %s %s", resp.status_code, resp.text[:200])
             return False
         log.info("Index authenticated successfully")
+
+        # Save session cookies to DB for reuse across CronJob runs
+        cookie_str = "; ".join(f"{k}={v}" for k, v in session.cookies.items())
+        if cookie_str:
+            save_cached_cookie(cookie_str)
+
         return True
     except Exception:
         log.exception("Failed index auth")

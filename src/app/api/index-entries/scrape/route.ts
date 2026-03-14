@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { readFile } from "fs/promises";
 import { join } from "path";
+import { getPool } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,55 @@ const DAC_FILENAME = "71cc79cd-25f6-4884-8e26-4cfdddc81864.png";
 let cachedCookie: string | null = null;
 let cacheExpiry = 0;
 const SESSION_TTL = 25 * 60 * 1000; // 25 minutes
+
+/**
+ * Load a cached session cookie from the database.
+ * Shared with the poller CronJob via the session_cache table.
+ */
+async function loadDbCookie(): Promise<string | null> {
+    const pool = getPool();
+    if (!pool) return null;
+    try {
+        const result = await pool.query(
+            "SELECT cookie FROM session_cache WHERE service_name = 'cryoarchive'"
+        );
+        return result.rows[0]?.cookie ?? null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Save a session cookie to the database for reuse by other consumers.
+ */
+async function saveDbCookie(cookie: string): Promise<void> {
+    const pool = getPool();
+    if (!pool) return;
+    try {
+        await pool.query(
+            `INSERT INTO session_cache (service_name, cookie, created_at)
+             VALUES ('cryoarchive', $1, NOW())
+             ON CONFLICT (service_name)
+             DO UPDATE SET cookie = EXCLUDED.cookie, created_at = NOW()`,
+            [cookie]
+        );
+    } catch {
+        /* best-effort */
+    }
+}
+
+/**
+ * Clear the cached cookie from DB when known to be expired.
+ */
+async function clearDbCookie(): Promise<void> {
+    const pool = getPool();
+    if (!pool) return;
+    try {
+        await pool.query("DELETE FROM session_cache WHERE service_name = 'cryoarchive'");
+    } catch {
+        /* best-effort */
+    }
+}
 
 /**
  * Perform a full DAC authentication flow.
@@ -117,17 +167,34 @@ async function tryFetchIndex(cookie: string): Promise<string | null> {
 }
 
 /**
- * Get authenticated cookie — uses cache when available, falls back to
- * full re-authentication when the cached session expires.
+ * Get authenticated cookie — checks in-memory cache, then DB cache
+ * (shared with poller), then falls back to full re-authentication.
  */
 async function getAuthCookie(): Promise<string | null> {
+    // 1. In-memory cache (fastest, same Node process)
     if (cachedCookie && Date.now() < cacheExpiry) {
         return cachedCookie;
     }
+
+    // 2. DB cache (shared with poller CronJob)
+    const dbCookie = await loadDbCookie();
+    if (dbCookie) {
+        const html = await tryFetchIndex(dbCookie);
+        if (html) {
+            cachedCookie = dbCookie;
+            cacheExpiry = Date.now() + SESSION_TTL;
+            return dbCookie;
+        }
+        // DB cookie expired — clear it
+        await clearDbCookie();
+    }
+
+    // 3. Full re-authentication
     const cookie = await fullAuthenticate();
     if (cookie) {
         cachedCookie = cookie;
         cacheExpiry = Date.now() + SESSION_TTL;
+        await saveDbCookie(cookie);
     }
     return cookie;
 }
@@ -138,6 +205,7 @@ async function getAuthCookie(): Promise<string | null> {
 function invalidateSession(): void {
     cachedCookie = null;
     cacheExpiry = 0;
+    void clearDbCookie();
 }
 
 /* ------------------------------------------------------------------ */
