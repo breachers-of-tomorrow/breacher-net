@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { readFile } from "fs/promises";
-import { join } from "path";
 import { getPool } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -12,11 +11,9 @@ const INDEX_PASSWORD =
     process.env.CRYO_INDEX_PASSWORD ??
     "WITH PAIN AND FURY STRIKE THE STONE UNTIL ITS SECRETS BREAK WITH SILENT RAGE UPON THESE ALIEN SHORES UNTOLD FUTURES HIDE GO DEAR VIOLENT ONE TO WHAT ONCE WAS HOME BUT NOW LIES HAUNTED";
 
-const DAC_PATH =
-    process.env.CRYO_DAC_PATH ??
-    join(process.cwd(), "poller", "dac", "71cc79cd-25f6-4884-8e26-4cfdddc81864.png");
-
-const DAC_FILENAME = "71cc79cd-25f6-4884-8e26-4cfdddc81864.png";
+// DAC_PATH must be provided via CRYO_DAC_PATH env var (mounted secret).
+// Each user has their own DAC file tied to their Discord account.
+const DAC_PATH = process.env.CRYO_DAC_PATH ?? "";
 
 /* ------------------------------------------------------------------ */
 /*  Session caching — reuse authenticated cookie across requests       */
@@ -93,6 +90,10 @@ async function fullAuthenticate(): Promise<string | null> {
     const cookieHeader = setCookie.split(";")[0]; // e.g. "goliath_public=eyJ..."
 
     // Step 2: Upload DAC
+    if (!DAC_PATH) {
+        console.error("CRYO_DAC_PATH not set — cannot authenticate. Mount your DAC file as a secret.");
+        return null;
+    }
     let dacBuffer: Buffer;
     try {
         dacBuffer = await readFile(DAC_PATH);
@@ -103,7 +104,8 @@ async function fullAuthenticate(): Promise<string | null> {
 
     const formData = new FormData();
     const dacBlob = new Blob([new Uint8Array(dacBuffer)], { type: "image/png" });
-    formData.append("data", dacBlob, DAC_FILENAME);
+    const dacFilename = DAC_PATH.split("/").pop() ?? "dac.png";
+    formData.append("data", dacBlob, dacFilename);
 
     const loginRes = await fetch(`${BASE_URL}/api/auth/login`, {
         method: "POST",

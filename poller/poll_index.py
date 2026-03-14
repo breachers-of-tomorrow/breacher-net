@@ -32,10 +32,9 @@ BASE_URL = "https://cryoarchive.systems"
 REQUEST_TIMEOUT = 30
 
 # DAC auth credentials
-DAC_PATH = os.environ.get(
-    "CRYO_DAC_PATH",
-    str(Path(__file__).parent / "dac" / "71cc79cd-25f6-4884-8e26-4cfdddc81864.png"),
-)
+# DAC_PATH must be provided via CRYO_DAC_PATH env var (mounted secret).
+# Each user has their own DAC file tied to their Discord account.
+DAC_PATH = os.environ.get("CRYO_DAC_PATH", "")
 INDEX_PASSWORD = os.environ.get(
     "CRYO_INDEX_PASSWORD",
     "WITH PAIN AND FURY STRIKE THE STONE UNTIL ITS SECRETS BREAK "
@@ -138,6 +137,9 @@ def authenticate(session: requests.Session) -> bool:
         return False
 
     # Step 2: Upload DAC
+    if not DAC_PATH:
+        log.error("CRYO_DAC_PATH not set — cannot authenticate. Mount your DAC file as a secret.")
+        return False
     dac_file = Path(DAC_PATH)
     if not dac_file.exists():
         log.error("DAC file not found: %s", DAC_PATH)
