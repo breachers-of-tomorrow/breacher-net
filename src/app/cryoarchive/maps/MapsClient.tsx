@@ -66,14 +66,14 @@ const MAPS: MapConfig[] = [
           { cx: 200, cy: 108, r: 78 },
           { cx: 128, cy: 928, r: 82 },
         ],
-        color: "#00E5CC",
+        color: "#038ADF",
       },
       "2": {
         circles: [
           { cx: 425, cy: 525, r: 78 },
           { cx: 862, cy: 892, r: 82 },
         ],
-        color: "#39FF14",
+        color: "#00D4EB",
       },
       "3": {
         circles: [
@@ -86,7 +86,7 @@ const MAPS: MapConfig[] = [
     zoneInfo: {
       "1": {
         label: "// ZONE 01",
-        color: "#00E5CC",
+        color: "#038ADF",
         title: "ROUTE ONE",
         imageGroups: [
           {
@@ -107,7 +107,7 @@ const MAPS: MapConfig[] = [
       },
       "2": {
         label: "// ZONE 02",
-        color: "#39FF14",
+        color: "#00D4EB",
         title: "ROUTE TWO",
         imageGroups: [
           {
@@ -163,7 +163,7 @@ const MAPS: MapConfig[] = [
           { cx: 120, cy: 472, r: 55 },
           { cx: 583, cy: 712, r: 55 },
         ],
-        color: "#00E5CC",
+        color: "#038ADF",
       },
       "dm-route2": {
         circles: [
@@ -183,7 +183,7 @@ const MAPS: MapConfig[] = [
     zoneInfo: {
       "dm-route1": {
         label: "// ROUTE 01",
-        color: "#00E5CC",
+        color: "#038ADF",
         title: "AI UPLINK → WEST GATE",
         imageGroups: [
           {
@@ -258,7 +258,7 @@ const MAPS: MapConfig[] = [
           { cx: 757, cy: 637, r: 55 },
           { cx: 269, cy: 637, r: 55 },
         ],
-        color: "#00E5CC",
+        color: "#038ADF",
       },
       "op-route2": {
         circles: [
@@ -278,7 +278,7 @@ const MAPS: MapConfig[] = [
     zoneInfo: {
       "op-route1": {
         label: "// ROUTE 01",
-        color: "#00E5CC",
+        color: "#038ADF",
         title: "DORMITORIES → DRONE WING",
         imageGroups: [
           {
@@ -407,22 +407,19 @@ function CameraCard({ name, data }: { name: string; data?: CameraData }) {
 function AlertBanner({ mapName, allComplete }: { mapName: string; allComplete: boolean }) {
   return (
     <div
-      className={`flex items-center justify-center gap-3 p-3 text-center font-[var(--font-display)] text-xs tracking-[3px] border ${
-        allComplete
+      className={`flex items-center justify-center gap-3 p-3 text-center font-[var(--font-display)] text-xs tracking-[3px] border ${allComplete
           ? "border-accent2/25 bg-accent2/5 text-accent2"
           : "border-warn/25 bg-warn/5 text-warn"
-      }`}
+        }`}
     >
       <span
-        className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-          allComplete ? "bg-accent2 shadow-[0_0_6px_var(--color-accent2)] animate-pulse-slow" : "bg-warn shadow-[0_0_6px_var(--color-warn)]"
-        }`}
+        className={`w-1.5 h-1.5 rounded-full shrink-0 ${allComplete ? "bg-accent2 shadow-[0_0_6px_var(--color-accent2)] animate-pulse-slow" : "bg-warn shadow-[0_0_6px_var(--color-warn)]"
+          }`}
       />
       {mapName.toUpperCase()} TERMINALS {allComplete ? "COMPLETE" : "INCOMPLETE"}
       <span
-        className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-          allComplete ? "bg-accent2 shadow-[0_0_6px_var(--color-accent2)] animate-pulse-slow" : "bg-warn shadow-[0_0_6px_var(--color-warn)]"
-        }`}
+        className={`w-1.5 h-1.5 rounded-full shrink-0 ${allComplete ? "bg-accent2 shadow-[0_0_6px_var(--color-accent2)] animate-pulse-slow" : "bg-warn shadow-[0_0_6px_var(--color-warn)]"
+          }`}
       />
     </div>
   );
@@ -768,17 +765,15 @@ export function MapsClient() {
         {MAPS.map((map, i) => (
           <button
             key={map.id}
-            className={`font-[var(--font-display)] text-[0.6rem] tracking-[3px] uppercase px-5 sm:px-7 py-3 cursor-pointer border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
-              activeTab === i
+            className={`font-[var(--font-display)] text-[0.6rem] tracking-[3px] uppercase px-5 sm:px-7 py-3 cursor-pointer border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === i
                 ? "text-accent2 border-accent2 bg-accent2/5"
                 : "text-dim border-transparent hover:text-foreground hover:bg-accent/5"
-            }`}
+              }`}
             onClick={() => setActiveTab(i)}
           >
             <span
-              className={`w-1.5 h-1.5 rounded-full ${
-                activeTab === i ? "bg-accent2 shadow-[0_0_5px_var(--color-accent2)]" : "bg-current"
-              }`}
+              className={`w-1.5 h-1.5 rounded-full ${activeTab === i ? "bg-accent2 shadow-[0_0_5px_var(--color-accent2)]" : "bg-current"
+                }`}
             />
             {map.displayName}
           </button>

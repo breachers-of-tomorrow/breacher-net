@@ -10,25 +10,40 @@ interface NavLink {
   external?: boolean;
 }
 
-const NAV_LINKS: NavLink[] = [
-  { href: "/cryoarchive", label: "Dashboard" },
-  { href: "/cryoarchive/cameras", label: "Camera Monitoring" },
-  { href: "/cryoarchive/maps", label: "Terminal Maps" },
-  { href: "/cryoarchive/changes", label: "Cryoarchive Changes" },
+interface NavSection {
+  label: string;
+  links: NavLink[];
+}
+
+const NAV_SECTIONS: NavSection[] = [
   {
-    href: "https://docs.google.com/document/d/1mtUtDPvbh6ahiynYFVS7Z4O79Nw6y5PEOjweCpzWV_A/edit?tab=t.0",
-    label: "Google Doc",
-    external: true,
+    label: "CRYOARCHIVE",
+    links: [
+      { href: "/cryoarchive", label: "Dashboard" },
+      { href: "/cryoarchive/cameras", label: "Cameras" },
+      { href: "/cryoarchive/maps", label: "Maps" },
+      { href: "/cryoarchive/index", label: "Index" },
+      { href: "/cryoarchive/changes", label: "Changes" },
+    ],
   },
   {
-    href: "https://discord.gg/sGeg5Gx2yM",
-    label: "Discord",
-    external: true,
+    label: "BREACHER.NET",
+    links: [
+      { href: "https://wiki.breacher.net", label: "Wiki", external: true },
+      { href: "https://discord.gg/sGeg5Gx2yM", label: "Discord", external: true },
+      {
+        href: "https://docs.google.com/document/d/1mtUtDPvbh6ahiynYFVS7Z4O79Nw6y5PEOjweCpzWV_A/edit?tab=t.0",
+        label: "Community Doc",
+        external: true,
+      },
+    ],
   },
   {
-    href: "https://wiki.breacher.net",
-    label: "Wiki",
-    external: true,
+    label: "MARATHON",
+    links: [
+      { href: "https://marathon.winnower.garden/cryoarchive", label: "Winnower", external: true },
+      { href: "https://tauceti.world", label: "Tau Ceti", external: true },
+    ],
   },
 ];
 
@@ -40,11 +55,13 @@ export function Navigation() {
     <>
       {/* Header */}
       <header className="border-b border-border px-4 sm:px-8 py-5 flex justify-between items-center bg-gradient-to-r from-accent/5 to-transparent flex-wrap gap-2.5">
-        <Link href="/" className="no-underline">
-          <div className="font-[var(--font-display)] text-lg sm:text-xl font-black text-accent glow-accent tracking-[4px]">
-            BREACHER<span className="text-accent2">.NET</span>
-          </div>
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/" className="no-underline">
+            <div className="font-[var(--font-display)] text-lg sm:text-xl font-black text-accent glow-accent tracking-[4px]">
+              BREACHER<span className="text-accent2">//</span>NET
+            </div>
+          </Link>
+        </div>
         <div className="flex gap-5 items-center text-xs flex-wrap">
           <StatusDot />
           <Clock />
@@ -52,42 +69,67 @@ export function Navigation() {
       </header>
 
       {/* Desktop nav */}
-      <nav className="bg-background border-b-2 border-border px-4 sm:px-8 pt-2.5 hidden md:flex gap-1.5">
-        {NAV_LINKS.map((link) => {
-          const isActive =
-            !link.external && pathname === link.href;
-          const baseClasses =
-            "font-[var(--font-display)] text-[0.65rem] tracking-[3px] uppercase text-dim no-underline px-4 py-2.5 border border-transparent border-b-0 transition-all flex items-center gap-2 relative top-[2px]";
-          const activeClasses = isActive
-            ? "text-accent bg-panel border-border border-b-2 border-b-panel glow-accent"
-            : "hover:text-foreground hover:bg-accent/5 hover:border-border";
+      <nav className="bg-background border-b-2 border-border px-4 sm:px-8 pt-2.5 hidden md:flex items-end gap-0 overflow-x-auto scrollbar-none">
+        {/* Home tab */}
+        <Link
+          href="/"
+          className={`font-[var(--font-display)] text-[0.65rem] tracking-[3px] uppercase no-underline px-3 py-2.5 border border-transparent border-b-0 transition-all flex items-center gap-1.5 relative top-[2px] mr-2 ${pathname === "/"
+              ? "text-accent bg-panel border-border border-b-2 border-b-panel glow-accent"
+              : "text-dim hover:text-foreground hover:bg-accent/5 hover:border-border"
+            }`}
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z" />
+          </svg>
+          HOME
+        </Link>
 
-          if (link.external) {
-            return (
-              <a
-                key={link.href}
-                href={link.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`${baseClasses} ${activeClasses}`}
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-current shadow-[0_0_6px_currentColor]" />
-                {link.label}
-              </a>
-            );
-          }
+        {NAV_SECTIONS.map((section, sIdx) => (
+          <div key={section.label} className="flex items-end">
+            {/* Section divider */}
+            <div className="h-5 w-px bg-border mx-1.5 mb-2.5" />
+            {/* Section label */}
+            <div className="font-[var(--font-display)] text-[0.45rem] tracking-[2px] text-dim/50 px-1.5 pb-3 select-none">
+              {section.label}
+            </div>
+            {/* Section links */}
+            {section.links.map((link) => {
+              const isActive = !link.external && pathname === link.href;
+              const baseClasses =
+                "font-[var(--font-display)] text-[0.6rem] tracking-[2px] uppercase text-dim no-underline px-2.5 py-2.5 border border-transparent border-b-0 transition-all flex items-center gap-1.5 relative top-[2px]";
+              const activeClasses = isActive
+                ? "text-accent bg-panel border-border border-b-2 border-b-panel glow-accent"
+                : "hover:text-foreground hover:bg-accent/5 hover:border-border";
 
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`${baseClasses} ${activeClasses}`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-current shadow-[0_0_6px_currentColor]" />
-              {link.label}
-            </Link>
-          );
-        })}
+              if (link.external) {
+                return (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`${baseClasses} ${activeClasses}`}
+                  >
+                    {link.label}
+                    <svg className="w-2.5 h-2.5 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                );
+              }
+
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`${baseClasses} ${activeClasses}`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* Mobile hamburger */}
@@ -118,36 +160,56 @@ export function Navigation() {
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="md:hidden bg-panel border-b border-border">
-          {NAV_LINKS.map((link) => {
-            const isActive = !link.external && pathname === link.href;
-            if (link.external) {
-              return (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block px-6 py-3 text-xs tracking-[2px] uppercase text-dim hover:text-accent hover:bg-accent/5 border-b border-border/50"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {link.label}
-                </a>
-              );
-            }
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`block px-6 py-3 text-xs tracking-[2px] uppercase border-b border-border/50 ${isActive
-                  ? "text-accent bg-accent/5"
-                  : "text-dim hover:text-accent hover:bg-accent/5"
-                  }`}
-                onClick={() => setMobileOpen(false)}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
+          {/* Home link */}
+          <Link
+            href="/"
+            className={`block px-6 py-3 text-xs tracking-[2px] uppercase border-b border-border/50 ${pathname === "/"
+                ? "text-accent bg-accent/5"
+                : "text-dim hover:text-accent hover:bg-accent/5"
+              }`}
+            onClick={() => setMobileOpen(false)}
+          >
+            ⌂ Home
+          </Link>
+
+          {NAV_SECTIONS.map((section) => (
+            <div key={section.label}>
+              {/* Section header */}
+              <div className="px-6 py-2 text-[0.55rem] tracking-[3px] uppercase text-dim/50 bg-background/50 border-b border-border/30 font-[var(--font-display)]">
+                {section.label}
+              </div>
+              {section.links.map((link) => {
+                const isActive = !link.external && pathname === link.href;
+                if (link.external) {
+                  return (
+                    <a
+                      key={link.href}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block px-8 py-3 text-xs tracking-[2px] uppercase text-dim hover:text-accent hover:bg-accent/5 border-b border-border/50"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      {link.label} ↗
+                    </a>
+                  );
+                }
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`block px-8 py-3 text-xs tracking-[2px] uppercase border-b border-border/50 ${isActive
+                        ? "text-accent bg-accent/5"
+                        : "text-dim hover:text-accent hover:bg-accent/5"
+                      }`}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </div>
       )}
     </>
@@ -156,7 +218,7 @@ export function Navigation() {
 
 function StatusDot() {
   return (
-    <div className="w-2 h-2 rounded-full bg-accent2 box-glow-accent2 animate-pulse-slow" />
+    <div className="w-2 h-2 rounded-full bg-mint box-glow-mint animate-pulse-slow" />
   );
 }
 

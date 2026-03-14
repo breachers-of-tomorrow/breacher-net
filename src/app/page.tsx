@@ -21,11 +21,11 @@ export default async function HomePage() {
 
   const avgStabilization = stabilization
     ? Math.round(
-        Object.values(stabilization).reduce(
-          (sum, c) => sum + c.stabilizationLevel,
-          0
-        ) / Object.values(stabilization).length
-      )
+      Object.values(stabilization).reduce(
+        (sum, c) => sum + c.stabilizationLevel,
+        0
+      ) / Object.values(stabilization).length
+    )
     : null;
 
   return (
@@ -33,12 +33,13 @@ export default async function HomePage() {
       {/* Hero */}
       <div className="text-center mb-12 sm:mb-16">
         <h1 className="font-[var(--font-display)] text-3xl sm:text-5xl font-black text-accent glow-accent tracking-[6px] mb-4">
-          BREACHERS OF
-          <br />
-          <span className="text-accent2 glow-accent2">TOMORROW</span>
+          BREACHER<span className="text-accent2">//</span>NET
         </h1>
+        <p className="font-[var(--font-display)] text-lg sm:text-xl font-bold text-text-heading tracking-[4px] mb-2">
+          BREACHERS OF TOMORROW
+        </p>
         <p className="text-dim text-sm sm:text-base tracking-[2px] max-w-2xl mx-auto">
-          COMMUNITY TRACKER AND HUB FOR THE MARATHON ARG
+          COMMUNITY HUB &amp; LIVE TRACKER FOR THE MARATHON ARG
         </p>
       </div>
 
@@ -79,7 +80,7 @@ export default async function HomePage() {
       )}
 
       {/* Navigation Cards */}
-      <div className="section-title">BREACH PROTOCOL</div>
+      <div className="section-title">CRYOARCHIVE TOOLS</div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12">
         <NavCard
           href="/cryoarchive"
@@ -90,26 +91,51 @@ export default async function HomePage() {
         <NavCard
           href="/cryoarchive/cameras"
           icon="📷"
-          title="CAMERA MONITORING"
+          title="CAMERAS"
           description="CCTV stabilization levels across all sectors and cameras"
-        />
-        <NavCard
-          href="/cryoarchive/changes"
-          icon="🔄"
-          title="CRYOARCHIVE CHANGES"
-          description="Detected website updates and deployment changes"
         />
         <NavCard
           href="/cryoarchive/maps"
           icon="🗺️"
-          title="TERMINAL MAPS"
+          title="MAPS"
           description="Interactive maps of Perimeter, Dire Marsh, and Outpost"
+        />
+        <NavCard
+          href="/cryoarchive/index"
+          icon="📂"
+          title="INDEX ARCHIVE"
+          description="Cryoarchive entry index — types, lock status, and unlock tracking"
+        />
+        <NavCard
+          href="/cryoarchive/changes"
+          icon="🔄"
+          title="SITE CHANGES"
+          description="Detected website deployments and build changes"
         />
       </div>
 
       {/* Community Links */}
       <div className="section-title">COMMUNITY</div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12">
+        <a
+          href="https://wiki.breacher.net"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="cryo-panel p-6 flex items-center gap-4 hover:border-accent transition-colors no-underline group"
+        >
+          <div className="text-3xl">📖</div>
+          <div>
+            <div className="font-[var(--font-display)] text-xs tracking-[3px] text-accent group-hover:glow-accent mb-1">
+              WIKI
+            </div>
+            <div className="text-sm text-dim">
+              Marathon lore, sectors, characters, and resources
+            </div>
+          </div>
+          <div className="ml-auto text-accent2 font-[var(--font-display)] text-lg group-hover:translate-x-1 transition-transform">
+            →
+          </div>
+        </a>
         <a
           href="https://discord.gg/sGeg5Gx2yM"
           target="_blank"
@@ -161,25 +187,6 @@ export default async function HomePage() {
             </div>
             <div className="text-sm text-dim">
               Historical ARG data archive — full history from day one
-            </div>
-          </div>
-          <div className="ml-auto text-accent2 font-[var(--font-display)] text-lg group-hover:translate-x-1 transition-transform">
-            →
-          </div>
-        </a>
-        <a
-          href="https://tauceti.world"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="cryo-panel p-6 flex items-center gap-4 hover:border-accent transition-colors no-underline group"
-        >
-          <div className="text-3xl">🌐</div>
-          <div>
-            <div className="font-[var(--font-display)] text-xs tracking-[3px] text-accent group-hover:glow-accent mb-1">
-              TAU CETI WORLD
-            </div>
-            <div className="text-sm text-dim">
-              Interactive colony map — Perimeter, Dire Marsh, and Outpost
             </div>
           </div>
           <div className="ml-auto text-accent2 font-[var(--font-display)] text-lg group-hover:translate-x-1 transition-transform">

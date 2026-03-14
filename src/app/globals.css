@@ -1,41 +1,55 @@
 @import "tailwindcss";
 
 /* ============================================================
-   Faction Palette — Breachers of Tomorrow terminal aesthetic
-   Terminal-born infiltrators answering Durandal's signal.
-   Cyan = "I'm in your system." Green = Durandal's voice.
-   Amber = comms from the original trilogy.
+   Breachers of Tomorrow — Revised Palette
+   Blue = BREACH//NET core identity.  Cyan = system response.
+   Mint = signal/success accent (sparingly).  Amber = comms legacy.
+   Gradient ramp: Blue → Cyan → Mint (#038ADF → #00D4EB → #00FF9D)
    ============================================================ */
 
 @theme inline {
-  /* Core palette — void dark backgrounds */
-  --color-cryo-bg: #0A0E14;
-  --color-cryo-panel: #0F1923;
-  --color-cryo-border: #243447;
-  --color-cryo-accent: #00E5CC;
-  --color-cryo-accent2: #39FF14;
+  /* Primary — Breacher Blue */
+  --color-cryo-accent: #038ADF;
+  --color-blue-mid: #0270B8;
+  --color-blue-deep: #015A94;
+
+  /* Secondary — Breacher Cyan */
+  --color-cryo-accent2: #00D4EB;
+  --color-cyan-mid: #00ACC2;
+  --color-cyan-deep: #008799;
+
+  /* Accent — Signal Mint (use sparingly) */
+  --color-mint: #00FF9D;
+  --color-mint-mid: #00CC7E;
+  --color-mint-deep: #009960;
+
+  /* Warm accents */
   --color-cryo-warn: #FFAA00;
+  --color-amber-mid: #CC8800;
   --color-cryo-danger: #FF3344;
+
+  /* Backgrounds — teal-dark */
+  --color-cryo-bg: #031A22;
+  --color-cryo-panel: #0A2A35;
+  --color-void-card: #12384A;
+  --color-cryo-border: #1A4660;
+
+  /* Neutrals — Bone/Cream */
   --color-cryo-text: #8AACB8;
   --color-cryo-dim: #5A7A8A;
-
-  /* Extended palette */
-  --color-void-card: #1A2332;
-  --color-cyan-mid: #00BFA6;
-  --color-cyan-deep: #008F7A;
-  --color-green-vivid: #2BCC10;
-  --color-green-forest: #1A8A0A;
-  --color-amber-mid: #CC8800;
-  --color-amber-deep: #996600;
-  --color-text-heading: #E0F0ED;
+  --color-text-heading: #E0DDD2;
+  --color-neutral-bone: #E0DDD2;
+  --color-neutral-cream: #D5D0C4;
+  --color-neutral-mid: #9B978C;
+  --color-neutral-dim: #8A8880;
 
   /* Semantic aliases */
-  --color-background: #0A0E14;
+  --color-background: #031A22;
   --color-foreground: #8AACB8;
-  --color-panel: #0F1923;
-  --color-border: #243447;
-  --color-accent: #00E5CC;
-  --color-accent2: #39FF14;
+  --color-panel: #0A2A35;
+  --color-border: #1A4660;
+  --color-accent: #038ADF;
+  --color-accent2: #00D4EB;
   --color-warn: #FFAA00;
   --color-danger: #FF3344;
   --color-dim: #5A7A8A;
@@ -102,11 +116,15 @@ body {
 /* ---- Glow effects ---- */
 
 .glow-accent {
-  text-shadow: 0 0 10px rgba(0, 229, 204, 0.4);
+  text-shadow: 0 0 10px rgba(3, 138, 223, 0.5);
 }
 
 .glow-accent2 {
-  text-shadow: 0 0 10px rgba(57, 255, 20, 0.4);
+  text-shadow: 0 0 10px rgba(0, 212, 235, 0.5);
+}
+
+.glow-mint {
+  text-shadow: 0 0 10px rgba(0, 255, 157, 0.4);
 }
 
 .glow-warn {
@@ -118,11 +136,15 @@ body {
 }
 
 .box-glow-accent {
-  box-shadow: 0 0 10px rgba(0, 229, 204, 0.4);
+  box-shadow: 0 0 10px rgba(3, 138, 223, 0.4);
 }
 
 .box-glow-accent2 {
-  box-shadow: 0 0 10px rgba(57, 255, 20, 0.4);
+  box-shadow: 0 0 10px rgba(0, 212, 235, 0.4);
+}
+
+.box-glow-mint {
+  box-shadow: 0 0 10px rgba(0, 255, 157, 0.3);
 }
 
 .box-glow-warn {
@@ -145,7 +167,7 @@ body {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, var(--color-cryo-border), transparent);
+  background: linear-gradient(90deg, var(--color-cryo-accent), var(--color-cryo-border), transparent);
 }
 
 /* ---- Section titles ---- */

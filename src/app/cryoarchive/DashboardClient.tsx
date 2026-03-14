@@ -160,7 +160,7 @@ export function DashboardClient({ initialData }: Props) {
 
       {/* SECTOR STATE */}
       <div className="section-title">SECTOR STATE</div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3.5 mb-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 mb-3">
         {SECTOR_NAMES.map((name) => (
           <SectorCard
             key={name}
@@ -337,7 +337,7 @@ function SectorCard({
       >
         {name.toUpperCase()}
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <Badge label="UNLOCKED" on={unlocked} />
         <Badge
           label="COMPLETED"

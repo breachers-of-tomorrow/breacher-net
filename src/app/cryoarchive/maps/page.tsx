@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { MapsClient } from "./MapsClient";
 
 export const metadata: Metadata = {
-  title: "CRYOARCHIVE // TERMINAL MAPS",
+  title: "Maps",
   description:
     "Interactive terminal maps for Perimeter, Dire Marsh, and Outpost sectors with zone inspection and stabilization data.",
 };
