@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Browser impersonation module** (`poller/browser.py`) — `CryoBrowser` class using `curl_cffi` to bypass Vercel Security Checkpoint via TLS fingerprint impersonation ([#49](https://github.com/breachers-of-tomorrow/breacher-net/issues/49))
+
+### Changed
+
+- **DB-only architecture** — all data now served exclusively from the polled PostgreSQL database; no user request ever contacts cryoarchive.systems directly
+- **Client refresh intervals** — DashboardClient and CamerasClient now refresh every 5 minutes (matching poller cadence) instead of 60 seconds
+- **`src/lib/api.ts`** — rewired to query local DB instead of fetching from cryoarchive.systems
+- **`/api/state/latest`** and **`/api/stabilization/latest`** — removed live API fallback; return 503 if DB is empty
+- **Poller dependencies** — replaced `requests` with `curl_cffi` for browser-impersonated HTTP
+
+### Removed
+
+- **`/api/state/live`** — proxy route that forwarded every user request to cryoarchive state API
+- **`/api/stabilization/live`** — proxy route that forwarded every user request to cryoarchive stabilization API
+- **`/api/index-entries/scrape`** — full auth + scrape route that hit cryoarchive on every request
+- **Live scrape fallback** in IndexArchiveClient — DB is now the only data source
+
+## [0.4.1] - 2026-03-15
+
+### Added
+
+- **Kill count chart** — recharts-powered area chart showing UESC kill count over time on the dashboard
+- **Stabilization chart** — recharts-powered line chart displaying camera stabilization trends
+- **CORS proxy routes** — server-side `/api/state/live` and `/api/stabilization/live` proxy routes to bypass CORS restrictions on upstream API
+
+### Changed
+
+- **Nav section headings** — increased font size from 0.45rem to 0.6rem for WCAG AA contrast compliance
+- **README rewrite** — updated with DAC auth documentation, environment variable reference, and architecture overview
+- **DAC auth as mounted secret** — DAC authentication file treated as K8s-mounted secret instead of committed file; added to `.gitignore`
+
+### Fixed
+
+- **Session cookie persistence** — poller now persists session cookies in the database across runs, preventing rate-limit issues on the scrape route
+
 ## [0.4.0] - 2026-03-14
 
 ### Added
