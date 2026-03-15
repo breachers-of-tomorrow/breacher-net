@@ -11,6 +11,7 @@ import {
 } from "@/lib/format";
 import { SECTOR_NAMES } from "@/lib/types";
 import type { SectorName } from "@/lib/types";
+import { KillCountChart } from "@/components/KillCountChart";
 
 interface DashboardData {
   killCount: number;
@@ -25,7 +26,7 @@ interface Props {
   initialData: DashboardData | null;
 }
 
-const STATE_API = "https://cryoarchive.systems/api/public/state";
+const STATE_API = "/api/state/live";
 const REFRESH_INTERVAL = 60_000; // 60 seconds
 
 export function DashboardClient({ initialData }: Props) {
@@ -238,21 +239,9 @@ export function DashboardClient({ initialData }: Props) {
         )}
       </div>
 
-      {/* CHART placeholder — future: Chart.js integration */}
+      {/* Kill Count Chart */}
       <div className="section-title">KILL COUNT OVER TIME</div>
-      <div className="cryo-panel p-5 h-[300px] flex flex-col items-center justify-center gap-4">
-        <div className="text-dim text-sm tracking-[2px]">
-          CHART AVAILABLE AFTER DATABASE MIGRATION
-        </div>
-        <a
-          href="https://marathon.winnower.garden/cryoarchive"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-accent text-xs tracking-[2px] hover:glow-accent"
-        >
-          VIEW HISTORICAL DATA AT WINNOWER GARDEN →
-        </a>
-      </div>
+      <KillCountChart />
     </div>
   );
 }

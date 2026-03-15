@@ -89,7 +89,7 @@ export function Navigation() {
             {/* Section divider */}
             <div className="h-5 w-px bg-border mx-1.5 mb-2.5" />
             {/* Section label */}
-            <div className="font-[var(--font-display)] text-[0.45rem] tracking-[2px] text-dim/50 px-1.5 pb-3 select-none">
+            <div className="font-[var(--font-display)] text-[0.6rem] tracking-[2px] text-dim px-1.5 pb-3 select-none">
               {section.label}
             </div>
             {/* Section links */}
@@ -175,7 +175,7 @@ export function Navigation() {
           {NAV_SECTIONS.map((section) => (
             <div key={section.label}>
               {/* Section header */}
-              <div className="px-6 py-2 text-[0.55rem] tracking-[3px] uppercase text-dim/50 bg-background/50 border-b border-border/30 font-[var(--font-display)]">
+              <div className="px-6 py-2 text-[0.6rem] tracking-[3px] uppercase text-dim bg-background/50 border-b border-border/30 font-[var(--font-display)]">
                 {section.label}
               </div>
               {section.links.map((link) => {

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { toLocalTimeOnly, formatCountdown } from "@/lib/format";
 import { CAMERA_NAMES } from "@/lib/types";
 import type { CameraName } from "@/lib/types";
+import { StabilizationChart } from "@/components/StabilizationChart";
 
 interface CameraData {
   stabilizationLevel: number;
@@ -14,8 +15,7 @@ interface Props {
   initialData: Record<string, CameraData> | null;
 }
 
-const STAB_API =
-  "https://cryoarchive.systems/api/public/cctv-cameras/stabilization";
+const STAB_API = "/api/stabilization/live";
 const REFRESH_INTERVAL = 60_000;
 
 /** Human-friendly camera name */
@@ -178,21 +178,9 @@ export function CamerasClient({ initialData }: Props) {
         })}
       </div>
 
-      {/* Chart placeholder */}
+      {/* Stabilization Chart */}
       <div className="section-title">STABILIZATION OVER TIME</div>
-      <div className="cryo-panel p-5 h-[300px] flex flex-col items-center justify-center gap-4">
-        <div className="text-dim text-sm tracking-[2px]">
-          CHART AVAILABLE AFTER DATABASE MIGRATION
-        </div>
-        <a
-          href="https://marathon.winnower.garden/cryoarchive"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-accent text-xs tracking-[2px] hover:glow-accent"
-        >
-          VIEW HISTORICAL DATA AT WINNOWER GARDEN →
-        </a>
-      </div>
+      <StabilizationChart />
     </div>
   );
 }
