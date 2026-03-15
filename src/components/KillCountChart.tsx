@@ -119,7 +119,7 @@ export function KillCountChart() {
   }
 
   return (
-    <div className="cryo-panel p-4 sm:p-5">
+    <div className="cryo-panel p-4 sm:p-5" role="img" aria-label="Kill count over time chart showing UESC kill count trends">
       <div className="h-[280px] sm:h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart

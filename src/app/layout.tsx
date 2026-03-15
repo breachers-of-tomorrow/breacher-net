@@ -14,6 +14,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://breacher.net"),
   title: {
     default: "BREACHER.NET // Breachers of Tomorrow",
     template: "%s // BREACHER.NET",
@@ -21,6 +22,24 @@ export const metadata: Metadata = {
   description:
     "Community tracker and hub for the Marathon ARG — Breachers of Tomorrow",
   keywords: ["marathon", "arg", "bungie", "cryoarchive", "breach protocol"],
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://breacher.net",
+    siteName: "BREACHER.NET",
+    title: "BREACHER.NET // Breachers of Tomorrow",
+    description:
+      "Community tracker and hub for the Marathon ARG — live kill count, sector states, stabilization data, and interactive maps.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "BREACHER.NET // Breachers of Tomorrow",
+    description:
+      "Community tracker and hub for the Marathon ARG — live kill count, sector states, stabilization data, and interactive maps.",
+  },
+  alternates: {
+    canonical: "https://breacher.net",
+  },
 };
 
 export default function RootLayout({
@@ -33,8 +52,16 @@ export default function RootLayout({
       <body
         className={`${jetbrainsMono.variable} ${spaceGrotesk.variable} antialiased`}
       >
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-accent focus:text-background focus:text-sm focus:font-bold focus:tracking-widest focus:outline-none"
+        >
+          Skip to content
+        </a>
         <Navigation />
-        {children}
+        <div id="main-content">
+          {children}
+        </div>
       </body>
     </html>
   );

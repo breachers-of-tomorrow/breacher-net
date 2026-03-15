@@ -4,6 +4,11 @@ import { ChangesClient } from "./ChangesClient";
 export const metadata: Metadata = {
   title: "Site Changes",
   description: "Detected website deployments and build changes on cryoarchive.systems",
+  openGraph: {
+    title: "Site Changes // BREACHER.NET",
+    description: "Detected website deployments and build changes on cryoarchive.systems",
+    url: "https://breacher.net/cryoarchive/changes",
+  },
 };
 
 export default function ChangesPage() {

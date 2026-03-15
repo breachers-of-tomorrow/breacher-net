@@ -5,6 +5,12 @@ export const metadata: Metadata = {
   title: "Maps",
   description:
     "Interactive terminal maps for Perimeter, Dire Marsh, and Outpost sectors with zone inspection and stabilization data.",
+  openGraph: {
+    title: "Maps // BREACHER.NET",
+    description:
+      "Interactive terminal maps for Perimeter, Dire Marsh, and Outpost sectors with zone inspection and stabilization data.",
+    url: "https://breacher.net/cryoarchive/maps",
+  },
 };
 
 export default function MapsPage() {

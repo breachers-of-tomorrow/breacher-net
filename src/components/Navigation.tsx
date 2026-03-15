@@ -54,7 +54,7 @@ export function Navigation() {
   return (
     <>
       {/* Header */}
-      <header className="border-b border-border px-4 sm:px-8 py-5 flex justify-between items-center bg-gradient-to-r from-accent/5 to-transparent flex-wrap gap-2.5">
+      <header className="border-b border-border px-4 sm:px-8 py-5 flex justify-between items-center bg-gradient-to-r from-accent/5 to-transparent flex-wrap gap-2.5" role="banner">
         <div className="flex items-center gap-4">
           <Link href="/" className="no-underline">
             <div className="font-[var(--font-display)] text-lg sm:text-xl font-black text-accent glow-accent tracking-[4px]">
@@ -69,7 +69,7 @@ export function Navigation() {
       </header>
 
       {/* Desktop nav */}
-      <nav className="bg-background border-b-2 border-border px-4 sm:px-8 pt-2.5 hidden md:flex items-end gap-0 overflow-x-auto scrollbar-none">
+      <nav aria-label="Main navigation" className="bg-background border-b-2 border-border px-4 sm:px-8 pt-2.5 hidden md:flex items-end gap-0 overflow-x-auto scrollbar-none">
         {/* Home tab */}
         <Link
           href="/"
@@ -138,6 +138,8 @@ export function Navigation() {
           onClick={() => setMobileOpen(!mobileOpen)}
           className="text-dim hover:text-accent transition-colors p-2"
           aria-label="Toggle navigation"
+          aria-expanded={mobileOpen}
+          aria-controls="mobile-nav-menu"
         >
           <svg
             className="w-6 h-6"
@@ -159,7 +161,7 @@ export function Navigation() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-panel border-b border-border">
+        <nav id="mobile-nav-menu" aria-label="Mobile navigation" className="md:hidden bg-panel border-b border-border">
           {/* Home link */}
           <Link
             href="/"
@@ -210,7 +212,7 @@ export function Navigation() {
               })}
             </div>
           ))}
-        </div>
+        </nav>
       )}
     </>
   );
@@ -218,7 +220,10 @@ export function Navigation() {
 
 function StatusDot() {
   return (
-    <div className="w-2 h-2 rounded-full bg-mint box-glow-mint animate-pulse-slow" />
+    <div role="status" aria-label="System online" className="flex items-center gap-1.5">
+      <div className="w-2 h-2 rounded-full bg-mint box-glow-mint animate-pulse-slow" aria-hidden="true" />
+      <span className="sr-only">System is online</span>
+    </div>
   );
 }
 
