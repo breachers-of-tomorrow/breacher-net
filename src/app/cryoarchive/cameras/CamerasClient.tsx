@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { toLocalTimeOnly, formatCountdown } from "@/lib/format";
 import { CAMERA_NAMES } from "@/lib/types";
 import type { CameraName } from "@/lib/types";
+import { StabilizationChart } from "@/components/StabilizationChart";
 
 interface CameraData {
   stabilizationLevel: number;
@@ -14,9 +15,8 @@ interface Props {
   initialData: Record<string, CameraData> | null;
 }
 
-const STAB_API =
-  "https://cryoarchive.systems/api/public/cctv-cameras/stabilization";
-const REFRESH_INTERVAL = 60_000;
+const STAB_API = "/api/stabilization/latest";
+const REFRESH_INTERVAL = 300_000; // 5 minutes — matches poller cadence
 
 /** Human-friendly camera name */
 function displayName(name: string): string {
@@ -63,16 +63,16 @@ export function CamerasClient({ initialData }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [, setTick] = useState(0);
 
-  const fetchLive = useCallback(async () => {
+  const fetchLatest = useCallback(async () => {
     try {
       const res = await fetch(`${STAB_API}?t=${Date.now()}`, {
         cache: "no-store",
       });
       if (!res.ok) throw new Error(`API returned ${res.status}`);
       const json = await res.json();
-      const stab = json?.stabilization;
-      if (!stab) throw new Error("Invalid response");
-      setData(stab);
+      const cameras = json?.data?.cameras;
+      if (!cameras) throw new Error("No data available");
+      setData(cameras);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch");
@@ -85,9 +85,9 @@ export function CamerasClient({ initialData }: Props) {
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(fetchLive, REFRESH_INTERVAL);
+    const interval = setInterval(fetchLatest, REFRESH_INTERVAL);
     return () => clearInterval(interval);
-  }, [fetchLive]);
+  }, [fetchLatest]);
 
   if (!data) {
     return (
@@ -178,21 +178,9 @@ export function CamerasClient({ initialData }: Props) {
         })}
       </div>
 
-      {/* Chart placeholder */}
+      {/* Stabilization Chart */}
       <div className="section-title">STABILIZATION OVER TIME</div>
-      <div className="cryo-panel p-5 h-[300px] flex flex-col items-center justify-center gap-4">
-        <div className="text-dim text-sm tracking-[2px]">
-          CHART AVAILABLE AFTER DATABASE MIGRATION
-        </div>
-        <a
-          href="https://marathon.winnower.garden/cryoarchive"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-accent text-xs tracking-[2px] hover:glow-accent"
-        >
-          VIEW HISTORICAL DATA AT WINNOWER GARDEN →
-        </a>
-      </div>
+      <StabilizationChart />
     </div>
   );
 }

@@ -3,7 +3,10 @@
 Authenticates via DAC upload + password, then parses the RSC payload
 from the authenticated /indx page to extract unlocked entry data.
 
-Auth flow:
+Uses curl_cffi (TLS fingerprint impersonation) to bypass Vercel Security Checkpoint.
+See: https://github.com/breachers-of-tomorrow/breacher-net/issues/49
+
+Auth flow (through curl_cffi session with Chrome TLS fingerprint):
   1. POST /api/session/create -> session cookie
   2. POST /api/auth/login     -> upload DAC PNG (FormData)
   3. POST /api/indx/auth      -> submit index password
@@ -18,7 +21,8 @@ import sys
 from pathlib import Path
 
 import psycopg2
-import requests
+
+from browser import CryoBrowser
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,13 +33,11 @@ log = logging.getLogger("poll_index")
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://breacher:breacher@db:5432/breacher")
 BASE_URL = "https://cryoarchive.systems"
-REQUEST_TIMEOUT = 30
 
 # DAC auth credentials
-DAC_PATH = os.environ.get(
-    "CRYO_DAC_PATH",
-    str(Path(__file__).parent / "dac" / "71cc79cd-25f6-4884-8e26-4cfdddc81864.png"),
-)
+# DAC_PATH must be provided via CRYO_DAC_PATH env var (mounted secret).
+# Each user has their own DAC file tied to their Discord account.
+DAC_PATH = os.environ.get("CRYO_DAC_PATH", "")
 INDEX_PASSWORD = os.environ.get(
     "CRYO_INDEX_PASSWORD",
     "WITH PAIN AND FURY STRIKE THE STONE UNTIL ITS SECRETS BREAK "
@@ -51,66 +53,52 @@ def get_db():
     return psycopg2.connect(DATABASE_URL)
 
 
-def authenticate(session: requests.Session) -> bool:
-    """Authenticate with cryoarchive: session -> DAC -> password.
+def authenticate(cryo: CryoBrowser) -> bool:
+    """Authenticate with cryoarchive via the curl_cffi session.
 
-    Checks if the session already has valid credentials before
-    performing the full auth flow (avoids failing on duplicate login).
+    The session's Chrome TLS fingerprint bypasses Vercel's WAF automatically.
+    Cookies from previous requests in the same session may still be valid,
+    so we probe /indx first and skip auth if the session is still good.
     """
-    # Try fetching /indx directly — if the session is still valid, skip auth
+    # Try navigating to /indx with existing cookies
     try:
-        probe = session.get(
-            f"{BASE_URL}/indx",
-            timeout=REQUEST_TIMEOUT,
-            allow_redirects=False,
-        )
-        if probe.status_code == 200 and "slotId" in probe.text:
+        html, _ = cryo.fetch_page("/indx")
+        if "slotId" in html:
             log.info("Existing session still valid, skipping auth")
             return True
     except Exception:
-        pass  # No existing session, proceed with full auth
+        pass
+    log.info("Session expired or missing — performing full auth")
 
     # Step 1: Create session
     try:
-        resp = session.post(f"{BASE_URL}/api/session/create", timeout=REQUEST_TIMEOUT)
-        resp.raise_for_status()
-        log.info("Session created: %s", resp.json().get("sessionId", "unknown"))
+        session_data = cryo.post_json("/api/session/create")
+        log.info("Session created: %s", session_data.get("sessionId", "unknown"))
     except Exception:
         log.exception("Failed to create session")
         return False
 
     # Step 2: Upload DAC
+    if not DAC_PATH:
+        log.error("CRYO_DAC_PATH not set — cannot authenticate. Mount your DAC file as a secret.")
+        return False
     dac_file = Path(DAC_PATH)
     if not dac_file.exists():
         log.error("DAC file not found: %s", DAC_PATH)
         return False
 
     try:
-        with open(dac_file, "rb") as f:
-            resp = session.post(
-                f"{BASE_URL}/api/auth/login",
-                files={"data": (dac_file.name, f, "image/png")},
-                timeout=REQUEST_TIMEOUT,
-            )
-        if not resp.ok:
-            log.error("DAC login failed: %s %s", resp.status_code, resp.text[:200])
-            return False
-        data = resp.json()
-        log.info("DAC login OK: userId=%s", data.get("data", {}).get("userId", "unknown"))
+        dac_data = cryo.post_file(
+            "/api/auth/login", "data", str(dac_file), dac_file.name, "image/png",
+        )
+        log.info("DAC login OK: userId=%s", dac_data.get("data", {}).get("userId", "unknown"))
     except Exception:
         log.exception("Failed DAC login")
         return False
 
     # Step 3: Authenticate index with password
     try:
-        resp = session.post(
-            f"{BASE_URL}/api/indx/auth",
-            json={"password": INDEX_PASSWORD},
-            timeout=REQUEST_TIMEOUT,
-        )
-        if not resp.ok:
-            log.error("Index auth failed: %s %s", resp.status_code, resp.text[:200])
-            return False
+        cryo.post_json("/api/indx/auth", {"password": INDEX_PASSWORD})
         log.info("Index authenticated successfully")
         return True
     except Exception:
@@ -235,21 +223,18 @@ def parse_rsc_entries(html: str) -> list[dict]:
 
 def poll_index():
     """Authenticate, fetch the index page, and store entries."""
-    session = requests.Session()
-    session.headers.update({"User-Agent": "BREACHER//NET Index Poller"})
+    with CryoBrowser() as cryo:
+        if not authenticate(cryo):
+            log.error("Authentication failed")
+            return
 
-    if not authenticate(session):
-        log.error("Authentication failed")
-        return
+        try:
+            html, _ = cryo.fetch_page("/indx")
+        except Exception:
+            log.exception("Failed to fetch /indx page")
+            return
 
-    try:
-        resp = session.get(f"{BASE_URL}/indx", timeout=REQUEST_TIMEOUT)
-        resp.raise_for_status()
-    except Exception:
-        log.exception("Failed to fetch /indx page")
-        return
-
-    unlocked_entries = parse_rsc_entries(resp.text)
+        unlocked_entries = parse_rsc_entries(html)
 
     unlocked_ids = {e["entry_id"] for e in unlocked_entries}
     all_entries = list(unlocked_entries)

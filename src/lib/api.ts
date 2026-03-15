@@ -1,54 +1,55 @@
 // ============================================================
-// API client — fetches from cryoarchive.systems APIs
-// Server-side only (used in API routes and server components)
+// API client — reads polled data from the local PostgreSQL DB.
+//
+// All cryoarchive.systems data is fetched by the Python poller
+// every 5 minutes and stored in the database.  No user or
+// server-component request ever contacts cryoarchive directly.
+//
+// See: https://github.com/breachers-of-tomorrow/breacher-net/issues/49
 // ============================================================
 
+import { getPool } from "./db";
 import type {
-  StateApiResponse,
-  StabilizationApiResponse,
   CryoarchiveState,
   CameraStabilization,
   CameraName,
 } from "./types";
 
-const STATE_API = "https://cryoarchive.systems/api/public/state";
-const STABILIZATION_API =
-  "https://cryoarchive.systems/api/public/cctv-cameras/stabilization";
-
 /**
- * Fetch current state from cryoarchive.systems
- * Returns null on failure (API may be down)
+ * Get the latest state snapshot from the local database.
+ * The raw_response JSONB column stores the original API payload,
+ * so we can reconstruct the CryoarchiveState shape the server
+ * components already expect.
  */
 export async function fetchState(): Promise<CryoarchiveState | null> {
+  const pool = getPool();
+  if (!pool) return null;
   try {
-    const res = await fetch(`${STATE_API}?t=${Date.now()}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(10000),
-    });
-    if (!res.ok) return null;
-    const data: StateApiResponse = await res.json();
-    return data?.state ?? null;
+    const result = await pool.query(
+      "SELECT raw_response FROM state_snapshots ORDER BY captured_at DESC LIMIT 1",
+    );
+    if (!result.rows.length) return null;
+    return result.rows[0].raw_response?.state ?? null;
   } catch {
     return null;
   }
 }
 
 /**
- * Fetch camera stabilization levels
- * Returns null on failure
+ * Get the latest stabilization snapshot from the local database.
  */
 export async function fetchStabilization(): Promise<Record<
   CameraName,
   CameraStabilization
 > | null> {
+  const pool = getPool();
+  if (!pool) return null;
   try {
-    const res = await fetch(`${STABILIZATION_API}?t=${Date.now()}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(10000),
-    });
-    if (!res.ok) return null;
-    const data: StabilizationApiResponse = await res.json();
-    return data?.stabilization ?? null;
+    const result = await pool.query(
+      "SELECT raw_response FROM stabilization_snapshots ORDER BY captured_at DESC LIMIT 1",
+    );
+    if (!result.rows.length) return null;
+    return result.rows[0].raw_response?.stabilization ?? null;
   } catch {
     return null;
   }

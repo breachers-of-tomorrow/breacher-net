@@ -1,2 +1,2 @@
 psycopg2-binary>=2.9,<3
-requests>=2.31,<3
+curl_cffi>=0.14,<1

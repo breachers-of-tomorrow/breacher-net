@@ -40,3 +40,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+poller/dac/
+wiki-theme/
+
+# Python
+__pycache__/
+*.pyc
