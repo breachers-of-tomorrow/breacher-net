@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-03-15
+
+### Added
+
+- **robots.txt and sitemap.xml** — Next.js route handlers block `/api/` from crawlers and list all public routes with priority/frequency ([#25](https://github.com/breachers-of-tomorrow/breacher-net/issues/25))
+- **Open Graph and Twitter Card meta** — branded social previews on Discord, Reddit, and Twitter/X for all pages ([#26](https://github.com/breachers-of-tomorrow/breacher-net/issues/26))
+- **Error boundaries** — themed `error.tsx` at root and cryoarchive levels with retry buttons and fault IDs ([#28](https://github.com/breachers-of-tomorrow/breacher-net/issues/28))
+- **Custom 404 page** — "Signal Lost" themed not-found page with navigation back to main sections ([#34](https://github.com/breachers-of-tomorrow/breacher-net/issues/34))
+- **Loading skeletons** — pulse-animated `loading.tsx` for all route segments (home, dashboard, cameras, maps, index, changes) ([#32](https://github.com/breachers-of-tomorrow/breacher-net/issues/32))
+- **Centralized URL constants** — `src/lib/urls.ts` as single source of truth for all external URLs; zero hardcoded URLs in components ([#35](https://github.com/breachers-of-tomorrow/breacher-net/issues/35))
+- **Content-Security-Policy and security headers** — CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy via `next.config.ts`; `poweredByHeader: false` ([#43](https://github.com/breachers-of-tomorrow/breacher-net/issues/43))
+- **App-level rate limiting** — in-memory sliding window rate limiter via `proxy.ts` (Next.js 16 convention); per-path limits, 429 + Retry-After headers, auto-cleanup ([#42](https://github.com/breachers-of-tomorrow/breacher-net/issues/42))
+- **Centralized API input validation** — `src/lib/validation.ts` with `parseLimit()`, `parseSince()`, `parseIndexStatus()`, `parseIndexType()`; all 8 API routes hardened ([#40](https://github.com/breachers-of-tomorrow/breacher-net/issues/40))
+- **Cache-Control headers** — preset-based cache via `src/lib/cache.ts` (realtime/standard/slow/static); CDN-friendly `s-maxage` + `stale-while-revalidate` on all API routes ([#41](https://github.com/breachers-of-tomorrow/breacher-net/issues/41))
+
+### Changed
+
+- **Accessibility improvements** — skip-to-content link, ARIA landmarks on navigation, `aria-expanded`/`aria-controls` on mobile toggle, `role="status"` on StatusDot, `focus-visible` outlines, `.sr-only` utility, `aria-live` on kill count panel, `role="img"` + `aria-label` on chart containers ([#27](https://github.com/breachers-of-tomorrow/breacher-net/issues/27))
+- **Lazy-loaded recharts** — `KillCountChart` and `StabilizationChart` loaded via `next/dynamic` with `ssr: false`; ~180KB deferred from initial bundle ([#38](https://github.com/breachers-of-tomorrow/breacher-net/issues/38))
+- **`.env.example` updated** — all required and optional env vars documented with descriptions ([#39](https://github.com/breachers-of-tomorrow/breacher-net/issues/39))
+
 ## [0.4.1] - 2026-03-15
 
 ### Added
@@ -122,5 +143,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Migrated from static HTML/Python to Next.js App Router architecture
 - Replaced CSV data storage design with PostgreSQL
 
-[Unreleased]: https://github.com/breachers-of-tomorrow/breacher-net/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/breachers-of-tomorrow/breacher-net/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/breachers-of-tomorrow/breacher-net/compare/v0.4.1...v0.5.0
+[0.4.1]: https://github.com/breachers-of-tomorrow/breacher-net/compare/v0.4.0...v0.4.1
+[0.4.0]: https://github.com/breachers-of-tomorrow/breacher-net/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/breachers-of-tomorrow/breacher-net/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/breachers-of-tomorrow/breacher-net/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/breachers-of-tomorrow/breacher-net/releases/tag/v0.1.0
