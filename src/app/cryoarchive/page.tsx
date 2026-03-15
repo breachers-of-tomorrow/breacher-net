@@ -6,6 +6,11 @@ import { DashboardClient } from "./DashboardClient";
 export const metadata: Metadata = {
   title: "Dashboard",
   description: "Live kill count, sector states, ship date countdown, and kill rate chart",
+  openGraph: {
+    title: "Dashboard // BREACHER.NET",
+    description: "Live kill count, sector states, ship date countdown, and kill rate chart",
+    url: "https://breacher.net/cryoarchive",
+  },
 };
 
 export const revalidate = 0; // Always fresh

@@ -5,6 +5,11 @@ import { CamerasClient } from "./CamerasClient";
 export const metadata: Metadata = {
   title: "Cameras",
   description: "CCTV stabilization levels across all sectors and cameras",
+  openGraph: {
+    title: "Cameras // BREACHER.NET",
+    description: "CCTV stabilization levels across all sectors and cameras",
+    url: "https://breacher.net/cryoarchive/cameras",
+  },
 };
 
 export const revalidate = 0;

@@ -123,7 +123,7 @@ export default async function HomePage() {
           rel="noopener noreferrer"
           className="cryo-panel p-6 flex items-center gap-4 hover:border-accent transition-colors no-underline group"
         >
-          <div className="text-3xl">📖</div>
+          <div className="text-3xl" aria-hidden="true">📖</div>
           <div>
             <div className="font-[var(--font-display)] text-xs tracking-[3px] text-accent group-hover:glow-accent mb-1">
               WIKI
@@ -142,7 +142,7 @@ export default async function HomePage() {
           rel="noopener noreferrer"
           className="cryo-panel p-6 flex items-center gap-4 hover:border-accent transition-colors no-underline group"
         >
-          <div className="text-3xl">💬</div>
+          <div className="text-3xl" aria-hidden="true">💬</div>
           <div>
             <div className="font-[var(--font-display)] text-xs tracking-[3px] text-accent group-hover:glow-accent mb-1">
               DISCORD
@@ -161,7 +161,7 @@ export default async function HomePage() {
           rel="noopener noreferrer"
           className="cryo-panel p-6 flex items-center gap-4 hover:border-accent transition-colors no-underline group"
         >
-          <div className="text-3xl">📋</div>
+          <div className="text-3xl" aria-hidden="true">📋</div>
           <div>
             <div className="font-[var(--font-display)] text-xs tracking-[3px] text-accent group-hover:glow-accent mb-1">
               COMMUNITY DOC
@@ -180,7 +180,7 @@ export default async function HomePage() {
           rel="noopener noreferrer"
           className="cryo-panel p-6 flex items-center gap-4 hover:border-accent transition-colors no-underline group"
         >
-          <div className="text-3xl">🌱</div>
+          <div className="text-3xl" aria-hidden="true">🌱</div>
           <div>
             <div className="font-[var(--font-display)] text-xs tracking-[3px] text-accent group-hover:glow-accent mb-1">
               WINNOWER GARDEN
@@ -196,7 +196,7 @@ export default async function HomePage() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-border pt-6 text-center text-xs text-dim tracking-[2px]">
+      <footer className="border-t border-border pt-6 text-center text-xs text-dim tracking-[2px]" role="contentinfo">
         <p>
           BUILT BY{" "}
           <a
@@ -252,7 +252,7 @@ function NavCard({
       href={href}
       className="cryo-panel p-6 flex items-center gap-4 hover:border-accent transition-colors no-underline group"
     >
-      <div className="text-3xl shrink-0 drop-shadow-[0_0_8px_rgba(0,212,255,0.4)]">
+      <div className="text-3xl shrink-0 drop-shadow-[0_0_8px_rgba(0,212,255,0.4)]" aria-hidden="true">
         {icon}
       </div>
       <div className="flex-1">
