@@ -75,7 +75,6 @@ export function IndexArchiveClient() {
     const [filter, setFilter] = useState<FilterTab>("all");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [useApi, setUseApi] = useState(true);
     const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
     const toggleExpand = (id: string) => {
@@ -87,26 +86,10 @@ export function IndexArchiveClient() {
         });
     };
 
-    // Fetch from our API (DB-backed) or fall back to direct scrape
+    // Fetch from DB-backed API only — no live scrape fallback
     const fetchData = useCallback(async () => {
         try {
-            if (useApi) {
-                const res = await fetch(`${API_URL}?t=${Date.now()}`, { cache: "no-store" });
-                if (res.ok) {
-                    const json = await res.json();
-                    if (json.stats?.total > 0) {
-                        setData(json);
-                        setError(null);
-                        setLoading(false);
-                        return;
-                    }
-                }
-                // DB empty or unavailable — fall back to direct scrape
-                setUseApi(false);
-            }
-
-            // Direct scrape fallback
-            const res = await fetch(`/api/index-entries/scrape?t=${Date.now()}`, { cache: "no-store" });
+            const res = await fetch(`${API_URL}?t=${Date.now()}`, { cache: "no-store" });
             if (!res.ok) throw new Error(`API returned ${res.status}`);
             const json = await res.json();
             setData(json);
@@ -117,7 +100,7 @@ export function IndexArchiveClient() {
         } finally {
             setLoading(false);
         }
-    }, [useApi]);
+    }, []);
 
     useEffect(() => {
         fetchData();
@@ -127,15 +110,12 @@ export function IndexArchiveClient() {
 
     // Derived state
     const stats = data?.stats;
-    const hasRealTimestamps = data?.source !== "live-scrape";
-    const newCount = hasRealTimestamps
-        ? (data?.entries.filter(isNewEntry).length ?? 0)
-        : 0;
+    const newCount = data?.entries.filter(isNewEntry).length ?? 0;
 
     const filteredEntries = data?.entries.filter((e) => {
         if (filter === "all") return true;
         if (filter === "unlocked") return e.status === "unlocked";
-        if (filter === "new") return hasRealTimestamps && isNewEntry(e);
+        if (filter === "new") return isNewEntry(e);
         return e.entry_type === filter;
     }) ?? [];
 
@@ -242,7 +222,7 @@ export function IndexArchiveClient() {
                                         <EntryRow
                                             key={entry.entry_id}
                                             entry={entry}
-                                            isNew={hasRealTimestamps && isNewEntry(entry)}
+                                            isNew={isNewEntry(entry)}
                                             isExpanded={expanded.has(entry.entry_id)}
                                             onToggle={() => toggleExpand(entry.entry_id)}
                                         />

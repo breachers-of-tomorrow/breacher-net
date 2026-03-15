@@ -15,8 +15,8 @@ interface Props {
   initialData: Record<string, CameraData> | null;
 }
 
-const STAB_API = "/api/stabilization/live";
-const REFRESH_INTERVAL = 60_000;
+const STAB_API = "/api/stabilization/latest";
+const REFRESH_INTERVAL = 300_000; // 5 minutes — matches poller cadence
 
 /** Human-friendly camera name */
 function displayName(name: string): string {
@@ -63,16 +63,16 @@ export function CamerasClient({ initialData }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [, setTick] = useState(0);
 
-  const fetchLive = useCallback(async () => {
+  const fetchLatest = useCallback(async () => {
     try {
       const res = await fetch(`${STAB_API}?t=${Date.now()}`, {
         cache: "no-store",
       });
       if (!res.ok) throw new Error(`API returned ${res.status}`);
       const json = await res.json();
-      const stab = json?.stabilization;
-      if (!stab) throw new Error("Invalid response");
-      setData(stab);
+      const cameras = json?.data?.cameras;
+      if (!cameras) throw new Error("No data available");
+      setData(cameras);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch");
@@ -85,9 +85,9 @@ export function CamerasClient({ initialData }: Props) {
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(fetchLive, REFRESH_INTERVAL);
+    const interval = setInterval(fetchLatest, REFRESH_INTERVAL);
     return () => clearInterval(interval);
-  }, [fetchLive]);
+  }, [fetchLatest]);
 
   if (!data) {
     return (

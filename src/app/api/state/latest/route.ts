@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { getPool } from "@/lib/db";
-import { fetchState } from "@/lib/api";
 
 /**
  * GET /api/state/latest
  *
- * Returns the latest state — from the database if available, otherwise live from the API.
+ * Returns the latest state snapshot from the database.
+ * Data is populated by the Python poller every 5 minutes — no live fallback.
  */
 export async function GET() {
     // Try database first
@@ -38,27 +38,9 @@ export async function GET() {
         }
     }
 
-    // Fallback to live API
-    const state = await fetchState();
-    if (!state) {
-        return NextResponse.json(
-            { error: "Unable to fetch state", data: null, source: "error" },
-            { status: 502 }
-        );
-    }
-
-    return NextResponse.json({
-        data: {
-            capturedAt: new Date().toISOString(),
-            killCount: state.uescKillCount,
-            shipDate: state.shipDate,
-            nextUpdate: state.uescKillCountNextUpdateAt,
-            sectors: state.pages,
-            memoryFlags: {
-                memoryUnlocked: state.memoryUnlocked,
-                memoryCompleted: state.memoryCompleted,
-            },
-        },
-        source: "live-api",
-    });
+    // No data in DB yet — poller hasn't run
+    return NextResponse.json(
+        { error: "No state data available yet — poller may not have run", data: null, source: "empty" },
+        { status: 503 }
+    );
 }

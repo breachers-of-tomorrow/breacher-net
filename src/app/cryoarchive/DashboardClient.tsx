@@ -26,8 +26,8 @@ interface Props {
   initialData: DashboardData | null;
 }
 
-const STATE_API = "/api/state/live";
-const REFRESH_INTERVAL = 60_000; // 60 seconds
+const STATE_API = "/api/state/latest";
+const REFRESH_INTERVAL = 300_000; // 5 minutes — matches poller cadence
 
 export function DashboardClient({ initialData }: Props) {
   const [data, setData] = useState<DashboardData | null>(initialData);
@@ -41,31 +41,31 @@ export function DashboardClient({ initialData }: Props) {
   // Ticking state
   const [, setTick] = useState(0);
 
-  // Auto-refresh via live API
-  const fetchLive = useCallback(async () => {
+  // Auto-refresh from DB-backed API (polled every 5 min by Python poller)
+  const fetchLatest = useCallback(async () => {
     try {
       const res = await fetch(`${STATE_API}?t=${Date.now()}`, {
         cache: "no-store",
       });
       if (!res.ok) throw new Error(`API returned ${res.status}`);
       const json = await res.json();
-      const state = json?.state;
-      if (!state) throw new Error("Invalid API response");
+      const d = json?.data;
+      if (!d) throw new Error("No data available");
 
       if (data) setPrevKillCount(data.killCount);
 
       setData({
-        killCount: state.uescKillCount,
-        nextUpdateAt: state.uescKillCountNextUpdateAt,
-        shipDate: state.shipDate,
-        memoryUnlocked: state.memoryUnlocked,
-        memoryCompleted: state.memoryCompleted,
+        killCount: d.killCount,
+        nextUpdateAt: d.nextUpdate,
+        shipDate: d.shipDate,
+        memoryUnlocked: d.memoryFlags?.memoryUnlocked ?? false,
+        memoryCompleted: d.memoryFlags?.memoryCompleted ?? false,
         sectors: Object.fromEntries(
           SECTOR_NAMES.map((name) => [
             name,
             {
-              unlocked: state.pages?.[name]?.unlocked ?? false,
-              completed: state.pages?.[name]?.completed ?? false,
+              unlocked: d.sectors?.[name]?.unlocked ?? false,
+              completed: d.sectors?.[name]?.completed ?? false,
             },
           ])
         ),
@@ -86,19 +86,9 @@ export function DashboardClient({ initialData }: Props) {
 
   // Auto-refresh
   useEffect(() => {
-    const interval = setInterval(fetchLive, REFRESH_INTERVAL);
+    const interval = setInterval(fetchLatest, REFRESH_INTERVAL);
     return () => clearInterval(interval);
-  }, [fetchLive]);
-
-  // Smart refresh: when next update time passes, fetch after ~10s
-  useEffect(() => {
-    if (!data?.nextUpdateAt) return;
-    const nextUpdate = new Date(data.nextUpdateAt);
-    const delay = nextUpdate.getTime() - Date.now() + 10_000;
-    if (delay <= 0 || delay > 20 * 60_000) return;
-    const timeout = setTimeout(fetchLive, delay);
-    return () => clearTimeout(timeout);
-  }, [data?.nextUpdateAt, fetchLive]);
+  }, [fetchLatest]);
 
   if (!data) {
     return (

@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { getPool } from "@/lib/db";
-import { fetchStabilization } from "@/lib/api";
 
 /**
  * GET /api/stabilization/latest
  *
- * Returns the latest camera stabilization levels — from DB if available, otherwise live.
+ * Returns the latest stabilization snapshot from the database.
+ * Data is populated by the Python poller every 5 minutes — no live fallback.
  */
 export async function GET() {
     // Try database first
@@ -35,20 +35,9 @@ export async function GET() {
         }
     }
 
-    // Fallback to live API
-    const stabilization = await fetchStabilization();
-    if (!stabilization) {
-        return NextResponse.json(
-            { error: "Unable to fetch stabilization", data: null, source: "error" },
-            { status: 502 }
-        );
-    }
-
-    return NextResponse.json({
-        data: {
-            capturedAt: new Date().toISOString(),
-            cameras: stabilization,
-        },
-        source: "live-api",
-    });
+    // No data in DB yet — poller hasn't run
+    return NextResponse.json(
+        { error: "No stabilization data available yet — poller may not have run", data: null, source: "empty" },
+        { status: 503 }
+    );
 }
