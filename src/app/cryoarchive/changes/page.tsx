@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ChangesClient } from "./ChangesClient";
+import { SITE_URL } from "@/lib/urls";
 
 export const metadata: Metadata = {
   title: "Site Changes",
@@ -7,7 +8,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Site Changes // BREACHER.NET",
     description: "Detected website deployments and build changes on cryoarchive.systems",
-    url: "https://breacher.net/cryoarchive/changes",
+    url: `${SITE_URL}/cryoarchive/changes`,
   },
 };
 

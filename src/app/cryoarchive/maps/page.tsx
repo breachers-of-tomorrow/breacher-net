@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { MapsClient } from "./MapsClient";
+import { SITE_URL } from "@/lib/urls";
 
 export const metadata: Metadata = {
   title: "Maps",
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
     title: "Maps // BREACHER.NET",
     description:
       "Interactive terminal maps for Perimeter, Dire Marsh, and Outpost sectors with zone inspection and stabilization data.",
-    url: "https://breacher.net/cryoarchive/maps",
+    url: `${SITE_URL}/cryoarchive/maps`,
   },
 };
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { fetchStabilization } from "@/lib/api";
 import { CamerasClient } from "./CamerasClient";
+import { SITE_URL } from "@/lib/urls";
 
 export const metadata: Metadata = {
   title: "Cameras",
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Cameras // BREACHER.NET",
     description: "CCTV stabilization levels across all sectors and cameras",
-    url: "https://breacher.net/cryoarchive/cameras",
+    url: `${SITE_URL}/cryoarchive/cameras`,
   },
 };
 

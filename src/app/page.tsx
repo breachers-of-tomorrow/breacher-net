@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { fetchState, fetchStabilization } from "@/lib/api";
 import { SECTOR_NAMES } from "@/lib/types";
+import { URLS } from "@/lib/urls";
 
 export const revalidate = 60;
 
@@ -118,7 +119,7 @@ export default async function HomePage() {
       <div className="section-title">COMMUNITY</div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12">
         <a
-          href="https://wiki.breacher.net"
+          href={URLS.wiki}
           target="_blank"
           rel="noopener noreferrer"
           className="cryo-panel p-6 flex items-center gap-4 hover:border-accent transition-colors no-underline group"
@@ -137,7 +138,7 @@ export default async function HomePage() {
           </div>
         </a>
         <a
-          href="https://discord.gg/sGeg5Gx2yM"
+          href={URLS.discord}
           target="_blank"
           rel="noopener noreferrer"
           className="cryo-panel p-6 flex items-center gap-4 hover:border-accent transition-colors no-underline group"
@@ -156,7 +157,7 @@ export default async function HomePage() {
           </div>
         </a>
         <a
-          href="https://docs.google.com/document/d/1mtUtDPvbh6ahiynYFVS7Z4O79Nw6y5PEOjweCpzWV_A/edit?tab=t.0"
+          href={URLS.communityDoc}
           target="_blank"
           rel="noopener noreferrer"
           className="cryo-panel p-6 flex items-center gap-4 hover:border-accent transition-colors no-underline group"
@@ -175,7 +176,7 @@ export default async function HomePage() {
           </div>
         </a>
         <a
-          href="https://marathon.winnower.garden/cryoarchive"
+          href={URLS.winnower}
           target="_blank"
           rel="noopener noreferrer"
           className="cryo-panel p-6 flex items-center gap-4 hover:border-accent transition-colors no-underline group"
@@ -200,7 +201,7 @@ export default async function HomePage() {
         <p>
           BUILT BY{" "}
           <a
-            href="https://github.com/breachers-of-tomorrow"
+            href={URLS.github}
             target="_blank"
             rel="noopener noreferrer"
             className="text-accent hover:glow-accent"
@@ -211,7 +212,7 @@ export default async function HomePage() {
         <p className="mt-2">
           ORIGINAL TRACKER BY{" "}
           <a
-            href="https://github.com/CrowdTypical"
+            href={URLS.crowdTypical}
             target="_blank"
             rel="noopener noreferrer"
             className="text-accent hover:glow-accent"
@@ -222,7 +223,7 @@ export default async function HomePage() {
         <p className="mt-2">
           HISTORICAL DATA BY{" "}
           <a
-            href="https://marathon.winnower.garden/cryoarchive"
+            href={URLS.winnower}
             target="_blank"
             rel="noopener noreferrer"
             className="text-accent hover:glow-accent"

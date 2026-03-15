@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { URLS } from "@/lib/urls";
 import {
   ResponsiveContainer,
   LineChart,
@@ -135,7 +136,7 @@ export function StabilizationChart() {
           {error ?? "NO DATA AVAILABLE"}
         </div>
         <a
-          href="https://marathon.winnower.garden/cryoarchive"
+          href={URLS.winnower}
           target="_blank"
           rel="noopener noreferrer"
           className="text-accent text-xs tracking-[2px] hover:glow-accent"

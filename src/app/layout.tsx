@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Navigation } from "@/components/Navigation";
+import { SITE_URL } from "@/lib/urls";
 
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
@@ -14,7 +15,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://breacher.net"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "BREACHER.NET // Breachers of Tomorrow",
     template: "%s // BREACHER.NET",
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://breacher.net",
+    url: SITE_URL,
     siteName: "BREACHER.NET",
     title: "BREACHER.NET // Breachers of Tomorrow",
     description:
@@ -38,7 +39,7 @@ export const metadata: Metadata = {
       "Community tracker and hub for the Marathon ARG — live kill count, sector states, stabilization data, and interactive maps.",
   },
   alternates: {
-    canonical: "https://breacher.net",
+    canonical: SITE_URL,
   },
 };
 

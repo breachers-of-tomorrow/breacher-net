@@ -4,7 +4,21 @@ import { useEffect, useState, useCallback } from "react";
 import { toLocalTimeOnly, formatCountdown } from "@/lib/format";
 import { CAMERA_NAMES } from "@/lib/types";
 import type { CameraName } from "@/lib/types";
-import { StabilizationChart } from "@/components/StabilizationChart";
+import dynamic from "next/dynamic";
+
+const StabilizationChart = dynamic(
+  () => import("@/components/StabilizationChart").then((m) => m.StabilizationChart),
+  {
+    loading: () => (
+      <div className="cryo-panel p-5 h-[350px] flex items-center justify-center">
+        <div className="font-[var(--font-display)] text-xs tracking-[4px] text-dim animate-blink">
+          LOADING CHART...
+        </div>
+      </div>
+    ),
+    ssr: false,
+  },
+);
 
 interface CameraData {
   stabilizationLevel: number;
