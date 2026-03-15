@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { URLS } from "@/lib/urls";
 import {
   ResponsiveContainer,
   LineChart,
@@ -135,7 +136,7 @@ export function StabilizationChart() {
           {error ?? "NO DATA AVAILABLE"}
         </div>
         <a
-          href="https://marathon.winnower.garden/cryoarchive"
+          href={URLS.winnower}
           target="_blank"
           rel="noopener noreferrer"
           className="text-accent text-xs tracking-[2px] hover:glow-accent"
@@ -147,7 +148,7 @@ export function StabilizationChart() {
   }
 
   return (
-    <div className="cryo-panel p-4 sm:p-5">
+    <div className="cryo-panel p-4 sm:p-5" role="img" aria-label="Stabilization levels chart showing camera stabilization trends over time">
       <div className="h-[320px] sm:h-[350px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart

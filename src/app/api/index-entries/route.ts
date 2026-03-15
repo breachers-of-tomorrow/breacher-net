@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { getPool } from "@/lib/db";
+import { parseIndexStatus, parseIndexType, isErrorResponse } from "@/lib/validation";
+import { withCache } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +23,12 @@ export async function GET(request: Request) {
     }
 
     const url = new URL(request.url);
-    const statusFilter = url.searchParams.get("status") || "all";
-    const typeFilter = url.searchParams.get("type");
+
+    const statusFilter = parseIndexStatus(url.searchParams.get("status"));
+    if (isErrorResponse(statusFilter)) return statusFilter;
+
+    const typeFilter = parseIndexType(url.searchParams.get("type"));
+    if (isErrorResponse(typeFilter)) return typeFilter;
 
     try {
         // Get summary stats
@@ -56,7 +62,7 @@ export async function GET(request: Request) {
 
         if (typeFilter) {
             conditions.push(`entry_type = $${paramIdx}`);
-            params.push(typeFilter.toUpperCase());
+            params.push(typeFilter);
             paramIdx++;
         }
 
@@ -72,7 +78,7 @@ export async function GET(request: Request) {
             params
         );
 
-        return NextResponse.json({
+        return withCache(NextResponse.json({
             stats: {
                 total: Number(stats.total),
                 unlocked: Number(stats.unlocked),
@@ -87,7 +93,7 @@ export async function GET(request: Request) {
             entries: entriesResult.rows,
             fetchedAt: new Date().toISOString(),
             source: "database" as const,
-        });
+        }), "slow");
     } catch (err) {
         console.error("Failed to query index entries:", err);
         return NextResponse.json(

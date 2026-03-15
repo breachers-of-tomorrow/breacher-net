@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPool } from "@/lib/db";
+import { withCache } from "@/lib/cache";
 
 /**
  * GET /api/state/latest
@@ -21,7 +22,7 @@ export async function GET() {
 
             if (result.rows.length > 0) {
                 const row = result.rows[0];
-                return NextResponse.json({
+                return withCache(NextResponse.json({
                     data: {
                         capturedAt: row.captured_at,
                         killCount: row.kill_count,
@@ -31,7 +32,7 @@ export async function GET() {
                         memoryFlags: row.memory_flags,
                     },
                     source: "database",
-                });
+                }), "realtime");
             }
         } catch (err) {
             console.error("Failed to query latest state from DB:", err);

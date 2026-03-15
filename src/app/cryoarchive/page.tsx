@@ -2,10 +2,16 @@ import type { Metadata } from "next";
 import { fetchState } from "@/lib/api";
 import { SECTOR_NAMES } from "@/lib/types";
 import { DashboardClient } from "./DashboardClient";
+import { SITE_URL } from "@/lib/urls";
 
 export const metadata: Metadata = {
   title: "Dashboard",
   description: "Live kill count, sector states, ship date countdown, and kill rate chart",
+  openGraph: {
+    title: "Dashboard // BREACHER.NET",
+    description: "Live kill count, sector states, ship date countdown, and kill rate chart",
+    url: `${SITE_URL}/cryoarchive`,
+  },
 };
 
 export const revalidate = 0; // Always fresh

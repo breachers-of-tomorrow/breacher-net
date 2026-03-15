@@ -11,7 +11,22 @@ import {
 } from "@/lib/format";
 import { SECTOR_NAMES } from "@/lib/types";
 import type { SectorName } from "@/lib/types";
-import { KillCountChart } from "@/components/KillCountChart";
+import dynamic from "next/dynamic";
+import { URLS } from "@/lib/urls";
+
+const KillCountChart = dynamic(
+  () => import("@/components/KillCountChart").then((m) => m.KillCountChart),
+  {
+    loading: () => (
+      <div className="cryo-panel p-5 h-[300px] flex items-center justify-center">
+        <div className="font-[var(--font-display)] text-xs tracking-[4px] text-dim animate-blink">
+          LOADING CHART...
+        </div>
+      </div>
+    ),
+    ssr: false,
+  },
+);
 
 interface DashboardData {
   killCount: number;
@@ -114,7 +129,7 @@ export function DashboardClient({ initialData }: Props) {
     <div>
       {/* Error banner */}
       {error && (
-        <div className="bg-danger/10 border border-danger p-3 text-danger text-sm mb-5">
+        <div role="alert" className="bg-danger/10 border border-danger p-3 text-danger text-sm mb-5">
           {/* ERROR */} {error}
         </div>
       )}
@@ -126,13 +141,13 @@ export function DashboardClient({ initialData }: Props) {
 
       {/* CTA Banner */}
       <a
-        href="https://docs.google.com/document/d/1mtUtDPvbh6ahiynYFVS7Z4O79Nw6y5PEOjweCpzWV_A/edit?tab=t.0#heading=h.5j4qeuoxhabo"
+        href={URLS.communityDocHelp}
         target="_blank"
         rel="noopener noreferrer"
         className="block bg-gradient-to-br from-accent/[0.08] to-accent2/[0.05] border border-accent p-6 mb-8 flex items-center gap-5 relative overflow-hidden hover:border-accent2 hover:from-accent/[0.12] hover:to-accent2/[0.08] transition-all no-underline group"
       >
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-accent to-accent2" />
-        <div className="text-4xl shrink-0 drop-shadow-[0_0_8px_rgba(0,212,255,0.4)]">
+        <div className="text-4xl shrink-0 drop-shadow-[0_0_8px_rgba(0,212,255,0.4)]" aria-hidden="true">
           📡
         </div>
         <div className="flex-1">
@@ -170,7 +185,7 @@ export function DashboardClient({ initialData }: Props) {
 
       {/* KILL COUNT */}
       <div className="section-title">UESC KILL COUNT</div>
-      <div className="cryo-panel p-6 mb-8 flex items-center gap-8 flex-wrap">
+      <div className="cryo-panel p-6 mb-8 flex items-center gap-8 flex-wrap" aria-live="polite" aria-atomic="true">
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-danger to-transparent" />
         <div>
           <div className="font-[var(--font-display)] text-[0.65rem] tracking-[3px] text-dim">

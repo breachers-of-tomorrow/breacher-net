@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPool } from "@/lib/db";
+import { withCache } from "@/lib/cache";
 
 /**
  * GET /api/stabilization/latest
@@ -21,14 +22,14 @@ export async function GET() {
 
             if (result.rows.length > 0) {
                 const row = result.rows[0];
-                return NextResponse.json({
+                return withCache(NextResponse.json({
                     data: {
                         capturedAt: row.captured_at,
                         cameras: row.cameras,
                         nextStabilization: row.next_stabilization,
                     },
                     source: "database",
-                });
+                }), "realtime");
             }
         } catch (err) {
             console.error("Failed to query latest stabilization from DB:", err);
