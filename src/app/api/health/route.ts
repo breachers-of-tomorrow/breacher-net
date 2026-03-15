@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPool, isDatabaseReady } from "@/lib/db";
+import { withCache } from "@/lib/cache";
 
 /**
  * GET /api/health
@@ -23,7 +24,7 @@ export async function GET() {
 
   const status = dbConfigured ? (dbConnected ? "healthy" : "degraded") : "standalone";
 
-  return NextResponse.json({
+  return withCache(NextResponse.json({
     status,
     timestamp: new Date().toISOString(),
     database: {
@@ -32,5 +33,5 @@ export async function GET() {
       has_data: dbHasData,
     },
     mode: dbHasData ? "database" : "live-api",
-  });
+  }), "none");
 }

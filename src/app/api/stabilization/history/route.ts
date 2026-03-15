@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { getPool } from "@/lib/db";
+import { parseLimit, parseSince, isErrorResponse } from "@/lib/validation";
+import { withCache } from "@/lib/cache";
 
 /**
  * GET /api/stabilization/history?limit=100&since=2025-01-01T00:00:00Z
@@ -8,8 +10,12 @@ import { getPool } from "@/lib/db";
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const limit = Math.min(parseInt(searchParams.get("limit") ?? "100"), 1000);
-  const since = searchParams.get("since");
+
+  const limit = parseLimit(searchParams.get("limit"), 100, 1000);
+  if (isErrorResponse(limit)) return limit;
+
+  const since = parseSince(searchParams.get("since"));
+  if (isErrorResponse(since)) return since;
 
   const db = getPool();
   if (!db) {
@@ -39,11 +45,11 @@ export async function GET(request: Request) {
 
     const result = await db.query(query, params);
 
-    return NextResponse.json({
+    return withCache(NextResponse.json({
       data: result.rows,
       count: result.rowCount,
       source: "database",
-    });
+    }), "standard");
   } catch (err) {
     console.error("Failed to query stabilization history:", err);
     return NextResponse.json(

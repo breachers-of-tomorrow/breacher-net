@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPool } from "@/lib/db";
+import { withCache } from "@/lib/cache";
 
 /**
  * GET /api/builds/latest
@@ -24,10 +25,10 @@ export async function GET() {
        LIMIT 1`
         );
 
-        return NextResponse.json({
+        return withCache(NextResponse.json({
             data: result.rows[0] ?? null,
             source: "database",
-        });
+        }), "realtime");
     } catch (err) {
         console.error("Failed to query latest build event:", err);
         return NextResponse.json(

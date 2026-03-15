@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { getPool } from "@/lib/db";
+import { parseLimit, isErrorResponse } from "@/lib/validation";
+import { withCache } from "@/lib/cache";
 
 /**
  * GET /api/builds?limit=50
@@ -8,7 +10,9 @@ import { getPool } from "@/lib/db";
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const limit = Math.min(parseInt(searchParams.get("limit") ?? "50"), 200);
+
+  const limit = parseLimit(searchParams.get("limit"), 50, 200);
+  if (isErrorResponse(limit)) return limit;
 
   const db = getPool();
   if (!db) {
@@ -28,11 +32,11 @@ export async function GET(request: Request) {
       [limit]
     );
 
-    return NextResponse.json({
+    return withCache(NextResponse.json({
       data: result.rows,
       count: result.rowCount,
       source: "database",
-    });
+    }), "slow");
   } catch (err) {
     console.error("Failed to query build events:", err);
     return NextResponse.json(
