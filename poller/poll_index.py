@@ -3,7 +3,10 @@
 Authenticates via DAC upload + password, then parses the RSC payload
 from the authenticated /indx page to extract unlocked entry data.
 
-Auth flow:
+Uses curl_cffi (TLS fingerprint impersonation) to bypass Vercel Security Checkpoint.
+See: https://github.com/breachers-of-tomorrow/breacher-net/issues/49
+
+Auth flow (through curl_cffi session with Chrome TLS fingerprint):
   1. POST /api/session/create -> session cookie
   2. POST /api/auth/login     -> upload DAC PNG (FormData)
   3. POST /api/indx/auth      -> submit index password
@@ -18,7 +21,8 @@ import sys
 from pathlib import Path
 
 import psycopg2
-import requests
+
+from browser import CryoBrowser
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,7 +33,6 @@ log = logging.getLogger("poll_index")
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://breacher:breacher@db:5432/breacher")
 BASE_URL = "https://cryoarchive.systems"
-REQUEST_TIMEOUT = 30
 
 # DAC auth credentials
 # DAC_PATH must be provided via CRYO_DAC_PATH env var (mounted secret).
@@ -50,88 +53,27 @@ def get_db():
     return psycopg2.connect(DATABASE_URL)
 
 
-def load_cached_cookie() -> str | None:
-    """Load a cached session cookie from the database."""
+def authenticate(cryo: CryoBrowser) -> bool:
+    """Authenticate with cryoarchive via the curl_cffi session.
+
+    The session's Chrome TLS fingerprint bypasses Vercel's WAF automatically.
+    Cookies from previous requests in the same session may still be valid,
+    so we probe /indx first and skip auth if the session is still good.
+    """
+    # Try navigating to /indx with existing cookies
     try:
-        conn = get_db()
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT cookie, created_at FROM session_cache WHERE service_name = 'cryoarchive'"
-            )
-            row = cur.fetchone()
-        conn.close()
-        if row:
-            log.info("Loaded cached cookie from DB (created %s)", row[1])
-            return row[0]
-    except Exception:
-        log.exception("Failed to load cached cookie")
-    return None
-
-
-def save_cached_cookie(cookie: str) -> None:
-    """Save a session cookie to the database for reuse."""
-    try:
-        conn = get_db()
-        with conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    INSERT INTO session_cache (service_name, cookie, created_at)
-                    VALUES ('cryoarchive', %s, NOW())
-                    ON CONFLICT (service_name)
-                    DO UPDATE SET cookie = EXCLUDED.cookie, created_at = NOW()
-                    """,
-                    (cookie,),
-                )
-        conn.close()
-        log.info("Saved session cookie to DB")
-    except Exception:
-        log.exception("Failed to save cached cookie")
-
-
-def clear_cached_cookie() -> None:
-    """Clear the cached cookie when it's known to be expired."""
-    try:
-        conn = get_db()
-        with conn:
-            with conn.cursor() as cur:
-                cur.execute("DELETE FROM session_cache WHERE service_name = 'cryoarchive'")
-        conn.close()
+        html, _ = cryo.fetch_page("/indx")
+        if "slotId" in html:
+            log.info("Existing session still valid, skipping auth")
+            return True
     except Exception:
         pass
-
-
-def authenticate(session: requests.Session) -> bool:
-    """Authenticate with cryoarchive: session -> DAC -> password.
-
-    Loads cached cookie from DB first; only performs full auth when needed.
-    Saves successful cookies back to DB for reuse across CronJob runs.
-    """
-    # Try DB-cached cookie first
-    cached = load_cached_cookie()
-    if cached:
-        session.headers["Cookie"] = cached
-        try:
-            probe = session.get(
-                f"{BASE_URL}/indx",
-                timeout=REQUEST_TIMEOUT,
-                allow_redirects=False,
-            )
-            if probe.status_code == 200 and "slotId" in probe.text:
-                log.info("DB-cached session still valid, skipping auth")
-                return True
-        except Exception:
-            pass
-        # Cookie expired — clear it and fall through to full auth
-        log.info("Cached cookie expired, performing full auth")
-        clear_cached_cookie()
-        del session.headers["Cookie"]
+    log.info("Session expired or missing — performing full auth")
 
     # Step 1: Create session
     try:
-        resp = session.post(f"{BASE_URL}/api/session/create", timeout=REQUEST_TIMEOUT)
-        resp.raise_for_status()
-        log.info("Session created: %s", resp.json().get("sessionId", "unknown"))
+        session_data = cryo.post_json("/api/session/create")
+        log.info("Session created: %s", session_data.get("sessionId", "unknown"))
     except Exception:
         log.exception("Failed to create session")
         return False
@@ -146,38 +88,18 @@ def authenticate(session: requests.Session) -> bool:
         return False
 
     try:
-        with open(dac_file, "rb") as f:
-            resp = session.post(
-                f"{BASE_URL}/api/auth/login",
-                files={"data": (dac_file.name, f, "image/png")},
-                timeout=REQUEST_TIMEOUT,
-            )
-        if not resp.ok:
-            log.error("DAC login failed: %s %s", resp.status_code, resp.text[:200])
-            return False
-        data = resp.json()
-        log.info("DAC login OK: userId=%s", data.get("data", {}).get("userId", "unknown"))
+        dac_data = cryo.post_file(
+            "/api/auth/login", "data", str(dac_file), dac_file.name, "image/png",
+        )
+        log.info("DAC login OK: userId=%s", dac_data.get("data", {}).get("userId", "unknown"))
     except Exception:
         log.exception("Failed DAC login")
         return False
 
     # Step 3: Authenticate index with password
     try:
-        resp = session.post(
-            f"{BASE_URL}/api/indx/auth",
-            json={"password": INDEX_PASSWORD},
-            timeout=REQUEST_TIMEOUT,
-        )
-        if not resp.ok:
-            log.error("Index auth failed: %s %s", resp.status_code, resp.text[:200])
-            return False
+        cryo.post_json("/api/indx/auth", {"password": INDEX_PASSWORD})
         log.info("Index authenticated successfully")
-
-        # Save session cookies to DB for reuse across CronJob runs
-        cookie_str = "; ".join(f"{k}={v}" for k, v in session.cookies.items())
-        if cookie_str:
-            save_cached_cookie(cookie_str)
-
         return True
     except Exception:
         log.exception("Failed index auth")
@@ -301,21 +223,18 @@ def parse_rsc_entries(html: str) -> list[dict]:
 
 def poll_index():
     """Authenticate, fetch the index page, and store entries."""
-    session = requests.Session()
-    session.headers.update({"User-Agent": "BREACHER//NET Index Poller"})
+    with CryoBrowser() as cryo:
+        if not authenticate(cryo):
+            log.error("Authentication failed")
+            return
 
-    if not authenticate(session):
-        log.error("Authentication failed")
-        return
+        try:
+            html, _ = cryo.fetch_page("/indx")
+        except Exception:
+            log.exception("Failed to fetch /indx page")
+            return
 
-    try:
-        resp = session.get(f"{BASE_URL}/indx", timeout=REQUEST_TIMEOUT)
-        resp.raise_for_status()
-    except Exception:
-        log.exception("Failed to fetch /indx page")
-        return
-
-    unlocked_entries = parse_rsc_entries(resp.text)
+        unlocked_entries = parse_rsc_entries(html)
 
     unlocked_ids = {e["entry_id"] for e in unlocked_entries}
     all_entries = list(unlocked_entries)

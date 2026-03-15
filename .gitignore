@@ -42,3 +42,7 @@ yarn-error.log*
 next-env.d.ts
 poller/dac/
 wiki-theme/
+
+# Python
+__pycache__/
+*.pyc

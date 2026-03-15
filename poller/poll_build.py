@@ -1,5 +1,8 @@
 """Poll cryoarchive.systems for build/deployment changes, store detected changes in PostgreSQL.
 
+Uses curl_cffi (TLS fingerprint impersonation) to bypass Vercel Security Checkpoint.
+See: https://github.com/breachers-of-tomorrow/breacher-net/issues/49
+
 Fingerprinting strategy:
 - Extract the Vercel deployment ID from Next.js chunk URLs (dpl=dpl_XXXX)
 - Track static asset fingerprints (hashed filenames in chunk URLs)
@@ -13,10 +16,10 @@ import logging
 import os
 import re
 import sys
-from datetime import datetime, timezone
 
 import psycopg2
-import requests
+
+from browser import CryoBrowser
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,8 +29,6 @@ logging.basicConfig(
 log = logging.getLogger("poll_build")
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://breacher:breacher@db:5432/breacher")
-TARGET_URL = "https://cryoarchive.systems"
-REQUEST_TIMEOUT = 15
 
 # Regex patterns for deployment fingerprinting
 DPL_PATTERN = re.compile(r"dpl=(dpl_[a-zA-Z0-9]+)")
@@ -123,14 +124,13 @@ def extract_headers_of_interest(headers: dict) -> dict:
 def poll_build():
     """Check for build changes on cryoarchive.systems."""
     try:
-        resp = requests.get(TARGET_URL, timeout=REQUEST_TIMEOUT)
-        resp.raise_for_status()
+        with CryoBrowser() as cryo:
+            html, resp_headers = cryo.fetch_page("/")
     except Exception:
         log.exception("Failed to fetch target site")
         return
 
-    headers = {k.lower(): v for k, v in resp.headers.items()}
-    html = resp.text
+    headers = {k.lower(): v for k, v in resp_headers.items()}
 
     current_hash = compute_build_hash(html)
     last_hash = get_last_build_hash()
@@ -146,7 +146,6 @@ def poll_build():
     assets = extract_static_assets(html)
 
     details = {
-        "status_code": resp.status_code,
         "content_length": len(html),
         "previous_hash": last_hash,
         "deployment_id": dpl_id,

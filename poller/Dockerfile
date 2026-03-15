@@ -16,7 +16,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Non-root user
 RUN useradd --system --uid 1001 poller
 USER poller
 

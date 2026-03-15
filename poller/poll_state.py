@@ -1,13 +1,17 @@
-"""Poll cryoarchive.systems state and stabilization APIs, store snapshots in PostgreSQL."""
+"""Poll cryoarchive.systems state and stabilization APIs, store snapshots in PostgreSQL.
+
+Uses curl_cffi (TLS fingerprint impersonation) to bypass Vercel Security Checkpoint.
+See: https://github.com/breachers-of-tomorrow/breacher-net/issues/49
+"""
 
 import json
 import logging
 import os
 import sys
-from datetime import datetime, timezone
 
 import psycopg2
-import requests
+
+from browser import CryoBrowser
 
 logging.basicConfig(
     level=logging.INFO,
@@ -17,9 +21,6 @@ logging.basicConfig(
 log = logging.getLogger("poll_state")
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://breacher:breacher@db:5432/breacher")
-STATE_API = "https://cryoarchive.systems/api/public/state"
-STABILIZATION_API = "https://cryoarchive.systems/api/public/cctv-cameras/stabilization"
-REQUEST_TIMEOUT = 15
 
 
 def get_db():
@@ -27,12 +28,10 @@ def get_db():
     return psycopg2.connect(DATABASE_URL)
 
 
-def poll_state():
+def poll_state(cryo: CryoBrowser):
     """Fetch state API and store a snapshot."""
     try:
-        resp = requests.get(STATE_API, timeout=REQUEST_TIMEOUT)
-        resp.raise_for_status()
-        data = resp.json()
+        data = cryo.fetch_json("/api/public/state")
     except Exception:
         log.exception("Failed to fetch state API")
         return
@@ -74,12 +73,10 @@ def poll_state():
         log.exception("Failed to save state snapshot")
 
 
-def poll_stabilization():
+def poll_stabilization(cryo: CryoBrowser):
     """Fetch stabilization API and store a snapshot."""
     try:
-        resp = requests.get(STABILIZATION_API, timeout=REQUEST_TIMEOUT)
-        resp.raise_for_status()
-        data = resp.json()
+        data = cryo.fetch_json("/api/public/cctv-cameras/stabilization")
     except Exception:
         log.exception("Failed to fetch stabilization API")
         return
@@ -135,7 +132,12 @@ def heartbeat(status="ok", details=None):
 
 if __name__ == "__main__":
     log.info("Starting state poll cycle")
-    poll_state()
-    poll_stabilization()
-    heartbeat()
+    try:
+        with CryoBrowser() as cryo:
+            poll_state(cryo)
+            poll_stabilization(cryo)
+        heartbeat()
+    except Exception:
+        log.exception("State poll cycle failed")
+        heartbeat(status="error", details={"error": "browser_or_challenge_failure"})
     log.info("Poll cycle complete")
