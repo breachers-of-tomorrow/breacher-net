@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { URLS } from "@/lib/urls";
 
 interface NavLink {
   href: string;
@@ -29,10 +30,10 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: "BREACHER.NET",
     links: [
-      { href: "https://wiki.breacher.net", label: "Wiki", external: true },
-      { href: "https://discord.gg/sGeg5Gx2yM", label: "Discord", external: true },
+      { href: URLS.wiki, label: "Wiki", external: true },
+      { href: URLS.discord, label: "Discord", external: true },
       {
-        href: "https://docs.google.com/document/d/1mtUtDPvbh6ahiynYFVS7Z4O79Nw6y5PEOjweCpzWV_A/edit?tab=t.0",
+        href: URLS.communityDoc,
         label: "Community Doc",
         external: true,
       },
@@ -41,8 +42,8 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: "MARATHON",
     links: [
-      { href: "https://marathon.winnower.garden/cryoarchive", label: "Winnower", external: true },
-      { href: "https://tauceti.world", label: "Tau Ceti", external: true },
+      { href: URLS.winnower, label: "Winnower", external: true },
+      { href: URLS.tauCeti, label: "Tau Ceti", external: true },
     ],
   },
 ];

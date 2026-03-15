@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { URLS, youtubeEmbed } from "@/lib/urls";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -51,7 +52,7 @@ type FilterTab = "all" | "unlocked" | "new" | "IMAGE" | "TEXT" | "VIDEO" | "AUDI
 /*  Constants                                                          */
 /* ------------------------------------------------------------------ */
 
-const INDEX_URL = "https://cryoarchive.systems/indx";
+const INDEX_URL = URLS.cryoarchiveIndex;
 const API_URL = "/api/index-entries";
 const REFRESH_INTERVAL = 300_000; // 5 minutes
 const NEW_ENTRY_WINDOW_MS = 6 * 60 * 60 * 1000; // 6 hours
@@ -329,7 +330,7 @@ function EntryContent({ data: cd, entryId }: { data: EntryContentData; entryId: 
         return (
             <div className="py-2">
                 <iframe
-                    src={`https://www.youtube.com/embed/${cd.youtubeVideoId}`}
+                    src={youtubeEmbed(cd.youtubeVideoId)}
                     className="w-full max-w-2xl aspect-video border border-border"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen

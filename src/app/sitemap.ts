@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
+import { SITE_URL } from "@/lib/urls";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://breacher.net";
+  const baseUrl = SITE_URL;
   const now = new Date();
 
   return [

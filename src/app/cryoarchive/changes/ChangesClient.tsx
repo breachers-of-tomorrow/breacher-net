@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { URLS } from "@/lib/urls";
 
 interface BuildEvent {
   detected_at: string;
@@ -101,7 +102,7 @@ export function ChangesClient() {
       {/* Latest Build Banner */}
       {latest && (
         <a
-          href="https://cryoarchive.systems"
+          href={URLS.cryoarchive}
           target="_blank"
           rel="noopener noreferrer"
           className="block cryo-panel p-6 mb-8 hover:border-accent transition-colors no-underline group"

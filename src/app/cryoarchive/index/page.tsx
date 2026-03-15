@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IndexArchiveClient } from "./IndexArchiveClient";
+import { SITE_URL } from "@/lib/urls";
 
 export const metadata: Metadata = {
     title: "Index Archive",
@@ -7,7 +8,7 @@ export const metadata: Metadata = {
     openGraph: {
         title: "Index Archive // BREACHER.NET",
         description: "Cryoarchive entry index — types, lock status, and unlock tracking",
-        url: "https://breacher.net/cryoarchive/index",
+        url: `${SITE_URL}/cryoarchive/index`,
     },
 };
 
