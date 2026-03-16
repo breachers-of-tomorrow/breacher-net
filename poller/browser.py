@@ -21,7 +21,7 @@ import logging
 import os
 from pathlib import Path
 
-from curl_cffi import requests as cffi_requests
+from curl_cffi import CurlMime, requests as cffi_requests
 
 log = logging.getLogger(__name__)
 
@@ -94,12 +94,21 @@ class CryoBrowser:
         filename: str,
         content_type: str,
     ) -> dict:
-        """``POST`` a single file as ``multipart/form-data``."""
+        """``POST`` a single file as ``multipart/form-data``.
+
+        Uses ``CurlMime`` (curl_cffi >=0.14) instead of the removed ``files=`` parameter.
+        """
         url = self._abs(path)
-        file_bytes = Path(file_path).read_bytes()
+        mp = CurlMime()
+        mp.addpart(
+            name=field,
+            filename=filename,
+            content_type=content_type,
+            local_path=file_path,
+        )
         resp = self._session.post(
             url,
-            files={field: (filename, file_bytes, content_type)},
+            multipart=mp,
             timeout=REQUEST_TIMEOUT,
         )
         resp.raise_for_status()
