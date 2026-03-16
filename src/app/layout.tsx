@@ -23,6 +23,14 @@ export const metadata: Metadata = {
   description:
     "Community tracker and hub for the Marathon ARG — Breachers of Tomorrow",
   keywords: ["marathon", "arg", "bungie", "cryoarchive", "breach protocol"],
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -31,12 +39,21 @@ export const metadata: Metadata = {
     title: "BREACHER.NET // Breachers of Tomorrow",
     description:
       "Community tracker and hub for the Marathon ARG — live kill count, sector states, stabilization data, and interactive maps.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "BREACH//NET — Community hub for the Marathon ARG",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "BREACHER.NET // Breachers of Tomorrow",
     description:
       "Community tracker and hub for the Marathon ARG — live kill count, sector states, stabilization data, and interactive maps.",
+    images: ["/og-image.png"],
   },
   alternates: {
     canonical: SITE_URL,
