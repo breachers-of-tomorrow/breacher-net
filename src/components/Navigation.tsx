@@ -30,6 +30,8 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: "BREACHER.NET",
     links: [
+      { href: "/about", label: "About" },
+      { href: "/community", label: "Community" },
       { href: URLS.wiki, label: "Wiki", external: true },
       { href: URLS.discord, label: "Discord", external: true },
       {
