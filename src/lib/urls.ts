@@ -46,6 +46,14 @@ export const URLS = {
   /** Breachers of Tomorrow GitHub org */
   github: "https://github.com/breachers-of-tomorrow",
 
+  /** GitHub Discussions — community Q&A */
+  discussions:
+    "https://github.com/breachers-of-tomorrow/community/discussions",
+
+  /** breacher-net repo — for contributors */
+  breacherNetRepo:
+    "https://github.com/breachers-of-tomorrow/breacher-net",
+
   /** CrowdTypical — original tracker author */
   crowdTypical: "https://github.com/CrowdTypical",
 } as const;
