@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { fetchState, fetchStabilization } from "@/lib/api";
 import { SECTOR_NAMES } from "@/lib/types";
@@ -33,6 +34,16 @@ export default async function HomePage() {
     <main className="max-w-5xl mx-auto px-4 sm:px-8 py-8 sm:py-16">
       {/* Hero */}
       <div className="text-center mb-12 sm:mb-16">
+        <div className="flex justify-center mb-6">
+          <Image
+            src="/logo.svg"
+            alt=""
+            width={64}
+            height={58}
+            className="w-16 h-auto drop-shadow-[0_0_12px_rgba(3,138,223,0.5)]"
+            priority
+          />
+        </div>
         <h1 className="font-[var(--font-display)] text-3xl sm:text-5xl font-black text-accent glow-accent tracking-[6px] mb-4">
           BREACHER<span className="text-accent2">{"//"}</span>NET
         </h1>
@@ -124,7 +135,9 @@ export default async function HomePage() {
           rel="noopener noreferrer"
           className="cryo-panel p-6 flex items-center gap-4 hover:border-accent transition-colors no-underline group"
         >
-          <div className="text-3xl" aria-hidden="true">📖</div>
+          <div className="shrink-0" aria-hidden="true">
+            <Image src="/wiki-logo.svg" alt="" width={32} height={32} className="w-8 h-8" />
+          </div>
           <div>
             <div className="font-[var(--font-display)] text-xs tracking-[3px] text-accent group-hover:glow-accent mb-1">
               WIKI

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { URLS, SITE_URL } from "@/lib/urls";
 
@@ -40,7 +41,7 @@ export default function CommunityPage() {
             accent
           />
           <ResourceCard
-            icon="📖"
+            iconSrc="/wiki-logo.svg"
             title="WIKI"
             description="Marathon lore, sector documentation, character profiles, ARG timeline, and community research."
             href={URLS.wiki}
@@ -201,6 +202,7 @@ export default function CommunityPage() {
 
 function ResourceCard({
   icon,
+  iconSrc,
   title,
   description,
   href,
@@ -208,7 +210,8 @@ function ResourceCard({
   internal,
   accent,
 }: {
-  icon: string;
+  icon?: string;
+  iconSrc?: string;
   title: string;
   description: string;
   href: string;
@@ -229,7 +232,11 @@ function ResourceCard({
         }`}
     >
       <div className="text-2xl shrink-0 mt-0.5" aria-hidden="true">
-        {icon}
+        {iconSrc ? (
+          <Image src={iconSrc} alt="" width={28} height={28} className="w-7 h-7" />
+        ) : (
+          icon
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <div className="font-[var(--font-display)] text-xs tracking-[3px] text-accent group-hover:glow-accent mb-1.5">
