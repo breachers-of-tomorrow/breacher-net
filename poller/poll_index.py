@@ -191,6 +191,8 @@ def parse_rsc_entries(html: str) -> list[dict]:
                 entry_type = "AUDIO"
             elif "video" in mime:
                 entry_type = "VIDEO"
+            elif "pdf" in mime:
+                entry_type = "DOCUMENT"
             else:
                 entry_type = "MEDIA"
 

@@ -35,6 +35,9 @@ export const URLS = {
   /** Tau Ceti community project */
   tauCeti: "https://tauceti.world",
 
+  /** Marathon Weapons Database — community weapon/mod tracker */
+  weaponsDb: "https://d7dfb5c3f756e5dd.vercel-dns-017.com",
+
   /** Cryoarchive source site */
   cryoarchive: "https://cryoarchive.systems",
 

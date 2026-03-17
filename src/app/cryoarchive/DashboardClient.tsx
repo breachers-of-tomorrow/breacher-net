@@ -355,7 +355,7 @@ function Badge({
   const classes = on
     ? "border-accent2 text-accent2 bg-accent2/[0.08] box-glow-accent2"
     : partial
-      ? "border-accent text-accent bg-accent/5"
+      ? "border-border text-dim/60 bg-transparent"
       : "border-border text-dim";
 
   return (

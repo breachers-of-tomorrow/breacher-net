@@ -40,7 +40,9 @@ export async function GET(request: Request) {
         COUNT(*) FILTER (WHERE entry_type = 'IMAGE') AS images,
         COUNT(*) FILTER (WHERE entry_type = 'TEXT') AS texts,
         COUNT(*) FILTER (WHERE entry_type = 'VIDEO') AS videos,
-        COUNT(*) FILTER (WHERE entry_type = 'AUDIO') AS audio
+        COUNT(*) FILTER (WHERE entry_type = 'AUDIO') AS audio,
+        COUNT(*) FILTER (WHERE entry_type = 'DOCUMENT') AS documents,
+        COUNT(*) FILTER (WHERE entry_type = 'MEDIA') AS media
       FROM index_entries
     `);
 
@@ -88,6 +90,8 @@ export async function GET(request: Request) {
                     TEXT: Number(stats.texts),
                     VIDEO: Number(stats.videos),
                     AUDIO: Number(stats.audio),
+                    DOCUMENT: Number(stats.documents),
+                    MEDIA: Number(stats.media),
                 },
             },
             entries: entriesResult.rows,
