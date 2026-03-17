@@ -32,6 +32,8 @@ const NAV_SECTIONS: NavSection[] = [
     links: [
       { href: "/about", label: "About" },
       { href: "/community", label: "Community" },
+      { href: "/contribute", label: "Contribute" },
+      { href: "/api-docs", label: "API Docs" },
       { href: URLS.wiki, label: "Wiki", external: true },
       { href: URLS.discord, label: "Discord", external: true },
       {
