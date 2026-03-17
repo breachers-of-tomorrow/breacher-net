@@ -16,6 +16,8 @@ interface IndexStats {
         TEXT: number;
         VIDEO: number;
         AUDIO: number;
+        DOCUMENT: number;
+        MEDIA: number;
     };
 }
 
@@ -46,7 +48,7 @@ interface IndexApiResponse {
     source?: "database" | "live-scrape";
 }
 
-type FilterTab = "all" | "unlocked" | "new" | "IMAGE" | "TEXT" | "VIDEO" | "AUDIO";
+type FilterTab = "all" | "unlocked" | "new" | "IMAGE" | "TEXT" | "VIDEO" | "AUDIO" | "DOCUMENT" | "MEDIA";
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
@@ -175,11 +177,17 @@ export function IndexArchiveClient() {
                         <StatCard label="TEXT" value={stats.types.TEXT} color="text-accent glow-accent" />
                         <StatCard label="VIDEO" value={stats.types.VIDEO} color="text-warn glow-warn" />
                         <StatCard label="AUDIO" value={stats.types.AUDIO} color="text-danger glow-danger" />
+                        {stats.types.DOCUMENT > 0 && (
+                            <StatCard label="DOCUMENT" value={stats.types.DOCUMENT} color="text-purple-400 glow-accent" />
+                        )}
+                        {stats.types.MEDIA > 0 && (
+                            <StatCard label="MEDIA" value={stats.types.MEDIA} color="text-dim" />
+                        )}
                     </div>
 
                     {/* Filter Tabs */}
                     <div className="flex flex-wrap gap-2 mb-6">
-                        {(["all", "unlocked", "new", "IMAGE", "TEXT", "VIDEO", "AUDIO"] as FilterTab[]).map((tab) => {
+                        {(["all", "unlocked", "new", "IMAGE", "TEXT", "VIDEO", "AUDIO", "DOCUMENT", "MEDIA"] as FilterTab[]).map((tab) => {
                             const isActive = filter === tab;
                             const count = tab === "all"
                                 ? stats.total
@@ -188,6 +196,8 @@ export function IndexArchiveClient() {
                                     : tab === "new"
                                         ? newCount
                                         : stats.types[tab as keyof typeof stats.types] ?? 0;
+                            // Hide DOCUMENT and MEDIA tabs when count is 0
+                            if ((tab === "DOCUMENT" || tab === "MEDIA") && count === 0) return null;
                             return (
                                 <button
                                     key={tab}
@@ -267,6 +277,8 @@ const TYPE_COLORS: Record<string, string> = {
     TEXT: "text-accent",
     VIDEO: "text-warn",
     AUDIO: "text-danger",
+    DOCUMENT: "text-purple-400",
+    MEDIA: "text-dim",
 };
 
 function EntryRow({ entry, isNew, isExpanded, onToggle }: {
@@ -375,6 +387,30 @@ function EntryContent({ data: cd, entryId }: { data: EntryContentData; entryId: 
                 {(cd.altFilename || cd.alt) && (
                     <div className="text-dim text-[0.6rem] mt-1.5 tracking-[1px]">
                         {cd.altFilename ?? cd.alt}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // PDF / Document
+    if (cd.url && cd.mimeType === "application/pdf") {
+        return (
+            <div className="py-2">
+                <a
+                    href={cd.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 transition-colors"
+                >
+                    <span className="text-lg">📄</span>
+                    <span className="tracking-[1px] text-[0.7rem]">
+                        {cd.altFilename ?? cd.alt ?? "VIEW DOCUMENT"}
+                    </span>
+                </a>
+                {(cd.altFilename || cd.alt) && cd.altFilename !== cd.alt && (
+                    <div className="text-dim text-[0.6rem] mt-1 tracking-[1px]">
+                        {cd.alt}
                     </div>
                 )}
             </div>

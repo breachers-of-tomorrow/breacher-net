@@ -137,6 +137,13 @@ export default function CommunityPage() {
             href={URLS.tauCeti}
             cta="EXPLORE"
           />
+          <ResourceCard
+            icon="🔫"
+            title="WEAPONS DATABASE"
+            description="Community-built weapon and mod tracker — stats, attachments, and up-to-date loadout information."
+            href={URLS.weaponsDb}
+            cta="VIEW WEAPONS"
+          />
         </div>
       </section>
 
