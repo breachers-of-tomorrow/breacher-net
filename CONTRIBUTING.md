@@ -2,6 +2,8 @@
 
 Thanks for wanting to help! This project is maintained by the Breachers of Tomorrow community.
 
+**By participating in this project, you agree to abide by our [Code of Conduct](https://github.com/breachers-of-tomorrow/community/blob/main/CODE-OF-CONDUCT.md).**
+
 ## Development Setup
 
 ### Prerequisites
