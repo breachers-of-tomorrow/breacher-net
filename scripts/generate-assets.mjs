@@ -191,7 +191,7 @@ async function generatePwaIcons() {
 }
 
 // ============================================================
-// Generate OG image (1200×630) — logo + BREACH//NET text
+// Generate OG image (1200×630) — logo + BREACHER//NET text
 // ============================================================
 async function generateOgImage() {
   console.log("Generating OG image...");
@@ -229,12 +229,12 @@ async function generateOgImage() {
       <!-- Bottom accent line -->
       <rect x="0" y="${height - 3}" width="${width}" height="3" fill="url(#textGrad)" />
 
-      <!-- BREACH//NET title -->
+      <!-- BREACHER//NET title -->
       <text x="${width / 2}" y="${height / 2 + 60}"
             font-family="'Space Grotesk', 'Arial Black', sans-serif"
-            font-size="72" font-weight="900" letter-spacing="8"
+            font-size="64" font-weight="900" letter-spacing="6"
             fill="${ACCENT}" text-anchor="middle">
-        BREACH<tspan fill="${ACCENT2}">//</tspan>NET
+        BREACHER<tspan fill="${ACCENT2}">//</tspan>NET
       </text>
 
       <!-- Subtitle -->
