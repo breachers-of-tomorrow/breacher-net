@@ -191,21 +191,23 @@ export function KillCountChart() {
         );
 
         const points: DataPoint[] = sorted.map((r, i) => {
+          // PostgreSQL BIGINT comes back as string — must coerce to number
+          const killCount = Number(r.kill_count);
           let kpm: number | null = null;
           if (i > 0) {
-            const prev = sorted[i - 1];
-            const t1 = new Date(prev.captured_at).getTime();
+            const prevKc = Number(sorted[i - 1].kill_count);
+            const t1 = new Date(sorted[i - 1].captured_at).getTime();
             const t2 = new Date(r.captured_at).getTime();
             const mins = (t2 - t1) / 60_000;
-            if (mins > 0 && r.kill_count > prev.kill_count) {
-              kpm = Math.round((r.kill_count - prev.kill_count) / mins);
+            if (mins > 0 && killCount > prevKc) {
+              kpm = Math.round((killCount - prevKc) / mins);
             }
           }
           return {
             timestamp: r.captured_at,
             ts: new Date(r.captured_at).getTime(),
-            value: r.kill_count,
-            valueSmooth: r.kill_count,
+            value: killCount,
+            valueSmooth: killCount,
             kpm,
             kpmSmooth: null,
             label: formatTooltipTime(r.captured_at),
