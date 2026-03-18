@@ -44,8 +44,7 @@ type RangeLabel = (typeof RANGES)[number]["label"];
 
 const DEFAULT_RANGE: RangeLabel = "24H";
 const MAX_CHART_POINTS = 300;
-const KPM_SMOOTH_WINDOW = 5;
-const KILL_SMOOTH_WINDOW = 7;
+const KPM_DERIV_WINDOW = 10;
 
 /* ------------------------------------------------------------------ */
 /*  Formatting helpers                                                 */
@@ -108,38 +107,56 @@ function downsample(points: DataPoint[], maxPoints: number): DataPoint[] {
   return result;
 }
 
-/** Simple moving-average smoothing for KPM. */
-function smoothKpm(points: DataPoint[], window: number): DataPoint[] {
-  return points.map((p, i) => {
-    if (p.kpm === null) return p;
-    const half = Math.floor(window / 2);
-    const start = Math.max(0, i - half);
-    const end = Math.min(points.length, i + half + 1);
-    const values: number[] = [];
-    for (let j = start; j < end; j++) {
-      if (points[j].kpm !== null) values.push(points[j].kpm!);
+/**
+ * Linearly interpolate kill count between actual change points.
+ * The poller returns the same value between API updates, creating
+ * staircase steps. This draws a smooth ramp between each real change.
+ */
+function interpolateKillCount(points: DataPoint[]): DataPoint[] {
+  if (points.length < 2) return points.map((p) => ({ ...p }));
+
+  // Collect indices where the kill count actually changed
+  const cp: number[] = [0];
+  for (let i = 1; i < points.length; i++) {
+    if (points[i].value !== points[i - 1].value) cp.push(i);
+  }
+  if (cp[cp.length - 1] !== points.length - 1) cp.push(points.length - 1);
+
+  const result = points.map((p) => ({ ...p }));
+
+  for (let c = 0; c < cp.length - 1; c++) {
+    const si = cp[c];
+    const ei = cp[c + 1];
+    const sv = points[si].value;
+    const ev = points[ei].value;
+    const st = points[si].ts;
+    const dt = points[ei].ts - st;
+
+    for (let i = si; i <= ei; i++) {
+      const t = dt > 0 ? (points[i].ts - st) / dt : 0;
+      result[i].valueSmooth = Math.round(sv + (ev - sv) * t);
     }
-    const avg =
-      values.length > 0
-        ? Math.round(values.reduce((a, b) => a + b, 0) / values.length)
-        : null;
-    return { ...p, kpmSmooth: avg };
-  });
+  }
+
+  return result;
 }
 
-/** Moving-average smoothing for kill count to remove staircase steps. */
-function smoothKillCount(points: DataPoint[], window: number): DataPoint[] {
+/**
+ * Compute smoothed KPM from the interpolated kill count curve.
+ * Uses central differences over a rolling window so the rate line
+ * is smooth and continuous instead of spiking at change points.
+ */
+function computeSmoothedKpm(
+  points: DataPoint[],
+  window: number,
+): DataPoint[] {
   return points.map((p, i) => {
-    const half = Math.floor(window / 2);
-    const start = Math.max(0, i - half);
-    const end = Math.min(points.length, i + half + 1);
-    let sum = 0;
-    let count = 0;
-    for (let j = start; j < end; j++) {
-      sum += points[j].value;
-      count++;
-    }
-    return { ...p, valueSmooth: Math.round(sum / count) };
+    const lo = Math.max(0, i - window);
+    const hi = Math.min(points.length - 1, i + window);
+    const dv = points[hi].valueSmooth - points[lo].valueSmooth;
+    const dt = (points[hi].ts - points[lo].ts) / 60_000; // minutes
+    const kpm = dt > 0 ? Math.round(dv / dt) : null;
+    return { ...p, kpmSmooth: kpm !== null && kpm > 0 ? kpm : null };
   });
 }
 
@@ -218,7 +235,8 @@ export function KillCountChart() {
       if (filtered.length < 2) filtered = allData;
     }
     const sampled = downsample(filtered, MAX_CHART_POINTS);
-    return smoothKpm(smoothKillCount(sampled, KILL_SMOOTH_WINDOW), KPM_SMOOTH_WINDOW);
+    const interpolated = interpolateKillCount(sampled);
+    return computeSmoothedKpm(interpolated, KPM_DERIV_WINDOW);
   }, [allData, range]);
 
   /** Only enable range buttons when we actually have enough data. */
