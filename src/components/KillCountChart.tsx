@@ -398,7 +398,7 @@ export function KillCountChart() {
             />
             <Area
               yAxisId="left"
-              type="natural"
+              type="monotone"
               dataKey="valueSmooth"
               name="Kill Count"
               stroke="#FF3344"
