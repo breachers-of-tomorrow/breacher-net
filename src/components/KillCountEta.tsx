@@ -27,7 +27,7 @@ interface Projection {
   eta: Date;
   /** Kills remaining to target */
   remaining: number;
-  /** Current KPM (last ~45 min average) */
+  /** Current KPM (last ~30 min average) */
   currentKpm: number;
   /** Average KPM across all history */
   avgKpm: number;
