@@ -55,19 +55,30 @@ function buildHourlyProfile(rows: HistoryRow[]): HourlyRate[] {
       new Date(a.captured_at).getTime() - new Date(b.captured_at).getTime(),
   );
 
+  // Deduplicate: keep only rows where kill_count actually changed.
+  // The game state updates every ~15 min but we poll every ~5 min,
+  // so ~2/3 of rows are duplicates. Without dedup, 15 min of kills
+  // get attributed to a 5-min gap, inflating rates by ~3x.
+  const changePoints: HistoryRow[] = [sorted[0]];
+  for (let i = 1; i < sorted.length; i++) {
+    if (Number(sorted[i].kill_count) !== Number(changePoints[changePoints.length - 1].kill_count)) {
+      changePoints.push(sorted[i]);
+    }
+  }
+
   // Bucket: hour -> array of KPM observations
   const buckets: Map<number, number[]> = new Map();
   for (let h = 0; h < 24; h++) buckets.set(h, []);
 
-  for (let i = 1; i < sorted.length; i++) {
-    const t0 = new Date(sorted[i - 1].captured_at).getTime();
-    const t1 = new Date(sorted[i].captured_at).getTime();
-    const kc0 = Number(sorted[i - 1].kill_count);
-    const kc1 = Number(sorted[i].kill_count);
+  for (let i = 1; i < changePoints.length; i++) {
+    const t0 = new Date(changePoints[i - 1].captured_at).getTime();
+    const t1 = new Date(changePoints[i].captured_at).getTime();
+    const kc0 = Number(changePoints[i - 1].kill_count);
+    const kc1 = Number(changePoints[i].kill_count);
     const dtMin = (t1 - t0) / 60_000;
 
-    // Skip gaps > 30 min (missing data) and zero/negative deltas
-    if (dtMin <= 0 || dtMin > 30 || kc1 <= kc0) continue;
+    // Skip gaps > 60 min (missing data) and zero/negative deltas
+    if (dtMin <= 0 || dtMin > 60 || kc1 <= kc0) continue;
 
     const kpm = (kc1 - kc0) / dtMin;
     const hour = new Date(t1).getUTCHours();
