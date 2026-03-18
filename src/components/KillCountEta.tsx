@@ -11,12 +11,10 @@ const TARGET = 500_000_000;
 const HISTORY_API = "/api/state/history?limit=1000";
 
 /* ------------------------------------------------------------------ */
-/*  Diurnal-weighted projection model                                  */
+/*  Flat-average projection model                                      */
 /*                                                                     */
-/*  1. Compute average KPM for each UTC hour from all history          */
-/*  2. Walk forward hour-by-hour from "now" using each hour's rate     */
-/*  3. Accumulate kills until we reach the remaining amount            */
-/*  4. Result: projected date/time of arrival                          */
+/*  1. Compute overall KPM from total kills / total time               */
+/*  2. Project ETA linearly: remaining kills / avg KPM                 */
 /* ------------------------------------------------------------------ */
 
 interface HistoryRow {
@@ -24,131 +22,21 @@ interface HistoryRow {
   kill_count: string | number;
 }
 
-interface HourlyRate {
-  hour: number;
-  kpm: number;
-  samples: number;
-}
-
 interface Projection {
   /** Estimated Date when 500M is reached */
   eta: Date;
   /** Kills remaining to target */
   remaining: number;
-  /** Current KPM (last ~30 min average) */
+  /** Current KPM (last ~45 min average) */
   currentKpm: number;
-  /** Average KPM across all hours */
+  /** Average KPM across all history */
   avgKpm: number;
-  /** The 24-hour rate profile used */
-  hourlyRates: HourlyRate[];
   /** How many days of data the model is based on */
   dataSpanDays: number;
 }
 
 /**
- * Build the 24-hour KPM profile from historical data.
- * Groups all point-to-point rates by their UTC hour, then averages.
- */
-function buildHourlyProfile(rows: HistoryRow[]): HourlyRate[] {
-  const sorted = [...rows].sort(
-    (a, b) =>
-      new Date(a.captured_at).getTime() - new Date(b.captured_at).getTime(),
-  );
-
-  // Deduplicate: keep only rows where kill_count actually changed.
-  // The game state updates every ~15 min but we poll every ~5 min,
-  // so ~2/3 of rows are duplicates. Without dedup, 15 min of kills
-  // get attributed to a 5-min gap, inflating rates by ~3x.
-  const changePoints: HistoryRow[] = [sorted[0]];
-  for (let i = 1; i < sorted.length; i++) {
-    if (Number(sorted[i].kill_count) !== Number(changePoints[changePoints.length - 1].kill_count)) {
-      changePoints.push(sorted[i]);
-    }
-  }
-
-  // Bucket: hour -> array of KPM observations
-  const buckets: Map<number, number[]> = new Map();
-  for (let h = 0; h < 24; h++) buckets.set(h, []);
-
-  for (let i = 1; i < changePoints.length; i++) {
-    const t0 = new Date(changePoints[i - 1].captured_at).getTime();
-    const t1 = new Date(changePoints[i].captured_at).getTime();
-    const kc0 = Number(changePoints[i - 1].kill_count);
-    const kc1 = Number(changePoints[i].kill_count);
-    const dtMin = (t1 - t0) / 60_000;
-
-    // Skip gaps > 60 min (missing data) and zero/negative deltas
-    if (dtMin <= 0 || dtMin > 60 || kc1 <= kc0) continue;
-
-    const kpm = (kc1 - kc0) / dtMin;
-    const hour = new Date(t1).getUTCHours();
-    buckets.get(hour)!.push(kpm);
-  }
-
-  // Compute averages, fill gaps with overall average
-  const rates: HourlyRate[] = [];
-  let totalKpm = 0;
-  let totalSamples = 0;
-
-  for (let h = 0; h < 24; h++) {
-    const samples = buckets.get(h)!;
-    if (samples.length > 0) {
-      const avg = samples.reduce((a, b) => a + b, 0) / samples.length;
-      rates.push({ hour: h, kpm: Math.round(avg), samples: samples.length });
-      totalKpm += avg;
-      totalSamples++;
-    } else {
-      rates.push({ hour: h, kpm: 0, samples: 0 });
-    }
-  }
-
-  // Fill any empty hours with the overall average
-  const overallAvg =
-    totalSamples > 0 ? Math.round(totalKpm / totalSamples) : 0;
-  for (const r of rates) {
-    if (r.samples === 0) r.kpm = overallAvg;
-  }
-
-  return rates;
-}
-
-/**
- * Walk forward from now using the hourly rate profile until we
- * accumulate enough kills to reach the target.
- */
-function projectEta(
-  currentKills: number,
-  hourlyRates: HourlyRate[],
-): Date | null {
-  const remaining = TARGET - currentKills;
-  if (remaining <= 0) return new Date(); // Already hit!
-
-  let accumulated = 0;
-  const now = new Date();
-  let cursor = new Date(now);
-
-  // Walk forward in 1-minute increments for accuracy
-  // Cap at 60 days to avoid infinite loop
-  const maxMinutes = 60 * 24 * 60;
-
-  for (let m = 0; m < maxMinutes; m++) {
-    const hour = cursor.getUTCHours();
-    const kpm = hourlyRates[hour]?.kpm ?? 0;
-    accumulated += kpm;
-
-    if (accumulated >= remaining) {
-      return cursor;
-    }
-
-    cursor = new Date(cursor.getTime() + 60_000);
-  }
-
-  // Fallback: couldn't project within 60 days
-  return null;
-}
-
-/**
- * Compute current KPM from recent data (~last 30 min).
+ * Compute current KPM from recent data (~last 45 min).
  */
 function recentKpm(rows: HistoryRow[]): number {
   const sorted = [...rows].sort(
@@ -214,33 +102,34 @@ export function KillCountEta({
   const projection = useMemo((): Projection | null => {
     if (rows.length < 10) return null;
 
-    const hourlyRates = buildHourlyProfile(rows);
-    const eta = projectEta(currentKills, hourlyRates);
-    const curKpm = recentKpm(rows);
-
-    // Data span
     const sorted = [...rows].sort(
       (a, b) =>
         new Date(a.captured_at).getTime() - new Date(b.captured_at).getTime(),
     );
-    const spanMs =
-      new Date(sorted[sorted.length - 1].captured_at).getTime() -
-      new Date(sorted[0].captured_at).getTime();
-    const dataSpanDays = spanMs / (1000 * 60 * 60 * 24);
 
-    const avgKpm =
-      Math.round(
-        hourlyRates.reduce((s, r) => s + r.kpm, 0) / hourlyRates.length,
-      );
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    const totalMinutes =
+      (new Date(last.captured_at).getTime() -
+        new Date(first.captured_at).getTime()) /
+      60_000;
+    const totalKills =
+      Number(last.kill_count) - Number(first.kill_count);
 
-    if (!eta) return null;
+    if (totalMinutes <= 0 || totalKills <= 0) return null;
+
+    const avgKpm = Math.round(totalKills / totalMinutes);
+    const remaining = TARGET - currentKills;
+    const minutesLeft = remaining / avgKpm;
+    const eta = new Date(Date.now() + minutesLeft * 60_000);
+    const dataSpanDays = totalMinutes / (60 * 24);
+    const curKpm = recentKpm(rows);
 
     return {
       eta,
-      remaining: TARGET - currentKills,
+      remaining,
       currentKpm: curKpm,
       avgKpm,
-      hourlyRates,
       dataSpanDays,
     };
   }, [rows, currentKills]);
@@ -394,7 +283,7 @@ export function KillCountEta({
             MODEL{" "}
           </span>
           <span className="text-text-body">
-            diurnal-weighted ({dataSpanDays.toFixed(1)}d of data)
+            flat-average ({dataSpanDays.toFixed(1)}d of data)
           </span>
         </div>
       </div>
