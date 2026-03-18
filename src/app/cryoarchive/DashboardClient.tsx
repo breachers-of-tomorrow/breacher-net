@@ -28,6 +28,20 @@ const KillCountChart = dynamic(
   },
 );
 
+const KillCountEta = dynamic(
+  () => import("@/components/KillCountEta").then((m) => m.KillCountEta),
+  {
+    loading: () => (
+      <div className="cryo-panel p-5 mb-8 h-[100px] flex items-center justify-center">
+        <div className="font-[var(--font-display)] text-xs tracking-[4px] text-dim animate-blink">
+          CALCULATING PROJECTION...
+        </div>
+      </div>
+    ),
+    ssr: false,
+  },
+);
+
 interface DashboardData {
   killCount: number;
   nextUpdateAt: string;
@@ -224,8 +238,15 @@ export function DashboardClient({ initialData }: Props) {
         </div>
       </div>
 
+      {/* ETA TO 500M */}
+      <KillCountEta currentKills={data.killCount} />
+
+      {/* Kill Count Chart */}
+      <div className="section-title">KILL COUNT OVER TIME</div>
+      <KillCountChart />
+
       {/* SHIP DATE */}
-      <div className="cryo-panel p-5 mb-8">
+      <div className="cryo-panel p-5 mt-8">
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-accent to-transparent" />
         <div className="font-[var(--font-display)] text-[0.6rem] tracking-[3px] text-dim mb-2">
           SHIP DATE
@@ -243,10 +264,6 @@ export function DashboardClient({ initialData }: Props) {
           </div>
         )}
       </div>
-
-      {/* Kill Count Chart */}
-      <div className="section-title">KILL COUNT OVER TIME</div>
-      <KillCountChart />
     </div>
   );
 }
