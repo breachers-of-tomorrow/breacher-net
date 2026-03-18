@@ -17,6 +17,7 @@ interface DataPoint {
   timestamp: string;
   ts: number;
   value: number;
+  valueSmooth: number;
   kpm: number | null;
   kpmSmooth: number | null;
   label: string;
@@ -44,6 +45,7 @@ type RangeLabel = (typeof RANGES)[number]["label"];
 const DEFAULT_RANGE: RangeLabel = "24H";
 const MAX_CHART_POINTS = 300;
 const KPM_SMOOTH_WINDOW = 5;
+const KILL_SMOOTH_WINDOW = 7;
 
 /* ------------------------------------------------------------------ */
 /*  Formatting helpers                                                 */
@@ -125,6 +127,22 @@ function smoothKpm(points: DataPoint[], window: number): DataPoint[] {
   });
 }
 
+/** Moving-average smoothing for kill count to remove staircase steps. */
+function smoothKillCount(points: DataPoint[], window: number): DataPoint[] {
+  return points.map((p, i) => {
+    const half = Math.floor(window / 2);
+    const start = Math.max(0, i - half);
+    const end = Math.min(points.length, i + half + 1);
+    let sum = 0;
+    let count = 0;
+    for (let j = start; j < end; j++) {
+      sum += points[j].value;
+      count++;
+    }
+    return { ...p, valueSmooth: Math.round(sum / count) };
+  });
+}
+
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
@@ -170,6 +188,7 @@ export function KillCountChart() {
             timestamp: r.captured_at,
             ts: new Date(r.captured_at).getTime(),
             value: r.kill_count,
+            valueSmooth: r.kill_count,
             kpm,
             kpmSmooth: null,
             label: formatTooltipTime(r.captured_at),
@@ -198,7 +217,8 @@ export function KillCountChart() {
       filtered = allData.filter((d) => d.ts >= cutoff);
       if (filtered.length < 2) filtered = allData;
     }
-    return smoothKpm(downsample(filtered, MAX_CHART_POINTS), KPM_SMOOTH_WINDOW);
+    const sampled = downsample(filtered, MAX_CHART_POINTS);
+    return smoothKpm(smoothKillCount(sampled, KILL_SMOOTH_WINDOW), KPM_SMOOTH_WINDOW);
   }, [allData, range]);
 
   /** Only enable range buttons when we actually have enough data. */
@@ -350,13 +370,14 @@ export function KillCountChart() {
             )}
             <Tooltip
               labelFormatter={(label) => formatTooltipTime(label as string)}
-              formatter={(value, name) => {
-                const v = Number(value);
-                if (name === "Kill Count")
-                  return [v.toLocaleString(), "Kill Count"];
+              formatter={(value, name, props) => {
+                if (name === "Kill Count") {
+                  const raw = props?.payload?.value ?? Number(value);
+                  return [Number(raw).toLocaleString(), "Kill Count"];
+                }
                 if (name === "Kills/min")
                   return [
-                    `${v.toLocaleString()} kills/min`,
+                    `${Number(value).toLocaleString()} kills/min`,
                     "Rate",
                   ];
                 return [String(value), String(name)];
@@ -377,8 +398,8 @@ export function KillCountChart() {
             />
             <Area
               yAxisId="left"
-              type="monotone"
-              dataKey="value"
+              type="natural"
+              dataKey="valueSmooth"
               name="Kill Count"
               stroke="#FF3344"
               strokeWidth={2}
