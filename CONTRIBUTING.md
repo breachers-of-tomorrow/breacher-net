@@ -42,7 +42,7 @@ docker compose up
 1. Fork the repository
 2. Create a feature branch from `develop`: `git checkout -b feature/my-feature develop`
 3. Make your changes
-4. Run checks: `npm run lint && npm run build`
+4. Run checks: `npm run lint && npm run test && npm run build`
 5. Commit with a descriptive message (see below)
 6. Push and open a PR targeting `develop`
 
@@ -90,4 +90,4 @@ Looking for something to work on? Check the [issues](https://github.com/breacher
 ## Questions?
 
 - Open an issue for bugs or feature requests
-- Join the [Discord](https://discord.gg/marathon) for discussion
+- Join the [Discord](https://discord.gg/sGeg5Gx2yM) for discussion

@@ -2,7 +2,7 @@
 
 Community hub and live tracking dashboard for the [Marathon](<https://en.wikipedia.org/wiki/Marathon_(upcoming_video_game)>) ARG — built by the Breachers of Tomorrow.
 
-**Live site:** [breacher.net](https://breacher.net) (coming soon)
+**Live site:** [breacher.net](https://breacher.net)
 
 ## What is this?
 
@@ -147,7 +147,7 @@ db/                         # Database schema
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development workflow, branch strategy, and guidelines.
 
-**TL;DR:** Fork → feature branch → PR to `develop`. Run `npm run lint && npm run build` before pushing.
+**TL;DR:** Fork → feature branch → PR to `develop`. Run `npm run lint && npm run test && npm run build` before pushing.
 
 ## Related Resources
 
