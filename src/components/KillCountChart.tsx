@@ -12,121 +12,159 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
+import {
+  RANGES,
+  DEFAULT_RANGE,
+  MAX_CHART_POINTS,
+  spansMultipleDays,
+  formatAxis,
+  formatTooltipTime,
+  formatCompact,
+  downsample,
+  filterToRange,
+  computeAvailableRanges,
+  clampedDomain,
+  TOOLTIP_STYLE,
+  AXIS_STYLE,
+  GRID_STYLE,
+} from "@/lib/chart-utils";
+import type { RangeLabel, BaseDataPoint } from "@/lib/chart-utils";
 
-interface DataPoint {
-  timestamp: string;
-  ts: number;
-  value: number;
-  valueSmooth: number;
+interface DataPoint extends BaseDataPoint {
   kpm: number | null;
   kpmSmooth: number | null;
-  label: string;
 }
 
 interface HistoryRow {
   captured_at: string;
-  kill_count: number;
+  kill_count: string | number;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Time range options                                                 */
-/* ------------------------------------------------------------------ */
-
-const RANGES = [
-  { label: "6H", hours: 6 },
-  { label: "24H", hours: 24 },
-  { label: "3D", hours: 72 },
-  { label: "7D", hours: 168 },
-  { label: "ALL", hours: 0 },
-] as const;
-
-type RangeLabel = (typeof RANGES)[number]["label"];
-
-const DEFAULT_RANGE: RangeLabel = "24H";
-const MAX_CHART_POINTS = 300;
-const KPM_DERIV_WINDOW = 10;
-
-/* ------------------------------------------------------------------ */
-/*  Formatting helpers                                                 */
-/* ------------------------------------------------------------------ */
-
-function spansMultipleDays(data: DataPoint[]): boolean {
-  if (data.length < 2) return false;
-  const first = new Date(data[0].timestamp).toLocaleDateString();
-  const last = new Date(data[data.length - 1].timestamp).toLocaleDateString();
-  return first !== last;
-}
-
-function formatAxis(ts: string, multiDay: boolean): string {
-  const d = new Date(ts);
-  if (multiDay) {
-    return d.toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      hour12: true,
-    });
+/**
+ * Smoothing window size scales with the selected time range.
+ * Shorter ranges show more detail; longer ranges smooth more aggressively.
+ */
+function kpmWindowForRange(rangeLabel: RangeLabel): number {
+  switch (rangeLabel) {
+    case "6H":
+      return 8;
+    case "24H":
+      return 12;
+    case "3D":
+      return 16;
+    case "7D":
+      return 20;
+    case "ALL":
+      return 24;
   }
-  return d.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-}
-
-function formatTooltipTime(ts: string): string {
-  const d = new Date(ts);
-  return d.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
 }
 
 function formatKills(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
-  return n.toLocaleString();
+  return formatCompact(n, 1);
 }
 
 /* ------------------------------------------------------------------ */
 /*  Data processing                                                    */
 /* ------------------------------------------------------------------ */
 
-/** Downsample keeping first, last, and evenly-spaced middle points. */
-function downsample(points: DataPoint[], maxPoints: number): DataPoint[] {
-  if (points.length <= maxPoints) return points;
-  const result: DataPoint[] = [points[0]];
-  const step = (points.length - 1) / (maxPoints - 1);
-  for (let i = 1; i < maxPoints - 1; i++) {
-    result.push(points[Math.round(i * step)]);
-  }
-  result.push(points[points.length - 1]);
-  return result;
-}
-
 /**
- * Linearly interpolate kill count between actual change points.
- * The poller returns the same value between API updates, creating
- * staircase steps. This draws a smooth ramp between each real change.
+ * Monotone cubic interpolation (Fritsch-Carlson) between change points.
+ *
+ * The poller returns identical kill_count between game API updates,
+ * creating staircase steps. Linear interpolation creates sharp kinks
+ * at change points, which propagate as spikes in the derivative (KPM).
+ *
+ * Cubic interpolation produces C1-continuous curves (smooth first
+ * derivative), eliminating the KPM spikes entirely.
  */
 function interpolateKillCount(points: DataPoint[]): DataPoint[] {
   if (points.length < 2) return points.map((p) => ({ ...p }));
 
   // Collect indices where the kill count actually changed
-  const cp: number[] = [0];
+  const cpIdx: number[] = [0];
   for (let i = 1; i < points.length; i++) {
-    if (points[i].value !== points[i - 1].value) cp.push(i);
+    if (points[i].value !== points[i - 1].value) cpIdx.push(i);
   }
-  if (cp[cp.length - 1] !== points.length - 1) cp.push(points.length - 1);
+  if (cpIdx[cpIdx.length - 1] !== points.length - 1) {
+    cpIdx.push(points.length - 1);
+  }
 
+  // If fewer than 3 change points, fall back to linear
+  if (cpIdx.length < 3) {
+    return linearInterpolate(points, cpIdx);
+  }
+
+  // Build arrays for the spline knots
+  const n = cpIdx.length;
+  const xs = cpIdx.map((i) => points[i].ts);
+  const ys = cpIdx.map((i) => points[i].value);
+
+  // Compute slopes between knots
+  const deltas: number[] = [];
+  const slopes: number[] = [];
+  for (let i = 0; i < n - 1; i++) {
+    const dx = xs[i + 1] - xs[i];
+    deltas.push(dx);
+    slopes.push(dx > 0 ? (ys[i + 1] - ys[i]) / dx : 0);
+  }
+
+  // Fritsch-Carlson tangents: monotone-preserving
+  const tangents = new Array(n).fill(0);
+  tangents[0] = slopes[0];
+  tangents[n - 1] = slopes[n - 2];
+
+  for (let i = 1; i < n - 1; i++) {
+    if (slopes[i - 1] * slopes[i] <= 0) {
+      tangents[i] = 0;
+    } else {
+      tangents[i] =
+        (2 * slopes[i - 1] * slopes[i]) / (slopes[i - 1] + slopes[i]);
+    }
+  }
+
+  // Evaluate cubic hermite for every point
   const result = points.map((p) => ({ ...p }));
 
-  for (let c = 0; c < cp.length - 1; c++) {
-    const si = cp[c];
-    const ei = cp[c + 1];
+  for (let seg = 0; seg < n - 1; seg++) {
+    const x0 = xs[seg];
+    const x1 = xs[seg + 1];
+    const y0 = ys[seg];
+    const y1 = ys[seg + 1];
+    const m0 = tangents[seg] * (x1 - x0);
+    const m1 = tangents[seg + 1] * (x1 - x0);
+
+    const startIdx = cpIdx[seg];
+    const endIdx = cpIdx[seg + 1];
+
+    for (let i = startIdx; i <= endIdx; i++) {
+      const t = x1 !== x0 ? (points[i].ts - x0) / (x1 - x0) : 0;
+      const t2 = t * t;
+      const t3 = t2 * t;
+
+      const h00 = 2 * t3 - 3 * t2 + 1;
+      const h10 = t3 - 2 * t2 + t;
+      const h01 = -2 * t3 + 3 * t2;
+      const h11 = t3 - t2;
+
+      result[i].valueSmooth = Math.round(
+        h00 * y0 + h10 * m0 + h01 * y1 + h11 * m1,
+      );
+    }
+  }
+
+  return result;
+}
+
+/** Simple linear interpolation fallback. */
+function linearInterpolate(
+  points: DataPoint[],
+  cpIdx: number[],
+): DataPoint[] {
+  const result = points.map((p) => ({ ...p }));
+
+  for (let c = 0; c < cpIdx.length - 1; c++) {
+    const si = cpIdx[c];
+    const ei = cpIdx[c + 1];
     const sv = points[si].value;
     const ev = points[ei].value;
     const st = points[si].ts;
@@ -142,21 +180,47 @@ function interpolateKillCount(points: DataPoint[]): DataPoint[] {
 }
 
 /**
- * Compute smoothed KPM from the interpolated kill count curve.
- * Uses central differences over a rolling window so the rate line
- * is smooth and continuous instead of spiking at change points.
+ * Gaussian-weighted KPM smoothing.
+ *
+ * Instead of a simple central-difference over a fixed window,
+ * this applies a Gaussian kernel so nearby points contribute
+ * more than distant ones. The result is a much smoother rate
+ * curve with no abrupt transitions.
  */
 function computeSmoothedKpm(
   points: DataPoint[],
   window: number,
 ): DataPoint[] {
+  const sigma = window / 2.5;
+  const weights: number[] = [];
+  for (let d = 0; d <= window; d++) {
+    weights.push(Math.exp((-d * d) / (2 * sigma * sigma)));
+  }
+
   return points.map((p, i) => {
-    const lo = Math.max(0, i - window);
-    const hi = Math.min(points.length - 1, i + window);
-    const dv = points[hi].valueSmooth - points[lo].valueSmooth;
-    const dt = (points[hi].ts - points[lo].ts) / 60_000; // minutes
-    const kpm = dt > 0 ? Math.round(dv / dt) : null;
-    return { ...p, kpmSmooth: kpm !== null && kpm > 0 ? kpm : null };
+    let weightedRate = 0;
+    let totalWeight = 0;
+
+    for (let offset = 1; offset <= window; offset++) {
+      const lo = i - offset;
+      const hi = i + offset;
+      if (lo < 0 || hi >= points.length) continue;
+
+      const dv = points[hi].valueSmooth - points[lo].valueSmooth;
+      const dt = (points[hi].ts - points[lo].ts) / 60_000;
+      if (dt <= 0) continue;
+
+      const w = weights[offset];
+      weightedRate += (dv / dt) * w;
+      totalWeight += w;
+    }
+
+    const kpm =
+      totalWeight > 0 ? Math.round(weightedRate / totalWeight) : null;
+    return {
+      ...p,
+      kpmSmooth: kpm !== null && kpm > 0 ? kpm : null,
+    };
   });
 }
 
@@ -164,12 +228,21 @@ function computeSmoothedKpm(
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export function KillCountChart() {
+interface Props {
+  /** Externally-controlled time range — syncs with PlayerCountChart */
+  range?: RangeLabel;
+  onRangeChange?: (range: RangeLabel) => void;
+}
+
+export function KillCountChart({ range: externalRange, onRangeChange }: Props = {}) {
   const [allData, setAllData] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [range, setRange] = useState<RangeLabel>(DEFAULT_RANGE);
+  const [internalRange, setInternalRange] = useState<RangeLabel>(DEFAULT_RANGE);
   const [showKpm, setShowKpm] = useState(true);
+
+  const range = externalRange ?? internalRange;
+  const setRange = onRangeChange ?? setInternalRange;
 
   useEffect(() => {
     async function load() {
@@ -227,30 +300,17 @@ export function KillCountChart() {
   /** Filter → downsample → smooth, recomputed when range or data changes. */
   const chartData = useMemo(() => {
     if (allData.length === 0) return [];
-    const cfg = RANGES.find((r) => r.label === range)!;
-    let filtered: DataPoint[];
-    if (cfg.hours === 0) {
-      filtered = allData;
-    } else {
-      const cutoff = Date.now() - cfg.hours * 3_600_000;
-      filtered = allData.filter((d) => d.ts >= cutoff);
-      if (filtered.length < 2) filtered = allData;
-    }
+    const filtered = filterToRange(allData, range);
     const sampled = downsample(filtered, MAX_CHART_POINTS);
     const interpolated = interpolateKillCount(sampled);
-    return computeSmoothedKpm(interpolated, KPM_DERIV_WINDOW);
+    return computeSmoothedKpm(interpolated, kpmWindowForRange(range));
   }, [allData, range]);
 
   /** Only enable range buttons when we actually have enough data. */
-  const availableRanges = useMemo(() => {
-    if (allData.length === 0) return new Set<RangeLabel>();
-    const hoursAvail = (Date.now() - allData[0].ts) / 3_600_000;
-    const set = new Set<RangeLabel>(["ALL"]);
-    for (const r of RANGES) {
-      if (r.hours === 0 || hoursAvail >= r.hours * 0.5) set.add(r.label);
-    }
-    return set;
-  }, [allData]);
+  const availableRanges = useMemo(
+    () => computeAvailableRanges(allData),
+    [allData],
+  );
 
   /* ---- Loading / error states ---- */
 
@@ -303,12 +363,12 @@ export function KillCountChart() {
           {/* KPM toggle */}
           <button
             onClick={() => setShowKpm((v) => !v)}
-            className={`font-[var(--font-display)] text-[0.55rem] tracking-[2px] px-2 py-1 border transition-colors ${
-              showKpm
+            className={`font-[var(--font-display)] text-[0.55rem] tracking-[2px] px-2 py-1 border transition-colors ${showKpm
                 ? "border-orange-500/50 text-orange-400 bg-orange-500/10"
                 : "border-border text-dim hover:text-text-body"
-            }`}
+              }`}
             title={showKpm ? "Hide kills/min rate" : "Show kills/min rate"}
+            aria-pressed={showKpm}
           >
             KILLS/MIN
           </button>
@@ -322,13 +382,12 @@ export function KillCountChart() {
                   key={r.label}
                   onClick={() => ok && setRange(r.label)}
                   disabled={!ok}
-                  className={`font-[var(--font-display)] text-[0.55rem] tracking-[1px] px-2 py-1 border transition-colors ${
-                    on
+                  className={`font-[var(--font-display)] text-[0.55rem] tracking-[1px] px-2 py-1 border transition-colors ${on
                       ? "border-accent text-accent bg-accent/10"
                       : ok
                         ? "border-border text-dim hover:text-text-body hover:border-border"
                         : "border-border/50 text-dim/30 cursor-not-allowed"
-                  }`}
+                    }`}
                 >
                   {r.label}
                 </button>
@@ -351,41 +410,32 @@ export function KillCountChart() {
                 <stop offset="100%" stopColor="#FF3344" stopOpacity={0.02} />
               </linearGradient>
             </defs>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="#1E3A50"
-              strokeOpacity={0.5}
-            />
+            <CartesianGrid {...GRID_STYLE} />
             <XAxis
               dataKey="timestamp"
               tickFormatter={(ts) => formatAxis(ts, multiDay)}
-              stroke="#6E8E9E"
-              tick={{ fontSize: 10, fill: "#6E8E9E" }}
-              axisLine={{ stroke: "#1E3A50" }}
-              tickLine={{ stroke: "#1E3A50" }}
+              {...AXIS_STYLE}
               interval="preserveStartEnd"
               minTickGap={multiDay ? 80 : 60}
             />
             <YAxis
               yAxisId="left"
               tickFormatter={formatKills}
-              stroke="#6E8E9E"
-              tick={{ fontSize: 10, fill: "#6E8E9E" }}
-              axisLine={{ stroke: "#1E3A50" }}
-              tickLine={{ stroke: "#1E3A50" }}
+              {...AXIS_STYLE}
               width={55}
-              domain={["dataMin - 100000", "dataMax + 100000"]}
+              domain={clampedDomain(100_000)}
             />
             {hasKpm && (
               <YAxis
                 yAxisId="right"
                 orientation="right"
                 tickFormatter={(v) => `${v}`}
-                stroke="#6E8E9E"
+                stroke={AXIS_STYLE.stroke}
                 tick={{ fontSize: 10, fill: "#FF6B35" }}
-                axisLine={{ stroke: "#1E3A50" }}
-                tickLine={{ stroke: "#1E3A50" }}
+                axisLine={AXIS_STYLE.axisLine}
+                tickLine={AXIS_STYLE.tickLine}
                 width={40}
+                domain={clampedDomain(50)}
               />
             )}
             <Tooltip
@@ -402,19 +452,7 @@ export function KillCountChart() {
                   ];
                 return [String(value), String(name)];
               }}
-              contentStyle={{
-                backgroundColor: "#0C1A22",
-                border: "1px solid #1E3A50",
-                borderRadius: 0,
-                fontSize: 12,
-                color: "#8AACB8",
-              }}
-              labelStyle={{
-                color: "#00D4EB",
-                fontFamily: "var(--font-display)",
-                fontSize: 11,
-                letterSpacing: "1px",
-              }}
+              {...TOOLTIP_STYLE}
             />
             <Area
               yAxisId="left"

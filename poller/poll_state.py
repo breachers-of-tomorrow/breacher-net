@@ -10,6 +10,7 @@ import os
 import sys
 
 import psycopg2
+import requests
 
 from browser import CryoBrowser
 
@@ -21,6 +22,12 @@ logging.basicConfig(
 log = logging.getLogger("poll_state")
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://breacher:breacher@db:5432/breacher")
+
+MARATHON_STEAM_APP_ID = 3065800
+STEAM_API_URL = (
+    f"https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/"
+    f"?appid={MARATHON_STEAM_APP_ID}"
+)
 
 
 def get_db():
@@ -130,12 +137,55 @@ def heartbeat(status="ok", details=None):
         log.exception("Failed to record heartbeat")
 
 
+def poll_steam():
+    """Fetch current Steam player count and store a snapshot.
+
+    Uses the public ISteamUserStats endpoint — no API key required.
+    This is a lightweight HTTP call that doesn't need the CryoBrowser.
+    """
+    try:
+        resp = requests.get(
+            STEAM_API_URL,
+            timeout=10,
+            headers={"User-Agent": "breacher-net-poller/1.0 (+https://breacher.net)"},
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+        if data.get("response", {}).get("result") != 1:
+            log.warning("Steam API returned unexpected result: %s", data)
+            return
+
+        player_count = data["response"]["player_count"]
+    except Exception:
+        log.exception("Failed to fetch Steam player count")
+        return
+
+    try:
+        conn = get_db()
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO steam_snapshots (player_count, app_id)
+                    VALUES (%s, %s)
+                    """,
+                    (player_count, MARATHON_STEAM_APP_ID),
+                )
+        conn.close()
+        log.info("Steam snapshot saved (player_count=%s)", player_count)
+    except Exception:
+        log.exception("Failed to save Steam snapshot")
+
+
 if __name__ == "__main__":
     log.info("Starting state poll cycle")
     try:
         with CryoBrowser() as cryo:
             poll_state(cryo)
             poll_stabilization(cryo)
+        # Steam API is a plain HTTP call — runs outside the browser session
+        poll_steam()
         heartbeat()
     except Exception:
         log.exception("State poll cycle failed")
