@@ -353,26 +353,26 @@ export function KillCountChart() {
             </defs>
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="#1A4660"
+              stroke="#1E3A50"
               strokeOpacity={0.5}
             />
             <XAxis
               dataKey="timestamp"
               tickFormatter={(ts) => formatAxis(ts, multiDay)}
-              stroke="#5A7A8A"
-              tick={{ fontSize: 10, fill: "#5A7A8A" }}
-              axisLine={{ stroke: "#1A4660" }}
-              tickLine={{ stroke: "#1A4660" }}
+              stroke="#6E8E9E"
+              tick={{ fontSize: 10, fill: "#6E8E9E" }}
+              axisLine={{ stroke: "#1E3A50" }}
+              tickLine={{ stroke: "#1E3A50" }}
               interval="preserveStartEnd"
               minTickGap={multiDay ? 80 : 60}
             />
             <YAxis
               yAxisId="left"
               tickFormatter={formatKills}
-              stroke="#5A7A8A"
-              tick={{ fontSize: 10, fill: "#5A7A8A" }}
-              axisLine={{ stroke: "#1A4660" }}
-              tickLine={{ stroke: "#1A4660" }}
+              stroke="#6E8E9E"
+              tick={{ fontSize: 10, fill: "#6E8E9E" }}
+              axisLine={{ stroke: "#1E3A50" }}
+              tickLine={{ stroke: "#1E3A50" }}
               width={55}
               domain={["dataMin - 100000", "dataMax + 100000"]}
             />
@@ -381,10 +381,10 @@ export function KillCountChart() {
                 yAxisId="right"
                 orientation="right"
                 tickFormatter={(v) => `${v}`}
-                stroke="#5A7A8A"
+                stroke="#6E8E9E"
                 tick={{ fontSize: 10, fill: "#FF6B35" }}
-                axisLine={{ stroke: "#1A4660" }}
-                tickLine={{ stroke: "#1A4660" }}
+                axisLine={{ stroke: "#1E3A50" }}
+                tickLine={{ stroke: "#1E3A50" }}
                 width={40}
               />
             )}
@@ -403,8 +403,8 @@ export function KillCountChart() {
                 return [String(value), String(name)];
               }}
               contentStyle={{
-                backgroundColor: "#0A2A35",
-                border: "1px solid #1A4660",
+                backgroundColor: "#0C1A22",
+                border: "1px solid #1E3A50",
                 borderRadius: 0,
                 fontSize: 12,
                 color: "#8AACB8",

@@ -8,7 +8,7 @@ export default function manifest(): MetadataRoute.Manifest {
       "Community tracker and hub for the Marathon ARG — live kill count, sector states, stabilization data, and interactive maps.",
     start_url: "/",
     display: "standalone",
-    background_color: "#031A22",
+    background_color: "#060D11",
     theme_color: "#038ADF",
     icons: [
       {

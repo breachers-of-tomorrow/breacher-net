@@ -157,24 +157,24 @@ export function StabilizationChart() {
           >
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="#1A4660"
+              stroke="#1E3A50"
               strokeOpacity={0.5}
             />
             <XAxis
               dataKey="timestamp"
               tickFormatter={formatAxis}
-              stroke="#5A7A8A"
-              tick={{ fontSize: 10, fill: "#5A7A8A" }}
-              axisLine={{ stroke: "#1A4660" }}
-              tickLine={{ stroke: "#1A4660" }}
+              stroke="#6E8E9E"
+              tick={{ fontSize: 10, fill: "#6E8E9E" }}
+              axisLine={{ stroke: "#1E3A50" }}
+              tickLine={{ stroke: "#1E3A50" }}
               interval="preserveStartEnd"
               minTickGap={60}
             />
             <YAxis
-              stroke="#5A7A8A"
-              tick={{ fontSize: 10, fill: "#5A7A8A" }}
-              axisLine={{ stroke: "#1A4660" }}
-              tickLine={{ stroke: "#1A4660" }}
+              stroke="#6E8E9E"
+              tick={{ fontSize: 10, fill: "#6E8E9E" }}
+              axisLine={{ stroke: "#1E3A50" }}
+              tickLine={{ stroke: "#1E3A50" }}
               width={40}
               domain={[0, 100]}
               tickFormatter={(v) => `${v}%`}
@@ -186,8 +186,8 @@ export function StabilizationChart() {
                 CAMERA_LABELS[name as string] ?? name,
               ]}
               contentStyle={{
-                backgroundColor: "#0A2A35",
-                border: "1px solid #1A4660",
+                backgroundColor: "#0C1A22",
+                border: "1px solid #1E3A50",
                 borderRadius: 0,
                 fontSize: 12,
                 color: "#8AACB8",
