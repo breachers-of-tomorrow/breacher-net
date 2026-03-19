@@ -28,15 +28,20 @@
   --color-amber-mid: #CC8800;
   --color-cryo-danger: #FF3344;
 
-  /* Backgrounds — teal-dark */
-  --color-cryo-bg: #031A22;
-  --color-cryo-panel: #0A2A35;
-  --color-void-card: #12384A;
-  --color-cryo-border: #1A4660;
+  /* Backgrounds — dark blue-teal (v3 — darkened for contrast) */
+  --color-cryo-bg: #060D11;
+  --color-cryo-panel: #0C1A22;
+  --color-cryo-card: #122430;
+  --color-cryo-border: #1E3A50;
+
+  /* Rarity badges (Marathon in-game tiers) */
+  --color-rarity-enhanced: #00D4EB;
+  --color-rarity-deluxe: #FF3344;
+  --color-rarity-prestige: #B464FF;
 
   /* Neutrals — Bone/Cream */
   --color-cryo-text: #8AACB8;
-  --color-cryo-dim: #5A7A8A;
+  --color-cryo-dim: #6E8E9E;
   --color-text-heading: #E0DDD2;
   --color-neutral-bone: #E0DDD2;
   --color-neutral-cream: #D5D0C4;
@@ -44,15 +49,15 @@
   --color-neutral-dim: #8A8880;
 
   /* Semantic aliases */
-  --color-background: #031A22;
+  --color-background: #060D11;
   --color-foreground: #8AACB8;
-  --color-panel: #0A2A35;
-  --color-border: #1A4660;
+  --color-panel: #0C1A22;
+  --color-border: #1E3A50;
   --color-accent: #038ADF;
   --color-accent2: #00D4EB;
   --color-warn: #FFAA00;
   --color-danger: #FF3344;
-  --color-dim: #5A7A8A;
+  --color-dim: #6E8E9E;
 
   /* Font family */
   --font-mono: "JetBrains Mono", ui-monospace, monospace;

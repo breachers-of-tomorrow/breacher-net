@@ -72,10 +72,11 @@ style: adjust camera card spacing on mobile
 
 ```bash
 npm run lint    # ESLint checks
+npm run test    # Unit tests (vitest)
 npm run build   # Full production build (catches type errors)
 ```
 
-Both must pass for CI to be green.
+All three must pass for CI to be green.
 
 ## Project Areas
 
