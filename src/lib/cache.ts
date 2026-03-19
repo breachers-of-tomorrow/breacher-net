@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 /**
  * Cache-Control header presets for API routes.
  *
- * All durations assume the Python poller writes new data every 5 minutes.
+ * All durations assume the Python poller writes new data every 15 minutes.
  * Cloudflare at the edge respects these origin headers for smarter caching.
  */
 

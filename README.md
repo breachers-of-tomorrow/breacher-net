@@ -2,7 +2,7 @@
 
 Community hub and live tracking dashboard for the [Marathon](<https://en.wikipedia.org/wiki/Marathon_(upcoming_video_game)>) ARG — built by the Breachers of Tomorrow.
 
-**Live site:** [breacher.net](https://breacher.net) (coming soon)
+**Live site:** [breacher.net](https://breacher.net)
 
 ## What is this?
 
@@ -31,7 +31,7 @@ docker compose up
 This starts:
 - **App** — Next.js on [http://localhost:3000](http://localhost:3000)
 - **Database** — PostgreSQL for historical data
-- **Poller** — Automatically collects state snapshots every 5 minutes + build checks every 60 seconds
+- **Poller** — Automatically collects state snapshots every 15 minutes + build checks every 60 seconds
 
 ### Option 2: App only (no database)
 
@@ -50,9 +50,9 @@ The app works without a database — it fetches directly from the cryoarchive.sy
 graph TD
     subgraph "breacher.net"
         App["Next.js App\n:3000"]
-        StatePoller["State Poller\n(every 5m)"]
+        StatePoller["State Poller\n(every 15m)"]
         BuildPoller["Build Poller\n(every 60s)"]
-        IndexPoller["Index Poller\n(every 10m)"]
+        IndexPoller["Index Poller\n(every 15m)"]
         DB["PostgreSQL 17\n(Patroni HA)"]
     end
 
@@ -72,7 +72,7 @@ graph TD
 ```
 
 - **Next.js App** — Server-rendered React with App Router. Proxies live data requests to cryoarchive.systems server-side (avoids CORS). Serves historical data from PostgreSQL.
-- **State Poller** — Python CronJob. Snapshots kill count, sector states, and ship date every 5 minutes.
+- **State Poller** — Python CronJob. Snapshots kill count, sector states, and ship date every 15 minutes.
 - **Build Poller** — Python CronJob. Checks for deployment changes every 60 seconds via chunk/asset fingerprinting.
 - **Index Poller** — Python CronJob. Authenticates via DAC + password, extracts and stores all 1200+ index entries with full content.
 - **PostgreSQL** — Stores state snapshots, stabilization history, build events, index entries, and session cookies.
@@ -147,7 +147,7 @@ db/                         # Database schema
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development workflow, branch strategy, and guidelines.
 
-**TL;DR:** Fork → feature branch → PR to `develop`. Run `npm run lint && npm run build` before pushing.
+**TL;DR:** Fork → feature branch → PR to `develop`. Run `npm run lint && npm run test && npm run build` before pushing.
 
 ## Related Resources
 

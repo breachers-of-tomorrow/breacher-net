@@ -1,15 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
-import { fetchState, fetchStabilization } from "@/lib/api";
+import { fetchState, fetchStabilization, fetchSteamPlayerCount } from "@/lib/api";
 import { SECTOR_NAMES } from "@/lib/types";
 import { URLS } from "@/lib/urls";
 
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const [state, stabilization] = await Promise.all([
+  const [state, stabilization, steamPlayers] = await Promise.all([
     fetchState(),
     fetchStabilization(),
+    fetchSteamPlayerCount(),
   ]);
 
   const killCount = state?.uescKillCount ?? null;
@@ -57,7 +58,7 @@ export default async function HomePage() {
 
       {/* Quick Status */}
       {state && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12">
           <div className="cryo-panel p-6 text-center">
             <div className="font-[var(--font-display)] text-[0.6rem] tracking-[3px] text-dim mb-2">
               UESC KILL COUNT
@@ -87,6 +88,16 @@ export default async function HomePage() {
             <div className="font-[var(--font-display)] text-2xl font-bold text-accent2 glow-accent2">
               {avgStabilization !== null ? `${avgStabilization}%` : "--"}
             </div>
+          </div>
+
+          <div className="cryo-panel p-6 text-center">
+            <div className="font-[var(--font-display)] text-[0.6rem] tracking-[3px] text-dim mb-2">
+              STEAM PLAYERS
+            </div>
+            <div className="font-[var(--font-display)] text-2xl font-bold text-mint glow-mint">
+              {steamPlayers !== null ? steamPlayers.toLocaleString() : "--"}
+            </div>
+            <div className="text-xs text-dim mt-1">online now</div>
           </div>
         </div>
       )}

@@ -54,3 +54,34 @@ export async function fetchStabilization(): Promise<Record<
     return null;
   }
 }
+
+// ---- Steam ----
+
+const MARATHON_STEAM_APP_ID = 3065800;
+
+interface SteamPlayerResponse {
+  response: {
+    player_count: number;
+    result: number;
+  };
+}
+
+/**
+ * Fetch the current Steam player count for Marathon.
+ * No API key required — uses the public ISteamUserStats endpoint.
+ * Returns null on failure (non-critical data).
+ */
+export async function fetchSteamPlayerCount(): Promise<number | null> {
+  try {
+    const res = await fetch(
+      `https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=${MARATHON_STEAM_APP_ID}`,
+      { next: { revalidate: 300 } },
+    );
+    if (!res.ok) return null;
+    const data = (await res.json()) as SteamPlayerResponse;
+    if (data.response?.result !== 1) return null;
+    return data.response.player_count;
+  } catch {
+    return null;
+  }
+}
