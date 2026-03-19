@@ -178,6 +178,28 @@ export function DashboardClient({ initialData }: Props) {
 
   return (
     <div>
+      {/* Marathon Reveal Trailer */}
+      <div className="cryo-panel p-0 mb-8 overflow-hidden relative">
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-accent via-accent2 to-accent z-10" />
+        <div className="px-5 pt-5 pb-3 flex items-center justify-between">
+          <div className="font-[var(--font-display)] text-xs tracking-[4px] text-accent glow-accent">
+            MARATHON — OFFICIAL REVEAL
+          </div>
+          <div className="font-[var(--font-display)] text-[0.55rem] tracking-[2px] px-2 py-0.5 border border-accent2 text-accent2 bg-accent2/[0.08]">
+            ARG COMPLETE
+          </div>
+        </div>
+        <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+          <iframe
+            className="absolute inset-0 w-full h-full"
+            src="https://www.youtube.com/embed/SW8VRcMy5vU"
+            title="Marathon — Official Reveal Trailer"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      </div>
+
       {/* Error banner */}
       {error && (
         <div role="alert" className="bg-danger/10 border border-danger p-3 text-danger text-sm mb-5">
