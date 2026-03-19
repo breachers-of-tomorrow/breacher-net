@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   formatNumber,
   toLocalTimeOnly,
@@ -13,6 +13,7 @@ import { SECTOR_NAMES } from "@/lib/types";
 import type { SectorName } from "@/lib/types";
 import dynamic from "next/dynamic";
 import { URLS } from "@/lib/urls";
+import type { RangeLabel } from "@/lib/chart-utils";
 
 const KillCountChart = dynamic(
   () => import("@/components/KillCountChart").then((m) => m.KillCountChart),
@@ -35,6 +36,35 @@ const KillCountEta = dynamic(
       <div className="cryo-panel p-5 mb-8 h-[100px] flex items-center justify-center">
         <div className="font-[var(--font-display)] text-xs tracking-[4px] text-dim animate-blink">
           CALCULATING PROJECTION...
+        </div>
+      </div>
+    ),
+    ssr: false,
+  },
+);
+
+const PlayerCountChart = dynamic(
+  () =>
+    import("@/components/PlayerCountChart").then((m) => m.PlayerCountChart),
+  {
+    loading: () => (
+      <div className="cryo-panel p-5 h-[260px] flex items-center justify-center">
+        <div className="font-[var(--font-display)] text-xs tracking-[4px] text-dim animate-blink">
+          LOADING PLAYER DATA...
+        </div>
+      </div>
+    ),
+    ssr: false,
+  },
+);
+
+const KillAnalytics = dynamic(
+  () => import("@/components/KillAnalytics").then((m) => m.KillAnalytics),
+  {
+    loading: () => (
+      <div className="cryo-panel p-5 h-[120px] flex items-center justify-center">
+        <div className="font-[var(--font-display)] text-xs tracking-[4px] text-dim animate-blink">
+          COMPUTING ANALYTICS...
         </div>
       </div>
     ),
@@ -67,6 +97,13 @@ export function DashboardClient({ initialData }: Props) {
   const [isLive, setIsLive] = useState(!!initialData);
   const [prevKillCount, setPrevKillCount] = useState<number | null>(null);
 
+  // Ref to track current data without triggering fetchLatest recreation
+  const dataRef = useRef(data);
+  dataRef.current = data;
+
+  // Shared chart time range — syncs kill chart and player chart
+  const [chartRange, setChartRange] = useState<RangeLabel>("24H");
+
   // Ticking state
   const [, setTick] = useState(0);
 
@@ -81,7 +118,7 @@ export function DashboardClient({ initialData }: Props) {
       const d = json?.data;
       if (!d) throw new Error("No data available");
 
-      if (data) setPrevKillCount(data.killCount);
+      if (dataRef.current) setPrevKillCount(dataRef.current.killCount);
 
       setData({
         killCount: d.killCount,
@@ -105,7 +142,7 @@ export function DashboardClient({ initialData }: Props) {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch");
     }
-  }, [data]);
+  }, []);
 
   // 1-second tick for countdowns
   useEffect(() => {
@@ -243,7 +280,15 @@ export function DashboardClient({ initialData }: Props) {
 
       {/* Kill Count Chart */}
       <div className="section-title">KILL COUNT OVER TIME</div>
-      <KillCountChart />
+      <KillCountChart range={chartRange} onRangeChange={setChartRange} />
+
+      {/* Player Count Chart (synced time range) */}
+      <div className="section-title mt-8">STEAM PLAYERS OVER TIME</div>
+      <PlayerCountChart range={chartRange} onRangeChange={setChartRange} />
+
+      {/* Kill Analytics */}
+      <div className="section-title mt-8">KILL ANALYTICS</div>
+      <KillAnalytics />
 
       {/* SHIP DATE */}
       <div className="cryo-panel p-5 mt-8">

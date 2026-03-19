@@ -31,11 +31,12 @@ export async function GET(request: Request) {
     let query = `
       SELECT captured_at, kill_count, ship_date, next_update, build_version, sectors, memory_flags
       FROM state_snapshots
+      WHERE kill_count IS NOT NULL
     `;
     const params: (string | number)[] = [];
 
     if (since) {
-      query += " WHERE captured_at >= $1";
+      query += " AND captured_at >= $1";
       params.push(since);
       query += " ORDER BY captured_at DESC LIMIT $2";
       params.push(limit);

@@ -135,5 +135,18 @@ CREATE TABLE IF NOT EXISTS session_cache (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ============================================================
+-- Steam player count snapshots (polled alongside state data)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS steam_snapshots (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    captured_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    player_count    INTEGER NOT NULL,
+    app_id          INTEGER NOT NULL DEFAULT 3065800
+);
+
+CREATE INDEX IF NOT EXISTS idx_steam_snapshots_captured
+    ON steam_snapshots (captured_at DESC);
+
 -- Migration: Add content_data column (v0.4.0)
 ALTER TABLE index_entries ADD COLUMN IF NOT EXISTS content_data JSONB;
