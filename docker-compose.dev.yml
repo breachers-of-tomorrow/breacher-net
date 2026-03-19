@@ -17,11 +17,11 @@ services:
       - ./postcss.config.mjs:/app/postcss.config.mjs
       - ./eslint.config.mjs:/app/eslint.config.mjs
     environment:
-      - DATABASE_URL=postgresql://breacher:breacher@db:5432/breacher
+      - DATABASE_URL=postgresql://breacher:${POSTGRES_PASSWORD:-mycomplexpassword}@db:5432/breacher
       - NODE_ENV=development
 
   poller:
     volumes:
       - ./poller:/app
     environment:
-      - DATABASE_URL=postgresql://breacher:breacher@db:5432/breacher
+      - DATABASE_URL=postgresql://breacher:${POSTGRES_PASSWORD:-mycomplexpassword}@db:5432/breacher
