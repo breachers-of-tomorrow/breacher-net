@@ -30,8 +30,13 @@ export async function GET(request: Request) {
   try {
     let query = `
       SELECT captured_at, kill_count, ship_date, next_update, build_version, sectors, memory_flags
-      FROM state_snapshots
-      WHERE kill_count IS NOT NULL
+      FROM (
+        SELECT *,
+          lag(kill_count) OVER (ORDER BY captured_at) AS prev_kc
+        FROM state_snapshots
+        WHERE kill_count IS NOT NULL
+      ) sub
+      WHERE kill_count IS DISTINCT FROM prev_kc
     `;
     const params: (string | number)[] = [];
 

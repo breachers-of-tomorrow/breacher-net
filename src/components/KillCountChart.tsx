@@ -152,13 +152,22 @@ export function KillCountChart({ range: externalRange, onRangeChange }: Props = 
             new Date(b.captured_at).getTime(),
         );
 
-        const points: DataPoint[] = sorted.map((r, i) => {
-          // PostgreSQL BIGINT comes back as string — must coerce to number
+        // Deduplicate consecutive identical kill_counts client-side
+        // (defense against 5-min poll data that hasn't been cleaned)
+        const deduped: HistoryRow[] = [];
+        for (const r of sorted) {
+          const kc = Number(r.kill_count);
+          if (deduped.length === 0 || Number(deduped[deduped.length - 1].kill_count) !== kc) {
+            deduped.push(r);
+          }
+        }
+
+        const points: DataPoint[] = deduped.map((r, i) => {
           const killCount = Number(r.kill_count);
           let kpm: number | null = null;
           if (i > 0) {
-            const prevKc = Number(sorted[i - 1].kill_count);
-            const t1 = new Date(sorted[i - 1].captured_at).getTime();
+            const prevKc = Number(deduped[i - 1].kill_count);
+            const t1 = new Date(deduped[i - 1].captured_at).getTime();
             const t2 = new Date(r.captured_at).getTime();
             const mins = (t2 - t1) / 60_000;
             if (mins > 0 && killCount > prevKc) {
@@ -252,8 +261,8 @@ export function KillCountChart({ range: externalRange, onRangeChange }: Props = 
           <button
             onClick={() => setShowKpm((v) => !v)}
             className={`font-[var(--font-display)] text-[0.55rem] tracking-[2px] px-2 py-1 border transition-colors ${showKpm
-                ? "border-orange-500/50 text-orange-400 bg-orange-500/10"
-                : "border-border text-dim hover:text-text-body"
+              ? "border-orange-500/50 text-orange-400 bg-orange-500/10"
+              : "border-border text-dim hover:text-text-body"
               }`}
             title={showKpm ? "Hide kills/min rate" : "Show kills/min rate"}
             aria-pressed={showKpm}
@@ -271,10 +280,10 @@ export function KillCountChart({ range: externalRange, onRangeChange }: Props = 
                   onClick={() => ok && setRange(r.label)}
                   disabled={!ok}
                   className={`font-[var(--font-display)] text-[0.55rem] tracking-[1px] px-2 py-1 border transition-colors ${on
-                      ? "border-accent text-accent bg-accent/10"
-                      : ok
-                        ? "border-border text-dim hover:text-text-body hover:border-border"
-                        : "border-border/50 text-dim/30 cursor-not-allowed"
+                    ? "border-accent text-accent bg-accent/10"
+                    : ok
+                      ? "border-border text-dim hover:text-text-body hover:border-border"
+                      : "border-border/50 text-dim/30 cursor-not-allowed"
                     }`}
                 >
                   {r.label}
