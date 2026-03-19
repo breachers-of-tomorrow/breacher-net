@@ -41,21 +41,21 @@ interface HistoryRow {
 }
 
 /**
- * Smoothing window size scales with the selected time range.
- * Shorter ranges show more detail; longer ranges smooth more aggressively.
+ * KPM rolling-average window scales with the selected time range.
+ * At 15-min poll intervals: 3 points = 45 min, 5 = 75 min, etc.
  */
 function kpmWindowForRange(rangeLabel: RangeLabel): number {
   switch (rangeLabel) {
     case "6H":
-      return 8;
+      return 2;
     case "24H":
-      return 12;
+      return 3;
     case "3D":
-      return 16;
+      return 4;
     case "7D":
-      return 20;
+      return 5;
     case "ALL":
-      return 24;
+      return 6;
   }
 }
 
@@ -68,155 +68,44 @@ function formatKills(n: number): string {
 /* ------------------------------------------------------------------ */
 
 /**
- * Monotone cubic interpolation (Fritsch-Carlson) between change points.
+ * Compute KPM with a simple rolling average.
  *
- * The poller returns identical kill_count between game API updates,
- * creating staircase steps. Linear interpolation creates sharp kinks
- * at change points, which propagate as spikes in the derivative (KPM).
+ * Data arrives at 15-minute intervals directly from the poller.
+ * No interpolation is needed — we just plot the raw values and
+ * compute the rate between consecutive points where kill_count
+ * actually changed (skipping flat segments where the game API
+ * hadn't updated yet).
  *
- * Cubic interpolation produces C1-continuous curves (smooth first
- * derivative), eliminating the KPM spikes entirely.
+ * The rolling average uses a centered window to smooth the rate
+ * curve without introducing the overshoot artifacts that cubic
+ * interpolation was causing.
  */
-function interpolateKillCount(points: DataPoint[]): DataPoint[] {
-  if (points.length < 2) return points.map((p) => ({ ...p }));
+function computeKpm(points: DataPoint[], window: number): DataPoint[] {
+  // First pass: compute raw KPM at each point from nearest change
+  const rawKpm: (number | null)[] = points.map((p, i) => {
+    if (i === 0) return null;
+    // Walk backward to find last different value
+    let prev = i - 1;
+    while (prev >= 0 && points[prev].value === p.value) prev--;
+    if (prev < 0) return null;
 
-  // Collect indices where the kill count actually changed
-  const cpIdx: number[] = [0];
-  for (let i = 1; i < points.length; i++) {
-    if (points[i].value !== points[i - 1].value) cpIdx.push(i);
-  }
-  if (cpIdx[cpIdx.length - 1] !== points.length - 1) {
-    cpIdx.push(points.length - 1);
-  }
+    const dk = p.value - points[prev].value;
+    const dt = (p.ts - points[prev].ts) / 60_000;
+    if (dt <= 0 || dk <= 0) return null;
+    return dk / dt;
+  });
 
-  // If fewer than 3 change points, fall back to linear
-  if (cpIdx.length < 3) {
-    return linearInterpolate(points, cpIdx);
-  }
-
-  // Build arrays for the spline knots
-  const n = cpIdx.length;
-  const xs = cpIdx.map((i) => points[i].ts);
-  const ys = cpIdx.map((i) => points[i].value);
-
-  // Compute slopes between knots
-  const deltas: number[] = [];
-  const slopes: number[] = [];
-  for (let i = 0; i < n - 1; i++) {
-    const dx = xs[i + 1] - xs[i];
-    deltas.push(dx);
-    slopes.push(dx > 0 ? (ys[i + 1] - ys[i]) / dx : 0);
-  }
-
-  // Fritsch-Carlson tangents: monotone-preserving
-  const tangents = new Array(n).fill(0);
-  tangents[0] = slopes[0];
-  tangents[n - 1] = slopes[n - 2];
-
-  for (let i = 1; i < n - 1; i++) {
-    if (slopes[i - 1] * slopes[i] <= 0) {
-      tangents[i] = 0;
-    } else {
-      tangents[i] =
-        (2 * slopes[i - 1] * slopes[i]) / (slopes[i - 1] + slopes[i]);
-    }
-  }
-
-  // Evaluate cubic hermite for every point
-  const result = points.map((p) => ({ ...p }));
-
-  for (let seg = 0; seg < n - 1; seg++) {
-    const x0 = xs[seg];
-    const x1 = xs[seg + 1];
-    const y0 = ys[seg];
-    const y1 = ys[seg + 1];
-    const m0 = tangents[seg] * (x1 - x0);
-    const m1 = tangents[seg + 1] * (x1 - x0);
-
-    const startIdx = cpIdx[seg];
-    const endIdx = cpIdx[seg + 1];
-
-    for (let i = startIdx; i <= endIdx; i++) {
-      const t = x1 !== x0 ? (points[i].ts - x0) / (x1 - x0) : 0;
-      const t2 = t * t;
-      const t3 = t2 * t;
-
-      const h00 = 2 * t3 - 3 * t2 + 1;
-      const h10 = t3 - 2 * t2 + t;
-      const h01 = -2 * t3 + 3 * t2;
-      const h11 = t3 - t2;
-
-      result[i].valueSmooth = Math.round(
-        h00 * y0 + h10 * m0 + h01 * y1 + h11 * m1,
-      );
-    }
-  }
-
-  return result;
-}
-
-/** Simple linear interpolation fallback. */
-function linearInterpolate(
-  points: DataPoint[],
-  cpIdx: number[],
-): DataPoint[] {
-  const result = points.map((p) => ({ ...p }));
-
-  for (let c = 0; c < cpIdx.length - 1; c++) {
-    const si = cpIdx[c];
-    const ei = cpIdx[c + 1];
-    const sv = points[si].value;
-    const ev = points[ei].value;
-    const st = points[si].ts;
-    const dt = points[ei].ts - st;
-
-    for (let i = si; i <= ei; i++) {
-      const t = dt > 0 ? (points[i].ts - st) / dt : 0;
-      result[i].valueSmooth = Math.round(sv + (ev - sv) * t);
-    }
-  }
-
-  return result;
-}
-
-/**
- * Gaussian-weighted KPM smoothing.
- *
- * Instead of a simple central-difference over a fixed window,
- * this applies a Gaussian kernel so nearby points contribute
- * more than distant ones. The result is a much smoother rate
- * curve with no abrupt transitions.
- */
-function computeSmoothedKpm(
-  points: DataPoint[],
-  window: number,
-): DataPoint[] {
-  const sigma = window / 2.5;
-  const weights: number[] = [];
-  for (let d = 0; d <= window; d++) {
-    weights.push(Math.exp((-d * d) / (2 * sigma * sigma)));
-  }
-
+  // Second pass: rolling average to smooth the rate curve
   return points.map((p, i) => {
-    let weightedRate = 0;
-    let totalWeight = 0;
-
-    for (let offset = 1; offset <= window; offset++) {
-      const lo = i - offset;
-      const hi = i + offset;
-      if (lo < 0 || hi >= points.length) continue;
-
-      const dv = points[hi].valueSmooth - points[lo].valueSmooth;
-      const dt = (points[hi].ts - points[lo].ts) / 60_000;
-      if (dt <= 0) continue;
-
-      const w = weights[offset];
-      weightedRate += (dv / dt) * w;
-      totalWeight += w;
+    let sum = 0;
+    let count = 0;
+    for (let j = Math.max(0, i - window); j <= Math.min(points.length - 1, i + window); j++) {
+      if (rawKpm[j] !== null) {
+        sum += rawKpm[j]!;
+        count++;
+      }
     }
-
-    const kpm =
-      totalWeight > 0 ? Math.round(weightedRate / totalWeight) : null;
+    const kpm = count > 0 ? Math.round(sum / count) : null;
     return {
       ...p,
       kpmSmooth: kpm !== null && kpm > 0 ? kpm : null,
@@ -297,13 +186,12 @@ export function KillCountChart({ range: externalRange, onRangeChange }: Props = 
     load();
   }, []);
 
-  /** Filter → downsample → smooth, recomputed when range or data changes. */
+  /** Filter → downsample → compute KPM. No interpolation — raw 15-min data. */
   const chartData = useMemo(() => {
     if (allData.length === 0) return [];
     const filtered = filterToRange(allData, range);
     const sampled = downsample(filtered, MAX_CHART_POINTS);
-    const interpolated = interpolateKillCount(sampled);
-    return computeSmoothedKpm(interpolated, kpmWindowForRange(range));
+    return computeKpm(sampled, kpmWindowForRange(range));
   }, [allData, range]);
 
   /** Only enable range buttons when we actually have enough data. */
@@ -457,7 +345,7 @@ export function KillCountChart({ range: externalRange, onRangeChange }: Props = 
             <Area
               yAxisId="left"
               type="monotone"
-              dataKey="valueSmooth"
+              dataKey="value"
               name="Kill Count"
               stroke="#FF3344"
               strokeWidth={2}
