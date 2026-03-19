@@ -7,7 +7,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=postgresql://breacher:breacher@db:5432/breacher
+      - DATABASE_URL=postgresql://breacher:${POSTGRES_PASSWORD:-mycomplexpassword}@db:5432/breacher
     depends_on:
       db:
         condition: service_healthy
@@ -25,7 +25,7 @@ services:
     environment:
       POSTGRES_DB: breacher
       POSTGRES_USER: breacher
-      POSTGRES_PASSWORD: breacher
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mycomplexpassword}
     ports:
       - "5432:5432"
     volumes:
@@ -44,7 +44,7 @@ services:
       context: ./poller
       dockerfile: Dockerfile
     environment:
-      - DATABASE_URL=postgresql://breacher:breacher@db:5432/breacher
+      - DATABASE_URL=postgresql://breacher:${POSTGRES_PASSWORD:-mycomplexpassword}@db:5432/breacher
     depends_on:
       db:
         condition: service_healthy

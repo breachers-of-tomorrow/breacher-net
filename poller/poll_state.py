@@ -21,7 +21,7 @@ logging.basicConfig(
 )
 log = logging.getLogger("poll_state")
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://breacher:breacher@db:5432/breacher")
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://breacher:mycomplexpassword@db:5432/breacher")
 
 MARATHON_STEAM_APP_ID = 3065800
 STEAM_API_URL = (

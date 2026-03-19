@@ -31,7 +31,7 @@ logging.basicConfig(
 )
 log = logging.getLogger("poll_index")
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://breacher:breacher@db:5432/breacher")
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://breacher:mycomplexpassword@db:5432/breacher")
 BASE_URL = "https://cryoarchive.systems"
 
 # DAC auth credentials

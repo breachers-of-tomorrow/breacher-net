@@ -28,7 +28,7 @@ logging.basicConfig(
 )
 log = logging.getLogger("poll_build")
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://breacher:breacher@db:5432/breacher")
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://breacher:mycomplexpassword@db:5432/breacher")
 
 # Regex patterns for deployment fingerprinting
 DPL_PATTERN = re.compile(r"dpl=(dpl_[a-zA-Z0-9]+)")
