@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useKillCountData, useChartRange } from "@/hooks";
 import { URLS } from "@/lib/urls";
 import {
   ResponsiveContainer,
@@ -14,7 +15,6 @@ import {
 } from "recharts";
 import {
   RANGES,
-  DEFAULT_RANGE,
   MAX_CHART_POINTS,
   spansMultipleDays,
   formatAxis,
@@ -33,11 +33,6 @@ import type { RangeLabel, BaseDataPoint } from "@/lib/chart-utils";
 interface DataPoint extends BaseDataPoint {
   kpm: number | null;
   kpmSmooth: number | null;
-}
-
-interface HistoryRow {
-  captured_at: string;
-  kill_count: string | number;
 }
 
 /**
@@ -124,76 +119,36 @@ interface Props {
 }
 
 export function KillCountChart({ range: externalRange, onRangeChange }: Props = {}) {
-  const [allData, setAllData] = useState<DataPoint[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [internalRange, setInternalRange] = useState<RangeLabel>(DEFAULT_RANGE);
+  const { deduped, loading, error } = useKillCountData();
+  const [range, setRange] = useChartRange(externalRange, onRangeChange);
   const [showKpm, setShowKpm] = useState(true);
 
-  const range = externalRange ?? internalRange;
-  const setRange = onRangeChange ?? setInternalRange;
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch("/api/state/history?limit=1000");
-        if (!res.ok) throw new Error(`API returned ${res.status}`);
-        const json = await res.json();
-
-        const rows: HistoryRow[] = json.data ?? [];
-        if (rows.length === 0) {
-          setError("No historical data yet");
-          return;
+  /** Map deduplicated rows to chart DataPoints. */
+  const allData = useMemo<DataPoint[]>(() => {
+    if (deduped.length === 0) return [];
+    return deduped.map((r, i) => {
+      const killCount = Number(r.kill_count);
+      let kpm: number | null = null;
+      if (i > 0) {
+        const prevKc = Number(deduped[i - 1].kill_count);
+        const t1 = new Date(deduped[i - 1].captured_at).getTime();
+        const t2 = new Date(r.captured_at).getTime();
+        const mins = (t2 - t1) / 60_000;
+        if (mins > 0 && killCount > prevKc) {
+          kpm = Math.round((killCount - prevKc) / mins);
         }
-
-        const sorted = [...rows].sort(
-          (a, b) =>
-            new Date(a.captured_at).getTime() -
-            new Date(b.captured_at).getTime(),
-        );
-
-        // Deduplicate consecutive identical kill_counts client-side
-        // (defense against 5-min poll data that hasn't been cleaned)
-        const deduped: HistoryRow[] = [];
-        for (const r of sorted) {
-          const kc = Number(r.kill_count);
-          if (deduped.length === 0 || Number(deduped[deduped.length - 1].kill_count) !== kc) {
-            deduped.push(r);
-          }
-        }
-
-        const points: DataPoint[] = deduped.map((r, i) => {
-          const killCount = Number(r.kill_count);
-          let kpm: number | null = null;
-          if (i > 0) {
-            const prevKc = Number(deduped[i - 1].kill_count);
-            const t1 = new Date(deduped[i - 1].captured_at).getTime();
-            const t2 = new Date(r.captured_at).getTime();
-            const mins = (t2 - t1) / 60_000;
-            if (mins > 0 && killCount > prevKc) {
-              kpm = Math.round((killCount - prevKc) / mins);
-            }
-          }
-          return {
-            timestamp: r.captured_at,
-            ts: new Date(r.captured_at).getTime(),
-            value: killCount,
-            valueSmooth: killCount,
-            kpm,
-            kpmSmooth: null,
-            label: formatTooltipTime(r.captured_at),
-          };
-        });
-
-        setAllData(points);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load chart");
-      } finally {
-        setLoading(false);
       }
-    }
-    load();
-  }, []);
+      return {
+        timestamp: r.captured_at,
+        ts: new Date(r.captured_at).getTime(),
+        value: killCount,
+        valueSmooth: killCount,
+        kpm,
+        kpmSmooth: null,
+        label: formatTooltipTime(r.captured_at),
+      };
+    });
+  }, [deduped]);
 
   /** Filter → downsample → compute KPM. No interpolation — raw 15-min data. */
   const chartData = useMemo(() => {
