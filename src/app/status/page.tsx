@@ -17,7 +17,6 @@ interface FreshnessEntry {
   table: string;
   label: string;
   lastUpdated: string | null;
-  rowCount: number;
 }
 
 interface PollerEntry {
@@ -32,7 +31,6 @@ interface StatusResponse {
   timestamp: string;
   database: {
     connected: boolean;
-    latencyMs: number | null;
   };
   freshness: FreshnessEntry[];
   pollers: PollerEntry[];
@@ -166,20 +164,9 @@ export default async function StatusPage() {
               }
             />
             <span className="font-[var(--font-display)] text-xs tracking-[2px] text-heading">
-              {data?.database.connected
-                ? "CONNECTED"
-                : "DISCONNECTED"}
+              {data?.database.connected ? "CONNECTED" : "DISCONNECTED"}
             </span>
           </div>
-          {data?.database.latencyMs !== null &&
-            data?.database.latencyMs !== undefined && (
-              <div className="text-xs text-dim">
-                Latency:{" "}
-                <span className="text-accent2">
-                  {data.database.latencyMs}ms
-                </span>
-              </div>
-            )}
         </div>
       </section>
 
@@ -203,9 +190,6 @@ export default async function StatusPage() {
                     <div className="min-w-0">
                       <div className="font-[var(--font-display)] text-xs tracking-[2px] text-heading truncate">
                         {entry.label.toUpperCase()}
-                      </div>
-                      <div className="text-xs text-dim mt-0.5">
-                        {entry.rowCount.toLocaleString()} rows
                       </div>
                     </div>
                   </div>
