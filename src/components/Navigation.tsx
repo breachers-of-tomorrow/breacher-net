@@ -18,6 +18,23 @@ interface NavSection {
 
 const NAV_SECTIONS: NavSection[] = [
   {
+    label: "BREACHER NET",
+    links: [
+      { href: "/about", label: "About" },
+      { href: "/community", label: "Community" },
+      { href: "/contribute", label: "Contribute" },
+      { href: URLS.wiki, label: "Wiki", external: true },
+      { href: URLS.discord, label: "Discord", external: true },
+    ],
+  },
+  {
+    label: "MARATHON",
+    links: [
+      { href: "/marathon", label: "Metrics" },
+      { href: URLS.weaponsDb, label: "Weapons DB", external: true },
+    ],
+  },
+  {
     label: "CRYOARCHIVE",
     links: [
       { href: "/cryoarchive", label: "Dashboard" },
@@ -28,25 +45,15 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    label: "BREACHER.NET",
+    label: "RESOURCES",
     links: [
-      { href: "/about", label: "About" },
-      { href: "/community", label: "Community" },
-      { href: "/contribute", label: "Contribute" },
       { href: "/api-docs", label: "API Docs" },
       { href: "/status", label: "Status" },
-      { href: URLS.wiki, label: "Wiki", external: true },
-      { href: URLS.discord, label: "Discord", external: true },
       {
         href: URLS.communityDoc,
         label: "Community Doc",
         external: true,
       },
-    ],
-  },
-  {
-    label: "MARATHON",
-    links: [
       { href: URLS.winnower, label: "Winnower", external: true },
       { href: URLS.tauCeti, label: "Tau Ceti", external: true },
     ],
