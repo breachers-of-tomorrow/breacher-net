@@ -17,8 +17,13 @@ export function getPool(): Pool | null {
       max: 5,
       idleTimeoutMillis: 30_000,
       connectionTimeoutMillis: 5_000,
-      // Kill queries that run longer than 10 seconds
-      statement_timeout: 10_000,
+    });
+
+    // Set statement_timeout per-connection (PgBouncer doesn't support it as a startup param)
+    pool.on("connect", (client) => {
+      client.query("SET statement_timeout = '10s'").catch(() => {
+        /* best-effort — don't block the connection */
+      });
     });
 
     pool.on("error", (err) => {
