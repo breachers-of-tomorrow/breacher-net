@@ -2,10 +2,10 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "BREACHER.NET — Breachers of Tomorrow",
+    name: "BREACHER.NET — The Breacher Network",
     short_name: "BREACHER.NET",
     description:
-      "Community tracker and hub for the Marathon ARG — live kill count, sector states, stabilization data, and interactive maps.",
+      "The Breacher Network — Marathon community hub. Game metrics, ARG archive, wiki, weapons database, and 1,500+ members.",
     start_url: "/",
     display: "standalone",
     background_color: "#060D11",
