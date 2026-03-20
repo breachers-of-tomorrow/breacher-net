@@ -17,6 +17,8 @@ export function getPool(): Pool | null {
       max: 5,
       idleTimeoutMillis: 30_000,
       connectionTimeoutMillis: 5_000,
+      // Kill queries that run longer than 10 seconds
+      statement_timeout: 10_000,
     });
 
     pool.on("error", (err) => {

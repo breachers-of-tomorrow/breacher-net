@@ -83,6 +83,17 @@ export function checkRateLimit(
  * Unmatched paths fall through to the default.
  */
 export const RATE_LIMITS: Record<string, RateLimitConfig> = {
+  /** Expensive: window-function dedup + full table scans. */
+  "/api/state/history": { limit: 20, windowSeconds: 60 },
+  "/api/stabilization/history": { limit: 20, windowSeconds: 60 },
+  "/api/steam/history": { limit: 20, windowSeconds: 60 },
+
+  /** Expensive: pagination + filtering over large table. */
+  "/api/index-entries": { limit: 20, windowSeconds: 60 },
+
+  /** Status runs 6+ DB queries per call. */
+  "/api/status": { limit: 10, windowSeconds: 60 },
+
   /** Standard DB-query endpoints — generous limit. */
   default: { limit: 60, windowSeconds: 60 },
 };

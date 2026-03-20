@@ -11,27 +11,24 @@ export async function GET() {
   const dbPool = getPool();
   const dbConfigured = dbPool !== null;
   let dbConnected = false;
-  let dbHasData = false;
 
   if (dbConfigured) {
     try {
-      dbHasData = await isDatabaseReady();
+      await isDatabaseReady();
       dbConnected = true;
     } catch {
       dbConnected = false;
     }
   }
 
-  const status = dbConfigured ? (dbConnected ? "healthy" : "degraded") : "standalone";
+  // K8s probes only need status + HTTP code — no internal details
+  const healthy = !dbConfigured || dbConnected;
 
-  return withCache(NextResponse.json({
-    status,
-    timestamp: new Date().toISOString(),
-    database: {
-      configured: dbConfigured,
-      connected: dbConnected,
-      has_data: dbHasData,
-    },
-    mode: dbHasData ? "database" : "live-api",
-  }), "none");
+  return withCache(
+    NextResponse.json(
+      { status: healthy ? "ok" : "degraded" },
+      { status: healthy ? 200 : 503 },
+    ),
+    "none",
+  );
 }

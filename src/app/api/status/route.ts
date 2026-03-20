@@ -6,7 +6,6 @@ interface TableFreshness {
   table: string;
   label: string;
   lastUpdated: string | null;
-  rowCount: number;
 }
 
 interface PollerHeartbeat {
@@ -38,15 +37,12 @@ export async function GET() {
   }
 
   let dbConnected = false;
-  let dbLatencyMs: number | null = null;
   const freshness: TableFreshness[] = [];
   const pollers: PollerHeartbeat[] = [];
 
   try {
-    // Measure DB latency
-    const start = performance.now();
+    // DB connectivity check (no latency exposed externally)
     await db.query("SELECT 1");
-    dbLatencyMs = Math.round(performance.now() - start);
     dbConnected = true;
 
     // Query freshness for each data table
@@ -54,27 +50,27 @@ export async function GET() {
       {
         table: "state_snapshots",
         label: "State Poller",
-        sql: "SELECT MAX(captured_at) AS last_updated, COUNT(*) AS row_count FROM state_snapshots",
+        sql: "SELECT MAX(captured_at) AS last_updated FROM state_snapshots",
       },
       {
         table: "stabilization_snapshots",
         label: "Stabilization Data",
-        sql: "SELECT MAX(captured_at) AS last_updated, COUNT(*) AS row_count FROM stabilization_snapshots",
+        sql: "SELECT MAX(captured_at) AS last_updated FROM stabilization_snapshots",
       },
       {
         table: "build_events",
         label: "Build Tracker",
-        sql: "SELECT MAX(detected_at) AS last_updated, COUNT(*) AS row_count FROM build_events",
+        sql: "SELECT MAX(detected_at) AS last_updated FROM build_events",
       },
       {
         table: "index_entries",
         label: "Index Archive",
-        sql: "SELECT MAX(last_updated) AS last_updated, COUNT(*) AS row_count FROM index_entries",
+        sql: "SELECT MAX(last_updated) AS last_updated FROM index_entries",
       },
       {
         table: "index_snapshots",
         label: "Index Snapshots",
-        sql: "SELECT MAX(captured_at) AS last_updated, COUNT(*) AS row_count FROM index_snapshots",
+        sql: "SELECT MAX(captured_at) AS last_updated FROM index_snapshots",
       },
     ];
 
@@ -86,14 +82,12 @@ export async function GET() {
           table: q.table,
           label: q.label,
           lastUpdated: row?.last_updated?.toISOString() ?? null,
-          rowCount: Number(row?.row_count ?? 0),
         });
       } catch {
         freshness.push({
           table: q.table,
           label: q.label,
           lastUpdated: null,
-          rowCount: 0,
         });
       }
     }
@@ -129,7 +123,6 @@ export async function GET() {
       timestamp: new Date().toISOString(),
       database: {
         connected: dbConnected,
-        latencyMs: dbLatencyMs,
       },
       freshness,
       pollers,
