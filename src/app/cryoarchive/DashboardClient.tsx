@@ -11,66 +11,8 @@ import {
 } from "@/lib/format";
 import { SECTOR_NAMES } from "@/lib/types";
 import type { SectorName } from "@/lib/types";
-import dynamic from "next/dynamic";
+import Link from "next/link";
 import { URLS } from "@/lib/urls";
-import type { RangeLabel } from "@/lib/chart-utils";
-
-const KillCountChart = dynamic(
-  () => import("@/components/KillCountChart").then((m) => m.KillCountChart),
-  {
-    loading: () => (
-      <div className="cryo-panel p-5 h-[300px] flex items-center justify-center">
-        <div className="font-[var(--font-display)] text-xs tracking-[4px] text-dim animate-blink">
-          LOADING CHART...
-        </div>
-      </div>
-    ),
-    ssr: false,
-  },
-);
-
-const KillCountEta = dynamic(
-  () => import("@/components/KillCountEta").then((m) => m.KillCountEta),
-  {
-    loading: () => (
-      <div className="cryo-panel p-5 mb-8 h-[100px] flex items-center justify-center">
-        <div className="font-[var(--font-display)] text-xs tracking-[4px] text-dim animate-blink">
-          CALCULATING PROJECTION...
-        </div>
-      </div>
-    ),
-    ssr: false,
-  },
-);
-
-const PlayerCountChart = dynamic(
-  () =>
-    import("@/components/PlayerCountChart").then((m) => m.PlayerCountChart),
-  {
-    loading: () => (
-      <div className="cryo-panel p-5 h-[260px] flex items-center justify-center">
-        <div className="font-[var(--font-display)] text-xs tracking-[4px] text-dim animate-blink">
-          LOADING PLAYER DATA...
-        </div>
-      </div>
-    ),
-    ssr: false,
-  },
-);
-
-const KillAnalytics = dynamic(
-  () => import("@/components/KillAnalytics").then((m) => m.KillAnalytics),
-  {
-    loading: () => (
-      <div className="cryo-panel p-5 h-[120px] flex items-center justify-center">
-        <div className="font-[var(--font-display)] text-xs tracking-[4px] text-dim animate-blink">
-          COMPUTING ANALYTICS...
-        </div>
-      </div>
-    ),
-    ssr: false,
-  },
-);
 
 interface DashboardData {
   killCount: number;
@@ -100,9 +42,6 @@ export function DashboardClient({ initialData }: Props) {
   // Ref to track current data without triggering fetchLatest recreation
   const dataRef = useRef(data);
   dataRef.current = data;
-
-  // Shared chart time range — syncs kill chart and player chart
-  const [chartRange, setChartRange] = useState<RangeLabel>("24H");
 
   // Ticking state
   const [, setTick] = useState(0);
@@ -256,9 +195,12 @@ export function DashboardClient({ initialData }: Props) {
         <StateFlag label="MEMORY COMPLETED" value={data.memoryCompleted} />
       </div>
 
-      {/* KILL COUNT */}
+      {/* KILL COUNT — summary with link to full metrics */}
       <div className="section-title">UESC KILL COUNT</div>
-      <div className="cryo-panel p-6 mb-8 flex items-center gap-8 flex-wrap" aria-live="polite" aria-atomic="true">
+      <Link
+        href="/marathon"
+        className="block cryo-panel p-6 mb-8 flex items-center gap-8 flex-wrap hover:border-accent/30 transition-colors no-underline group"
+      >
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-danger to-transparent" />
         <div>
           <div className="font-[var(--font-display)] text-[0.65rem] tracking-[3px] text-dim">
@@ -284,33 +226,16 @@ export function DashboardClient({ initialData }: Props) {
           </div>
         )}
         <div className="ml-auto text-right">
-          {nextUpdate && (
-            <div className="text-[0.7rem] text-dim">
-              NEXT UPDATE: {toLocalTimeOnly(nextUpdate)}
-            </div>
-          )}
+          <div className="font-[var(--font-display)] text-xs tracking-[2px] text-accent group-hover:text-accent2 transition-colors">
+            VIEW FULL METRICS →
+          </div>
           {lastFetch && (
             <div className="text-[0.65rem] text-dim mt-1">
               Updated {timeAgo(lastFetch)}
             </div>
           )}
         </div>
-      </div>
-
-      {/* ETA TO 500M */}
-      <KillCountEta currentKills={data.killCount} />
-
-      {/* Kill Count Chart */}
-      <div className="section-title">KILL COUNT OVER TIME</div>
-      <KillCountChart range={chartRange} onRangeChange={setChartRange} />
-
-      {/* Player Count Chart (synced time range) */}
-      <div className="section-title mt-8">STEAM PLAYERS OVER TIME</div>
-      <PlayerCountChart range={chartRange} onRangeChange={setChartRange} />
-
-      {/* Kill Analytics */}
-      <div className="section-title mt-8">KILL ANALYTICS</div>
-      <KillAnalytics />
+      </Link>
 
       {/* SHIP DATE */}
       <div className="cryo-panel p-5 mt-8">
