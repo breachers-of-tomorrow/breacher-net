@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useSteamPlayers } from "@/hooks";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -30,11 +31,6 @@ import type { RangeLabel, BaseDataPoint } from "@/lib/chart-utils";
 
 type DataPoint = BaseDataPoint;
 
-interface HistoryRow {
-  captured_at: string;
-  player_count: number;
-}
-
 function formatPlayers(n: number): string {
   return formatCompact(n, 1);
 }
@@ -50,48 +46,19 @@ interface Props {
 }
 
 export function PlayerCountChart({ range, onRangeChange }: Props) {
-  const [allData, setAllData] = useState<DataPoint[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { rows, loading, error } = useSteamPlayers();
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch("/api/steam/history?limit=1000");
-        if (!res.ok) throw new Error(`API returned ${res.status}`);
-        const json = await res.json();
-
-        const rows: HistoryRow[] = json.data ?? [];
-        if (rows.length === 0) {
-          setError("No player count history yet — data will appear after the next poll cycle");
-          return;
-        }
-
-        const sorted = [...rows].sort(
-          (a, b) =>
-            new Date(a.captured_at).getTime() -
-            new Date(b.captured_at).getTime(),
-        );
-
-        const points: DataPoint[] = sorted.map((r) => ({
-          timestamp: r.captured_at,
-          ts: new Date(r.captured_at).getTime(),
-          value: Number(r.player_count),
-          valueSmooth: Number(r.player_count),
-          label: formatTooltipTime(r.captured_at),
-        }));
-
-        setAllData(points);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to load player data",
-        );
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+  /** Map raw rows to chart DataPoints. */
+  const allData = useMemo<DataPoint[]>(() => {
+    if (rows.length === 0) return [];
+    return rows.map((r) => ({
+      timestamp: r.captured_at,
+      ts: new Date(r.captured_at).getTime(),
+      value: Number(r.player_count),
+      valueSmooth: Number(r.player_count),
+      label: formatTooltipTime(r.captured_at),
+    }));
+  }, [rows]);
 
   const chartData = useMemo(() => {
     if (allData.length === 0) return [];
