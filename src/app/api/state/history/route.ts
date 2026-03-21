@@ -37,6 +37,7 @@ export async function GET(request: Request) {
         WHERE kill_count IS NOT NULL
       ) sub
       WHERE kill_count IS DISTINCT FROM prev_kc
+        AND (prev_kc IS NULL OR kill_count >= prev_kc)
     `;
     const params: (string | number)[] = [];
 
