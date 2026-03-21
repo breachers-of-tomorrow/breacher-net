@@ -35,7 +35,7 @@ export default function CommunityPage() {
           <ResourceCard
             icon="💬"
             title="DISCORD"
-            description="The heart of Breachers of Tomorrow. 1,000+ members solving puzzles, sharing discoveries, and coordinating research."
+            description="The heart of Breachers of Tomorrow. 1,500+ members solving puzzles, sharing discoveries, and coordinating research."
             href={URLS.discord}
             cta="JOIN SERVER"
             accent
