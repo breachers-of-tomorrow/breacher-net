@@ -184,6 +184,8 @@ export function clampedDomain(
   ];
 }
 
+import { THEME } from "@/lib/constants";
+
 /* ------------------------------------------------------------------ */
 /*  Shared chart style tokens                                          */
 /* ------------------------------------------------------------------ */
@@ -191,14 +193,14 @@ export function clampedDomain(
 /** Tooltip content style matching the cryo design language. */
 export const TOOLTIP_STYLE = {
   contentStyle: {
-    backgroundColor: "#0C1A22", // --color-cryo-bg
-    border: "1px solid #1E3A50", // --color-cryo-border
+    backgroundColor: THEME.bg,
+    border: `1px solid ${THEME.border}`,
     borderRadius: 0,
     fontSize: 12,
-    color: "#8AACB8", // --color-cryo-body
+    color: THEME.text,
   },
   labelStyle: {
-    color: "#00D4EB", // --color-cryo-accent
+    color: THEME.accent2,
     fontFamily: "var(--font-display)",
     fontSize: 11,
     letterSpacing: "1px",
@@ -207,15 +209,15 @@ export const TOOLTIP_STYLE = {
 
 /** Common axis styling. */
 export const AXIS_STYLE = {
-  stroke: "#6E8E9E", // --color-cryo-dim
-  tick: { fontSize: 10, fill: "#6E8E9E" },
-  axisLine: { stroke: "#1E3A50" }, // --color-cryo-border
-  tickLine: { stroke: "#1E3A50" },
+  stroke: THEME.dim,
+  tick: { fontSize: 10, fill: THEME.dim },
+  axisLine: { stroke: THEME.border },
+  tickLine: { stroke: THEME.border },
 } as const;
 
 /** Grid styling. */
 export const GRID_STYLE = {
   strokeDasharray: "3 3",
-  stroke: "#1E3A50", // --color-cryo-border
+  stroke: THEME.border,
   strokeOpacity: 0.5,
 } as const;

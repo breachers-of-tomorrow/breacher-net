@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getPool } from "@/lib/db";
 import { parseLimit, parseSince, isErrorResponse } from "@/lib/validation";
 import { withCache } from "@/lib/cache";
+import { MARATHON_STEAM_APP_ID } from "@/lib/constants";
 
 /**
  * GET /api/steam/history?limit=500&since=2025-01-01T00:00:00Z
@@ -17,8 +18,6 @@ export async function GET(request: Request) {
 
   const since = parseSince(searchParams.get("since"));
   if (isErrorResponse(since)) return since;
-
-  const MARATHON_APP_ID = 3065800;
 
   const db = getPool();
   if (!db) {
@@ -40,7 +39,7 @@ export async function GET(request: Request) {
         WHERE app_id = $1 AND captured_at >= $2
         ORDER BY captured_at DESC LIMIT $3
       `;
-      params = [MARATHON_APP_ID, since, limit];
+      params = [MARATHON_STEAM_APP_ID, since, limit];
     } else {
       query = `
         SELECT captured_at, player_count
@@ -48,7 +47,7 @@ export async function GET(request: Request) {
         WHERE app_id = $1
         ORDER BY captured_at DESC LIMIT $2
       `;
-      params = [MARATHON_APP_ID, limit];
+      params = [MARATHON_STEAM_APP_ID, limit];
     }
 
     const result = await db.query(query, params);

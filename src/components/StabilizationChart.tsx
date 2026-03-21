@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { URLS } from "@/lib/urls";
+import { THEME, CHART_EXTENDED } from "@/lib/constants";
 import {
   ResponsiveContainer,
   LineChart,
@@ -25,15 +26,15 @@ interface StabRow {
 
 // Theme-consistent colors per camera — all meet WCAG AA on dark bg
 const CAMERA_COLORS: Record<string, string> = {
-  cargo: "#FF3344",
-  index: "#038ADF",
-  revival: "#00D4EB",
-  biostock: "#00FF9D",
-  steerage: "#FFAA00",
-  preservation: "#E0DDD2",
-  cryoHub: "#FF6B9D",
-  camera06: "#9D7AFF",
-  camera09: "#FF9D4A",
+  cargo: THEME.danger,
+  index: THEME.accent,
+  revival: THEME.accent2,
+  biostock: THEME.mint,
+  steerage: THEME.warn,
+  preservation: THEME.heading,
+  cryoHub: CHART_EXTENDED.pink,
+  camera06: CHART_EXTENDED.purple,
+  camera09: CHART_EXTENDED.warmOrange,
 };
 
 const CAMERA_LABELS: Record<string, string> = {
@@ -157,24 +158,24 @@ export function StabilizationChart() {
           >
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="#1E3A50"
+              stroke={THEME.border}
               strokeOpacity={0.5}
             />
             <XAxis
               dataKey="timestamp"
               tickFormatter={formatAxis}
-              stroke="#6E8E9E"
-              tick={{ fontSize: 10, fill: "#6E8E9E" }}
-              axisLine={{ stroke: "#1E3A50" }}
-              tickLine={{ stroke: "#1E3A50" }}
+              stroke={THEME.dim}
+              tick={{ fontSize: 10, fill: THEME.dim }}
+              axisLine={{ stroke: THEME.border }}
+              tickLine={{ stroke: THEME.border }}
               interval="preserveStartEnd"
               minTickGap={60}
             />
             <YAxis
-              stroke="#6E8E9E"
-              tick={{ fontSize: 10, fill: "#6E8E9E" }}
-              axisLine={{ stroke: "#1E3A50" }}
-              tickLine={{ stroke: "#1E3A50" }}
+              stroke={THEME.dim}
+              tick={{ fontSize: 10, fill: THEME.dim }}
+              axisLine={{ stroke: THEME.border }}
+              tickLine={{ stroke: THEME.border }}
               width={40}
               domain={[0, 100]}
               tickFormatter={(v) => `${v}%`}
@@ -186,14 +187,14 @@ export function StabilizationChart() {
                 CAMERA_LABELS[name as string] ?? name,
               ]}
               contentStyle={{
-                backgroundColor: "#0C1A22",
-                border: "1px solid #1E3A50",
+                backgroundColor: THEME.bg,
+                border: `1px solid ${THEME.border}`,
                 borderRadius: 0,
                 fontSize: 12,
-                color: "#8AACB8",
+                color: THEME.text,
               }}
               labelStyle={{
-                color: "#00D4EB",
+                color: THEME.accent2,
                 fontFamily: "var(--font-display)",
                 fontSize: 11,
                 letterSpacing: "1px",
@@ -201,14 +202,14 @@ export function StabilizationChart() {
             />
             <Legend
               formatter={(value) => CAMERA_LABELS[value] ?? value}
-              wrapperStyle={{ fontSize: 10, color: "#8AACB8" }}
+              wrapperStyle={{ fontSize: 10, color: THEME.text }}
             />
             {cameras.map((cam) => (
               <Line
                 key={cam}
                 type="monotone"
                 dataKey={cam}
-                stroke={CAMERA_COLORS[cam] ?? "#8AACB8"}
+                stroke={CAMERA_COLORS[cam] ?? THEME.text}
                 strokeWidth={1.5}
                 dot={false}
                 activeDot={{ r: 3 }}

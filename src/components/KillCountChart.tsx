@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useKillCountData, useChartRange } from "@/hooks";
 import { URLS } from "@/lib/urls";
+import { THEME, CHART_EXTENDED } from "@/lib/constants";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -258,8 +259,8 @@ export function KillCountChart({ range: externalRange, onRangeChange }: Props = 
           >
             <defs>
               <linearGradient id="killGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#FF3344" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="#FF3344" stopOpacity={0.02} />
+                <stop offset="0%" stopColor={THEME.danger} stopOpacity={0.3} />
+                <stop offset="100%" stopColor={THEME.danger} stopOpacity={0.02} />
               </linearGradient>
             </defs>
             <CartesianGrid {...GRID_STYLE} />
@@ -283,7 +284,7 @@ export function KillCountChart({ range: externalRange, onRangeChange }: Props = 
                 orientation="right"
                 tickFormatter={(v) => `${v}`}
                 stroke={AXIS_STYLE.stroke}
-                tick={{ fontSize: 10, fill: "#FF6B35" }}
+                tick={{ fontSize: 10, fill: CHART_EXTENDED.killSecondary }}
                 axisLine={AXIS_STYLE.axisLine}
                 tickLine={AXIS_STYLE.tickLine}
                 width={40}
@@ -311,14 +312,14 @@ export function KillCountChart({ range: externalRange, onRangeChange }: Props = 
               type="monotone"
               dataKey="value"
               name="Kill Count"
-              stroke="#FF3344"
+              stroke={THEME.danger}
               strokeWidth={2}
               fill="url(#killGradient)"
               dot={false}
               activeDot={{
                 r: 4,
-                fill: "#FF3344",
-                stroke: "#FF3344",
+                fill: THEME.danger,
+                stroke: THEME.danger,
                 strokeWidth: 2,
               }}
             />
@@ -328,11 +329,11 @@ export function KillCountChart({ range: externalRange, onRangeChange }: Props = 
                 type="monotone"
                 dataKey="kpmSmooth"
                 name="Kills/min"
-                stroke="#FF6B35"
+                stroke={CHART_EXTENDED.killSecondary}
                 strokeWidth={1.5}
                 strokeOpacity={0.7}
                 dot={false}
-                activeDot={{ r: 3, fill: "#FF6B35", stroke: "#FF6B35" }}
+                activeDot={{ r: 3, fill: CHART_EXTENDED.killSecondary, stroke: CHART_EXTENDED.killSecondary }}
                 connectNulls
               />
             )}
