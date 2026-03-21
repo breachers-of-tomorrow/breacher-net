@@ -1,9 +1,13 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/urls";
 
+// Use a fixed build-time date so crawlers see stable lastModified values
+// instead of "now" on every request (wastes crawl budget).
+const BUILD_DATE = new Date();
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = SITE_URL;
-  const now = new Date();
+  const now = BUILD_DATE;
 
   return [
     {

@@ -20,9 +20,10 @@ const HISTORY_API = "/api/state/history?limit=1000";
 /**
  * Fetch kill-count history from the DB-backed API.
  *
- * Returns sorted rows and a deduplicated subset (consecutive
- * identical kill_counts collapsed).  Every consumer gets the same
- * data without re-fetching.
+ * Returns sorted rows already deduplicated server-side (the SQL uses
+ * a `lag()` window function to collapse consecutive identical
+ * kill_counts).  `deduped` is an alias for `rows` kept for backward
+ * compatibility.
  *
  * @returns `{ rows, deduped, loading, error }`
  */
@@ -53,23 +54,12 @@ export function useKillCountData() {
             new Date(b.captured_at).getTime(),
         );
 
-        // Deduplicate consecutive identical kill_counts.
-        // The game state updates every ~15 min but we poll every ~5 min,
-        // so ~2/3 of rows are duplicates.
-        const unique: KillCountRow[] = [];
-        for (const r of sorted) {
-          const kc = Number(r.kill_count);
-          if (
-            unique.length === 0 ||
-            Number(unique[unique.length - 1].kill_count) !== kc
-          ) {
-            unique.push(r);
-          }
-        }
+        // Server-side SQL already deduplicates via lag() window function,
+        // so sorted data is ready to use directly.
 
         if (!cancelled) {
           setRows(sorted);
-          setDeduped(unique);
+          setDeduped(sorted);
         }
       } catch (err) {
         if (!cancelled) {
