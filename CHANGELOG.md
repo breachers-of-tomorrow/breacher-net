@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-03-23
+
+### Added
+
+- **Grouped dropdown navigation** — 18 flat tabs replaced with 5 grouped dropdown menus (Home, Community, Marathon, Cryoarchive, Resources); hover-to-open with 150ms close delay, click fallback, keyboard accessible ([#101](https://github.com/breachers-of-tomorrow/breacher-net/issues/101))
+
+### Changed
+
+- **About page streamlined** — removed duplicate GET STARTED cards, WAYS TO CONTRIBUTE grid, and CREDITS section; replaced with two focused CTAs ([#102](https://github.com/breachers-of-tomorrow/breacher-net/issues/102))
+- **Contribute page trimmed** — FOR DEVELOPERS tech stack grid replaced with compact developer note linking to Community Resources ([#102](https://github.com/breachers-of-tomorrow/breacher-net/issues/102))
+
+### Fixed
+
+- **Chart nosedive on stale API data** — SQL monotonic filter (`kill_count >= prev`) and client-side safety net prevent anomalous drops from cryoarchive API data freshness issues ([#103](https://github.com/breachers-of-tomorrow/breacher-net/pull/103))
+
 ## [0.6.0] - 2026-03-20
 
 ### Added
