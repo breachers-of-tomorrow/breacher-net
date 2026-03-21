@@ -20,9 +20,8 @@ import re
 import sys
 from pathlib import Path
 
-import psycopg2
-
 from browser import CryoBrowser
+from db_writer import get_db, insert_row, record_heartbeat
 
 logging.basicConfig(
     level=logging.INFO,
@@ -31,7 +30,6 @@ logging.basicConfig(
 )
 log = logging.getLogger("poll_index")
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://breacher:mycomplexpassword@db:5432/breacher")
 BASE_URL = "https://cryoarchive.systems"
 
 # DAC auth credentials
@@ -48,9 +46,9 @@ INDEX_PASSWORD = os.environ.get(
 TOTAL_ENTRIES = 1200
 
 
-def get_db():
-    """Get a database connection."""
-    return psycopg2.connect(DATABASE_URL)
+def get_db_conn():
+    """Get a database connection (used for index upserts that need ON CONFLICT)."""
+    return get_db()
 
 
 def authenticate(cryo: CryoBrowser) -> bool:
@@ -255,7 +253,7 @@ def poll_index():
     log.info("Parsed %d entries (%d unlocked)", total, len(unlocked_entries))
 
     try:
-        conn = get_db()
+        conn = get_db_conn()
         with conn:
             with conn.cursor() as cur:
                 for entry in all_entries:
@@ -292,25 +290,23 @@ def poll_index():
         conn.close()
         log.info("Index entries stored successfully")
     except Exception:
-        log.exception("Failed to store index entries")
+        log.exception("Failed to store index entries — buffering snapshot")
+        # Buffer the summary snapshot so we don't lose aggregate counts
+        from buffer import buffer_row
+        type_counts = {}
+        for e in unlocked_entries:
+            t = e["entry_type"] or "UNKNOWN"
+            type_counts[t] = type_counts.get(t, 0) + 1
+        buffer_row("index_snapshots", {
+            "total_entries": total,
+            "unlocked_count": len(unlocked_entries),
+            "type_counts": type_counts,
+        })
 
 
 def heartbeat(status="ok"):
     """Record poller heartbeat."""
-    try:
-        conn = get_db()
-        with conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    INSERT INTO poller_heartbeats (poller_name, status)
-                    VALUES ('index_poller', %s)
-                    """,
-                    (status,),
-                )
-        conn.close()
-    except Exception:
-        log.exception("Failed to record heartbeat")
+    record_heartbeat("index_poller", status)
 
 
 if __name__ == "__main__":

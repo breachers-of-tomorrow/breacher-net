@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useKillCountData } from "@/hooks";
+import type { KillCountRow } from "@/hooks";
 import { formatNumber } from "@/lib/format";
 
 /* ------------------------------------------------------------------ */
@@ -8,7 +10,6 @@ import { formatNumber } from "@/lib/format";
 /* ------------------------------------------------------------------ */
 
 const TARGET = 500_000_000;
-const HISTORY_API = "/api/state/history?limit=1000";
 
 /* ------------------------------------------------------------------ */
 /*  Diurnal-weighted projection model                                  */
@@ -18,11 +19,6 @@ const HISTORY_API = "/api/state/history?limit=1000";
 /*  3. Accumulate kills until we reach the remaining amount            */
 /*  4. Result: projected date/time of arrival                          */
 /* ------------------------------------------------------------------ */
-
-interface HistoryRow {
-  captured_at: string;
-  kill_count: string | number;
-}
 
 interface HourlyRate {
   hour: number;
@@ -49,7 +45,7 @@ interface Projection {
  * Build the 24-hour KPM profile from historical data.
  * Groups all point-to-point rates by their UTC hour, then averages.
  */
-function buildHourlyProfile(rows: HistoryRow[]): HourlyRate[] {
+function buildHourlyProfile(rows: KillCountRow[]): HourlyRate[] {
   const sorted = [...rows].sort(
     (a, b) =>
       new Date(a.captured_at).getTime() - new Date(b.captured_at).getTime(),
@@ -59,7 +55,7 @@ function buildHourlyProfile(rows: HistoryRow[]): HourlyRate[] {
   // The game state updates every ~15 min but we poll every ~5 min,
   // so ~2/3 of rows are duplicates. Without dedup, 15 min of kills
   // get attributed to a 5-min gap, inflating rates by ~3x.
-  const changePoints: HistoryRow[] = [sorted[0]];
+  const changePoints: KillCountRow[] = [sorted[0]];
   for (let i = 1; i < sorted.length; i++) {
     if (Number(sorted[i].kill_count) !== Number(changePoints[changePoints.length - 1].kill_count)) {
       changePoints.push(sorted[i]);
@@ -150,7 +146,7 @@ function projectEta(
 /**
  * Compute current KPM from recent data (~last 30 min).
  */
-function recentKpm(rows: HistoryRow[]): number {
+function recentKpm(rows: KillCountRow[]): number {
   const sorted = [...rows].sort(
     (a, b) =>
       new Date(a.captured_at).getTime() - new Date(b.captured_at).getTime(),
@@ -185,28 +181,12 @@ export function KillCountEta({
 }: {
   currentKills: number;
 }) {
-  const [rows, setRows] = useState<HistoryRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [, setTick] = useState(0);
-
-  // Fetch history once
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch(HISTORY_API);
-        if (!res.ok) return;
-        const json = await res.json();
-        setRows(json.data ?? []);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+  const { rows, loading } = useKillCountData();
+  const [now, setNow] = useState(() => Date.now());
 
   // Tick every second for live countdown
   useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
@@ -287,7 +267,7 @@ export function KillCountEta({
   const { eta, remaining, currentKpm, avgKpm, dataSpanDays } = projection;
 
   // Live countdown
-  const msLeft = Math.max(0, eta.getTime() - Date.now());
+  const msLeft = Math.max(0, eta.getTime() - now);
   const totalSecs = Math.floor(msLeft / 1000);
   const days = Math.floor(totalSecs / 86400);
   const hrs = Math.floor((totalSecs % 86400) / 3600);

@@ -50,32 +50,37 @@ The app works without a database — it fetches directly from the cryoarchive.sy
 graph TD
     subgraph "breacher.net"
         App["Next.js App\n:3000"]
-        StatePoller["State Poller\n(every 15m)"]
+        StatePoller["State Poller\n(every 5m)"]
         BuildPoller["Build Poller\n(every 60s)"]
         IndexPoller["Index Poller\n(every 15m)"]
+        SteamPoller["Steam Poller\n(every 5m)"]
         DB["PostgreSQL 17\n(Patroni HA)"]
     end
 
     API["cryoarchive.systems"]
+    Steam["Steam Web API"]
     DAC["DAC Auth File\n(K8s Secret)"]
 
     App -- "server proxy" --> API
     StatePoller -- "GET /api/public/state" --> API
     BuildPoller -- "HEAD + chunk diff" --> API
     IndexPoller -- "DAC auth + /indx" --> API
+    SteamPoller -- "GetNumberOfCurrentPlayers" --> Steam
     IndexPoller -- "mount" --> DAC
     App -- "DAC auth (fallback)" --> DAC
     StatePoller -- "write" --> DB
     BuildPoller -- "write" --> DB
     IndexPoller -- "write" --> DB
+    SteamPoller -- "write" --> DB
     App -- "read" --> DB
 ```
 
 - **Next.js App** — Server-rendered React with App Router. Proxies live data requests to cryoarchive.systems server-side (avoids CORS). Serves historical data from PostgreSQL.
-- **State Poller** — Python CronJob. Snapshots kill count, sector states, and ship date every 15 minutes.
+- **State Poller** — Python CronJob. Snapshots kill count, sector states, stabilization levels, and ship date every 5 minutes.
 - **Build Poller** — Python CronJob. Checks for deployment changes every 60 seconds via chunk/asset fingerprinting.
-- **Index Poller** — Python CronJob. Authenticates via DAC + password, extracts and stores all 1200+ index entries with full content.
-- **PostgreSQL** — Stores state snapshots, stabilization history, build events, index entries, and session cookies.
+- **Index Poller** — Python CronJob. Authenticates via DAC + password, extracts and stores all 1200+ index entries with full content every 15 minutes.
+- **Steam Poller** — Python CronJob. Collects Marathon player count from Steam Web API every 5 minutes.
+- **PostgreSQL** — Stores state snapshots, stabilization history, steam player counts, build events, index entries, and session cookies.
 
 ## Environment Variables
 
@@ -83,6 +88,7 @@ graph TD
 |----------|----------|-------------|
 | `DATABASE_URL` | For DB features | PostgreSQL connection string (e.g., `postgresql://user:pass@host:5432/db`) |
 | `CRYO_DAC_PATH` | For index features | Path to mounted DAC authentication file (see DAC Auth below) |
+| `POLLER_BUFFER_MAX_BYTES` | No | Max size of JSON buffer when DB is unavailable (default: 52428800 / 50 MiB) |
 
 ## DAC Authentication
 
@@ -122,25 +128,57 @@ export CRYO_DAC_PATH=/path/to/your-dac-file.png
 
 ```
 src/
-├── app/                    # Next.js App Router pages
-│   ├── api/                # API routes (health, history, builds, proxy)
-│   │   ├── state/          # State history + live proxy
-│   │   ├── stabilization/  # Stabilization history + live proxy
-│   │   ├── builds/         # Build event history
-│   │   └── index-entries/  # Index entries + scrape fallback
-│   ├── cryoarchive/        # ARG tracking pages
-│   │   ├── cameras/        # Camera stabilization monitoring
-│   │   ├── changes/        # Build change tracker
-│   │   ├── index/          # Cryoarchive index archive
-│   │   └── maps/           # Terminal maps
-│   └── page.tsx            # Landing page
-├── components/             # Shared React components
-│   ├── KillCountChart.tsx  # Historical kill count chart
-│   ├── StabilizationChart.tsx  # Camera stabilization chart
-│   └── Navigation.tsx      # Site navigation
-└── lib/                    # Utilities (API client, DB, types, formatting)
-poller/                     # Python poller service
-db/                         # Database schema
+├── app/                          # Next.js App Router pages
+│   ├── api/                      # API routes
+│   │   ├── builds/               # Build event history + latest
+│   │   ├── health/               # Health check
+│   │   ├── index-entries/        # Index entries
+│   │   ├── stabilization/        # Stabilization history + latest
+│   │   ├── state/                # State history + latest
+│   │   ├── status/               # Infrastructure status + freshness
+│   │   └── steam/                # Steam player count + history
+│   ├── about/                    # About page
+│   ├── api-docs/                 # API documentation page
+│   ├── community/                # Community resources page
+│   ├── contribute/               # Contribution guide page
+│   ├── cryoarchive/              # ARG tracking pages
+│   │   ├── cameras/              # Camera stabilization monitoring
+│   │   ├── changes/              # Build change tracker
+│   │   ├── index/                # Cryoarchive index archive
+│   │   └── maps/                 # Terminal maps
+│   ├── marathon/                 # Marathon metrics (charts, analytics)
+│   ├── status/                   # Status page
+│   └── page.tsx                  # Landing page (The Breacher Network)
+├── components/                   # Shared React components
+│   ├── KillAnalytics.tsx         # Kill rate / player correlation panel
+│   ├── KillCountChart.tsx        # Historical kill count chart
+│   ├── KillCountEta.tsx          # Kill count target ETA estimator
+│   ├── Navigation.tsx            # Site navigation
+│   ├── PlayerCountChart.tsx      # Steam player count chart
+│   └── StabilizationChart.tsx    # Camera stabilization chart
+├── hooks/                        # Custom React hooks
+│   ├── useChartRange.ts          # Time range picker state
+│   ├── useKillCountData.ts       # Kill count data fetcher
+│   └── useSteamPlayers.ts        # Steam player data fetcher
+└── lib/                          # Utilities
+    ├── api.ts                    # API client helpers
+    ├── cache.ts                  # Cache-Control header presets
+    ├── chart-utils.ts            # Chart formatting, colors, time ranges
+    ├── constants.ts              # Shared constants (Steam App ID, theme)
+    ├── db.ts                     # PostgreSQL connection pool
+    ├── format.ts                 # Number/date formatting
+    ├── rate-limit.ts             # Sliding window rate limiter
+    ├── types.ts                  # TypeScript type definitions
+    ├── urls.ts                   # External URL constants
+    └── validation.ts             # API input validation
+poller/                           # Python poller service
+├── buffer.py                     # JSON buffer for DB outage resilience
+├── db_writer.py                  # Buffered database writer
+├── poll_build.py                 # Build change detection (every 60s)
+├── poll_index.py                 # Index archive snapshots (every 15m)
+├── poll_state.py                 # State + stabilization (every 5m)
+└── poll_steam.py                 # Steam player count (every 5m)
+db/                               # Database schema (7 tables)
 ```
 
 ## Contributing

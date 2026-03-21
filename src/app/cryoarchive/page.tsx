@@ -5,11 +5,11 @@ import { DashboardClient } from "./DashboardClient";
 import { SITE_URL } from "@/lib/urls";
 
 export const metadata: Metadata = {
-  title: "Dashboard",
-  description: "Live kill count, sector states, ship date countdown, and kill rate chart",
+  title: "Cryoarchive Dashboard",
+  description: "The Breacher Network's ARG archive — live kill count, sector states, ship date countdown, and kill rate analytics.",
   openGraph: {
-    title: "Dashboard // BREACHER.NET",
-    description: "Live kill count, sector states, ship date countdown, and kill rate chart",
+    title: "Cryoarchive Dashboard // BREACHER.NET",
+    description: "The Breacher Network's ARG archive — live kill count, sector states, ship date countdown, and kill rate analytics.",
     url: `${SITE_URL}/cryoarchive`,
   },
 };

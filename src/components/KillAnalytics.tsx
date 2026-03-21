@@ -1,21 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useKillCountData, useSteamPlayers } from "@/hooks";
+import type { KillCountRow, SteamPlayerRow } from "@/hooks";
 import { formatNumber } from "@/lib/format";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
-
-interface StateRow {
-  captured_at: string;
-  kill_count: string | number;
-}
-
-interface SteamRow {
-  captured_at: string;
-  player_count: number;
-}
 
 interface AnalyticsData {
   // Current snapshot
@@ -54,8 +46,8 @@ interface AnalyticsData {
 /* ------------------------------------------------------------------ */
 
 function computeAnalytics(
-  stateRows: StateRow[],
-  steamRows: SteamRow[],
+  stateRows: KillCountRow[],
+  steamRows: SteamPlayerRow[],
 ): AnalyticsData | null {
   if (stateRows.length < 2 || steamRows.length < 2) return null;
 
@@ -251,32 +243,10 @@ function trendColor(trend: "rising" | "falling" | "stable"): string {
 /* ------------------------------------------------------------------ */
 
 export function KillAnalytics() {
-  const [stateRows, setStateRows] = useState<StateRow[]>([]);
-  const [steamRows, setSteamRows] = useState<SteamRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { rows: stateRows, loading: stateLoading } = useKillCountData();
+  const { rows: steamRows, loading: steamLoading } = useSteamPlayers();
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const [stateRes, steamRes] = await Promise.all([
-          fetch("/api/state/history?limit=1000"),
-          fetch("/api/steam/history?limit=1000"),
-        ]);
-
-        if (stateRes.ok) {
-          const stateJson = await stateRes.json();
-          setStateRows(stateJson.data ?? []);
-        }
-        if (steamRes.ok) {
-          const steamJson = await steamRes.json();
-          setSteamRows(steamJson.data ?? []);
-        }
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+  const loading = stateLoading || steamLoading;
 
   const analytics = useMemo(
     () => computeAnalytics(stateRows, steamRows),

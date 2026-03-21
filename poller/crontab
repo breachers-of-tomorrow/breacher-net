@@ -1,5 +1,11 @@
 # State + stabilization snapshot every 5 minutes
 */5 * * * * /usr/local/bin/python /app/poll_state.py
 
+# Steam player count every 5 minutes
+*/5 * * * * /usr/local/bin/python /app/poll_steam.py
+
+# Index archive snapshot every 15 minutes
+*/15 * * * * /usr/local/bin/python /app/poll_index.py
+
 # Build change detection every 60 seconds
 * * * * * /usr/local/bin/python /app/poll_build.py

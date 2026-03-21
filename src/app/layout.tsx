@@ -17,12 +17,22 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "BREACHER.NET // Breachers of Tomorrow",
+    default: "BREACHER.NET // The Breacher Network",
     template: "%s // BREACHER.NET",
   },
   description:
-    "Community tracker and hub for the Marathon ARG — Breachers of Tomorrow",
-  keywords: ["marathon", "arg", "bungie", "cryoarchive", "breach protocol"],
+    "The Breacher Network — Marathon community hub by Breachers of Tomorrow. Game metrics, ARG archive, wiki, weapons database, and 1,500+ members.",
+  keywords: [
+    "marathon",
+    "bungie",
+    "breacher network",
+    "breachers of tomorrow",
+    "arg",
+    "cryoarchive",
+    "kill count",
+    "weapons database",
+    "community",
+  ],
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
@@ -36,23 +46,23 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: SITE_URL,
     siteName: "BREACHER.NET",
-    title: "BREACHER.NET // Breachers of Tomorrow",
+    title: "BREACHER.NET // The Breacher Network",
     description:
-      "Community tracker and hub for the Marathon ARG — live kill count, sector states, stabilization data, and interactive maps.",
+      "The Breacher Network — Marathon community hub. Game metrics, kill count tracking, ARG archive, wiki, weapons database, and 1,500+ members.",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "BREACHER//NET — Community hub for the Marathon ARG",
+        alt: "BREACHER//NET — The Breacher Network",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "BREACHER.NET // Breachers of Tomorrow",
+    title: "BREACHER.NET // The Breacher Network",
     description:
-      "Community tracker and hub for the Marathon ARG — live kill count, sector states, stabilization data, and interactive maps.",
+      "The Breacher Network — Marathon community hub. Game metrics, kill count tracking, ARG archive, wiki, weapons database, and 1,500+ members.",
     images: ["/og-image.png"],
   },
   alternates: {

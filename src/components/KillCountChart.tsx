@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useKillCountData, useChartRange } from "@/hooks";
 import { URLS } from "@/lib/urls";
+import { THEME, CHART_EXTENDED } from "@/lib/constants";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -14,7 +16,6 @@ import {
 } from "recharts";
 import {
   RANGES,
-  DEFAULT_RANGE,
   MAX_CHART_POINTS,
   spansMultipleDays,
   formatAxis,
@@ -33,11 +34,6 @@ import type { RangeLabel, BaseDataPoint } from "@/lib/chart-utils";
 interface DataPoint extends BaseDataPoint {
   kpm: number | null;
   kpmSmooth: number | null;
-}
-
-interface HistoryRow {
-  captured_at: string;
-  kill_count: string | number;
 }
 
 /**
@@ -124,76 +120,36 @@ interface Props {
 }
 
 export function KillCountChart({ range: externalRange, onRangeChange }: Props = {}) {
-  const [allData, setAllData] = useState<DataPoint[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [internalRange, setInternalRange] = useState<RangeLabel>(DEFAULT_RANGE);
+  const { deduped, loading, error } = useKillCountData();
+  const [range, setRange] = useChartRange(externalRange, onRangeChange);
   const [showKpm, setShowKpm] = useState(true);
 
-  const range = externalRange ?? internalRange;
-  const setRange = onRangeChange ?? setInternalRange;
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch("/api/state/history?limit=1000");
-        if (!res.ok) throw new Error(`API returned ${res.status}`);
-        const json = await res.json();
-
-        const rows: HistoryRow[] = json.data ?? [];
-        if (rows.length === 0) {
-          setError("No historical data yet");
-          return;
+  /** Map deduplicated rows to chart DataPoints. */
+  const allData = useMemo<DataPoint[]>(() => {
+    if (deduped.length === 0) return [];
+    return deduped.map((r, i) => {
+      const killCount = Number(r.kill_count);
+      let kpm: number | null = null;
+      if (i > 0) {
+        const prevKc = Number(deduped[i - 1].kill_count);
+        const t1 = new Date(deduped[i - 1].captured_at).getTime();
+        const t2 = new Date(r.captured_at).getTime();
+        const mins = (t2 - t1) / 60_000;
+        if (mins > 0 && killCount > prevKc) {
+          kpm = Math.round((killCount - prevKc) / mins);
         }
-
-        const sorted = [...rows].sort(
-          (a, b) =>
-            new Date(a.captured_at).getTime() -
-            new Date(b.captured_at).getTime(),
-        );
-
-        // Deduplicate consecutive identical kill_counts client-side
-        // (defense against 5-min poll data that hasn't been cleaned)
-        const deduped: HistoryRow[] = [];
-        for (const r of sorted) {
-          const kc = Number(r.kill_count);
-          if (deduped.length === 0 || Number(deduped[deduped.length - 1].kill_count) !== kc) {
-            deduped.push(r);
-          }
-        }
-
-        const points: DataPoint[] = deduped.map((r, i) => {
-          const killCount = Number(r.kill_count);
-          let kpm: number | null = null;
-          if (i > 0) {
-            const prevKc = Number(deduped[i - 1].kill_count);
-            const t1 = new Date(deduped[i - 1].captured_at).getTime();
-            const t2 = new Date(r.captured_at).getTime();
-            const mins = (t2 - t1) / 60_000;
-            if (mins > 0 && killCount > prevKc) {
-              kpm = Math.round((killCount - prevKc) / mins);
-            }
-          }
-          return {
-            timestamp: r.captured_at,
-            ts: new Date(r.captured_at).getTime(),
-            value: killCount,
-            valueSmooth: killCount,
-            kpm,
-            kpmSmooth: null,
-            label: formatTooltipTime(r.captured_at),
-          };
-        });
-
-        setAllData(points);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load chart");
-      } finally {
-        setLoading(false);
       }
-    }
-    load();
-  }, []);
+      return {
+        timestamp: r.captured_at,
+        ts: new Date(r.captured_at).getTime(),
+        value: killCount,
+        valueSmooth: killCount,
+        kpm,
+        kpmSmooth: null,
+        label: formatTooltipTime(r.captured_at),
+      };
+    });
+  }, [deduped]);
 
   /** Filter → downsample → compute KPM. No interpolation — raw 15-min data. */
   const chartData = useMemo(() => {
@@ -303,8 +259,8 @@ export function KillCountChart({ range: externalRange, onRangeChange }: Props = 
           >
             <defs>
               <linearGradient id="killGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#FF3344" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="#FF3344" stopOpacity={0.02} />
+                <stop offset="0%" stopColor={THEME.danger} stopOpacity={0.3} />
+                <stop offset="100%" stopColor={THEME.danger} stopOpacity={0.02} />
               </linearGradient>
             </defs>
             <CartesianGrid {...GRID_STYLE} />
@@ -328,7 +284,7 @@ export function KillCountChart({ range: externalRange, onRangeChange }: Props = 
                 orientation="right"
                 tickFormatter={(v) => `${v}`}
                 stroke={AXIS_STYLE.stroke}
-                tick={{ fontSize: 10, fill: "#FF6B35" }}
+                tick={{ fontSize: 10, fill: CHART_EXTENDED.killSecondary }}
                 axisLine={AXIS_STYLE.axisLine}
                 tickLine={AXIS_STYLE.tickLine}
                 width={40}
@@ -356,14 +312,14 @@ export function KillCountChart({ range: externalRange, onRangeChange }: Props = 
               type="monotone"
               dataKey="value"
               name="Kill Count"
-              stroke="#FF3344"
+              stroke={THEME.danger}
               strokeWidth={2}
               fill="url(#killGradient)"
               dot={false}
               activeDot={{
                 r: 4,
-                fill: "#FF3344",
-                stroke: "#FF3344",
+                fill: THEME.danger,
+                stroke: THEME.danger,
                 strokeWidth: 2,
               }}
             />
@@ -373,11 +329,11 @@ export function KillCountChart({ range: externalRange, onRangeChange }: Props = 
                 type="monotone"
                 dataKey="kpmSmooth"
                 name="Kills/min"
-                stroke="#FF6B35"
+                stroke={CHART_EXTENDED.killSecondary}
                 strokeWidth={1.5}
                 strokeOpacity={0.7}
                 dot={false}
-                activeDot={{ r: 3, fill: "#FF6B35", stroke: "#FF6B35" }}
+                activeDot={{ r: 3, fill: CHART_EXTENDED.killSecondary, stroke: CHART_EXTENDED.killSecondary }}
                 connectNulls
               />
             )}

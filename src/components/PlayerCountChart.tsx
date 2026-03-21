@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useSteamPlayers } from "@/hooks";
+import { THEME } from "@/lib/constants";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -30,11 +32,6 @@ import type { RangeLabel, BaseDataPoint } from "@/lib/chart-utils";
 
 type DataPoint = BaseDataPoint;
 
-interface HistoryRow {
-  captured_at: string;
-  player_count: number;
-}
-
 function formatPlayers(n: number): string {
   return formatCompact(n, 1);
 }
@@ -50,48 +47,19 @@ interface Props {
 }
 
 export function PlayerCountChart({ range, onRangeChange }: Props) {
-  const [allData, setAllData] = useState<DataPoint[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { rows, loading, error } = useSteamPlayers();
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch("/api/steam/history?limit=1000");
-        if (!res.ok) throw new Error(`API returned ${res.status}`);
-        const json = await res.json();
-
-        const rows: HistoryRow[] = json.data ?? [];
-        if (rows.length === 0) {
-          setError("No player count history yet — data will appear after the next poll cycle");
-          return;
-        }
-
-        const sorted = [...rows].sort(
-          (a, b) =>
-            new Date(a.captured_at).getTime() -
-            new Date(b.captured_at).getTime(),
-        );
-
-        const points: DataPoint[] = sorted.map((r) => ({
-          timestamp: r.captured_at,
-          ts: new Date(r.captured_at).getTime(),
-          value: Number(r.player_count),
-          valueSmooth: Number(r.player_count),
-          label: formatTooltipTime(r.captured_at),
-        }));
-
-        setAllData(points);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to load player data",
-        );
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+  /** Map raw rows to chart DataPoints. */
+  const allData = useMemo<DataPoint[]>(() => {
+    if (rows.length === 0) return [];
+    return rows.map((r) => ({
+      timestamp: r.captured_at,
+      ts: new Date(r.captured_at).getTime(),
+      value: Number(r.player_count),
+      valueSmooth: Number(r.player_count),
+      label: formatTooltipTime(r.captured_at),
+    }));
+  }, [rows]);
 
   const chartData = useMemo(() => {
     if (allData.length === 0) return [];
@@ -202,8 +170,8 @@ export function PlayerCountChart({ range, onRangeChange }: Props) {
           >
             <defs>
               <linearGradient id="playerGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#00FF9D" stopOpacity={0.25} />
-                <stop offset="100%" stopColor="#00FF9D" stopOpacity={0.02} />
+                <stop offset="0%" stopColor={THEME.mint} stopOpacity={0.25} />
+                <stop offset="100%" stopColor={THEME.mint} stopOpacity={0.02} />
               </linearGradient>
             </defs>
             <CartesianGrid {...GRID_STYLE} />
@@ -232,14 +200,14 @@ export function PlayerCountChart({ range, onRangeChange }: Props) {
               type="monotone"
               dataKey="valueSmooth"
               name="Players"
-              stroke="#00FF9D"
+              stroke={THEME.mint}
               strokeWidth={2}
               fill="url(#playerGradient)"
               dot={false}
               activeDot={{
                 r: 4,
-                fill: "#00FF9D",
-                stroke: "#00FF9D",
+                fill: THEME.mint,
+                stroke: THEME.mint,
                 strokeWidth: 2,
               }}
             />

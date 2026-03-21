@@ -6,11 +6,11 @@ import { SITE_URL } from "@/lib/urls";
 export const metadata: Metadata = {
   title: "About",
   description:
-    "Breachers of Tomorrow — a 1,000+ member community tracking the Marathon ARG. Who we are, what we do, and how to join.",
+    "Breachers of Tomorrow — a 1,500+ member community and The Breacher Network for Marathon by Bungie. Who we are, what we do, and how to join.",
   openGraph: {
     title: "About // BREACHER.NET",
     description:
-      "Breachers of Tomorrow — a 1,000+ member community tracking the Marathon ARG.",
+      "Breachers of Tomorrow — a 1,500+ member community behind The Breacher Network.",
     url: `${SITE_URL}/about`,
   },
 };
@@ -24,7 +24,7 @@ export default function AboutPage() {
           BREACHERS OF TOMORROW
         </h1>
         <p className="text-dim text-sm sm:text-base tracking-[2px] max-w-2xl mx-auto">
-          COMMUNITY TRACKER AND HUB FOR THE MARATHON ARG
+          THE BREACHER NETWORK — MARATHON COMMUNITY HUB
         </p>
       </div>
 
@@ -34,7 +34,7 @@ export default function AboutPage() {
         <div className="cryo-panel p-6 sm:p-8 space-y-4">
           <p className="text-foreground text-sm sm:text-base leading-relaxed">
             <strong className="text-accent">Breachers of Tomorrow</strong> is a
-            1,000+ member community built around the{" "}
+            1,500+ member community built around the{" "}
             <a
               href={URLS.cryoarchive}
               target="_blank"

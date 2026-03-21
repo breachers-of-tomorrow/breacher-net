@@ -5,7 +5,7 @@ import { SITE_URL, URLS } from "@/lib/urls";
 export const metadata: Metadata = {
   title: "API Documentation",
   description:
-    "Public API reference for breacher.net — endpoints for state, stabilization, builds, index entries, and health.",
+    "Public API reference for breacher.net — endpoints for state, stabilization, steam player counts, builds, index entries, and health.",
   openGraph: {
     title: "API Documentation // BREACHER.NET",
     description:
@@ -29,24 +29,12 @@ const ENDPOINTS: Endpoint[] = [
     method: "GET",
     path: "/api/health",
     description:
-      "Health check endpoint for monitoring. Returns database connection status and current data mode.",
+      "Lightweight health check for K8s probes and uptime monitoring. Returns a simple status indicator with HTTP 200 (ok) or 503 (degraded).",
     responseFields: [
-      { name: "status", type: '"healthy" | "degraded" | "standalone"', description: "Overall service health" },
-      { name: "timestamp", type: "string (ISO 8601)", description: "Current server time" },
-      { name: "database.configured", type: "boolean", description: "Whether DATABASE_URL is set" },
-      { name: "database.connected", type: "boolean", description: "Whether the DB connection is live" },
-      { name: "database.has_data", type: "boolean", description: "Whether the poller has written data" },
-      { name: "mode", type: '"database" | "live-api"', description: "Data source mode" },
+      { name: "status", type: '"ok" | "degraded"', description: "Service health — ok when DB is connected or unconfigured, degraded when DB is configured but unreachable" },
     ],
     example: `{
-  "status": "healthy",
-  "timestamp": "2026-03-17T12:00:00.000Z",
-  "database": {
-    "configured": true,
-    "connected": true,
-    "has_data": true
-  },
-  "mode": "database"
+  "status": "ok"
 }`,
   },
   {
@@ -154,6 +142,36 @@ const ENDPOINTS: Endpoint[] = [
   "count": 100,
   "source": "database"
 }`,
+    cache: "120s + 60s stale-while-revalidate",
+  },
+  {
+    method: "GET",
+    path: "/api/steam",
+    description:
+      "Returns the current live Steam player count for Marathon. Proxies the public ISteamUserStats endpoint — no API key required.",
+    responseFields: [
+      { name: "playerCount", type: "number", description: "Current concurrent players on Steam" },
+      { name: "appId", type: "number", description: "Steam Application ID (3065800)" },
+      { name: "timestamp", type: "string (ISO 8601)", description: "Server time when fetched" },
+    ],
+    example: `{\n  "playerCount": 1247,\n  "appId": 3065800,\n  "timestamp": "2026-03-17T12:00:00.000Z"\n}`,
+    cache: "60s + 30s stale-while-revalidate",
+  },
+  {
+    method: "GET",
+    path: "/api/steam/history",
+    description:
+      "Returns historical Steam player count snapshots for Marathon. Used by the player count chart for trend analysis.",
+    params: [
+      { name: "limit", type: "integer", default: "500", description: "Max rows to return (max 2000)" },
+      { name: "since", type: "ISO 8601 timestamp", description: "Only return snapshots after this time" },
+    ],
+    responseFields: [
+      { name: "data", type: "array", description: "Array of { captured_at, player_count } objects" },
+      { name: "count", type: "number", description: "Number of rows returned" },
+      { name: "source", type: '"database"', description: "Data source" },
+    ],
+    example: `{\n  "data": [\n    {\n      "captured_at": "2026-03-17T12:00:00Z",\n      "player_count": 1247\n    }\n  ],\n  "count": 500,\n  "source": "database"\n}`,
     cache: "120s + 60s stale-while-revalidate",
   },
   {
@@ -371,17 +389,46 @@ export default function ApiDocsPage() {
         <div className="section-title">RATE LIMITING &amp; CACHING</div>
         <div className="cryo-panel p-6 sm:p-8">
           <p className="text-dim text-sm leading-relaxed mb-3">
-            There are no hard rate limits, but please be respectful. The data updates every 5 minutes —
-            polling faster won&apos;t get you fresher data.
+            A sliding-window rate limiter is applied per IP, per endpoint. Cloudflare also provides
+            edge-level throttling. Data updates every 5 minutes — polling faster won&apos;t get fresher data.
           </p>
+          <div className="overflow-x-auto mb-4">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border/50">
+                  <th className="text-left text-dim px-3 py-1.5 font-normal">Endpoint</th>
+                  <th className="text-left text-dim px-3 py-1.5 font-normal">Limit</th>
+                  <th className="text-left text-dim px-3 py-1.5 font-normal">Window</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-border/20">
+                  <td className="px-3 py-1.5"><code className="text-accent2 text-[0.65rem]">/api/*/history</code></td>
+                  <td className="px-3 py-1.5 text-dim/80">20 req</td>
+                  <td className="px-3 py-1.5 text-dim/80">60s</td>
+                </tr>
+                <tr className="border-b border-border/20">
+                  <td className="px-3 py-1.5"><code className="text-accent2 text-[0.65rem]">/api/index-entries</code></td>
+                  <td className="px-3 py-1.5 text-dim/80">20 req</td>
+                  <td className="px-3 py-1.5 text-dim/80">60s</td>
+                </tr>
+                <tr className="border-b border-border/20">
+                  <td className="px-3 py-1.5"><code className="text-accent2 text-[0.65rem]">/api/status</code></td>
+                  <td className="px-3 py-1.5 text-dim/80">10 req</td>
+                  <td className="px-3 py-1.5 text-dim/80">60s</td>
+                </tr>
+                <tr className="border-b border-border/20">
+                  <td className="px-3 py-1.5"><code className="text-accent2 text-[0.65rem]">All others</code></td>
+                  <td className="px-3 py-1.5 text-dim/80">60 req</td>
+                  <td className="px-3 py-1.5 text-dim/80">60s</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <ul className="space-y-1.5 text-xs text-dim/80">
             <li className="flex gap-2">
               <span className="text-accent2 shrink-0">▸</span>
               <span>Responses include <code className="text-accent2 text-[0.65rem]">Cache-Control</code> headers — respect them</span>
-            </li>
-            <li className="flex gap-2">
-              <span className="text-accent2 shrink-0">▸</span>
-              <span>Cloudflare sits in front — aggressive polling may be throttled at the edge</span>
             </li>
             <li className="flex gap-2">
               <span className="text-accent2 shrink-0">▸</span>

@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-03-20
+
+### Added
+
+- **Poller JSON buffer** — pollers write to a local JSON buffer when the database is unavailable; `db_writer` flushes buffered data on reconnect with configurable `POLLER_BUFFER_MAX_BYTES` (default 50 MiB) ([#86](https://github.com/breachers-of-tomorrow/breacher-net/pull/86))
+- **Steam player count tracking** — `/api/steam` and `/api/steam/history` endpoints serve live and historical Steam player data; `poll_steam.py` collects snapshots every 5 minutes ([#87](https://github.com/breachers-of-tomorrow/breacher-net/issues/87))
+- **Player count chart** — `PlayerCountChart` component on the Marathon metrics page ([#87](https://github.com/breachers-of-tomorrow/breacher-net/issues/87))
+- **Kill analytics panel** — `KillAnalytics` component correlating kill rate with player count ([#87](https://github.com/breachers-of-tomorrow/breacher-net/issues/87))
+- **Homepage JSON-LD** — `WebSite` structured data for search engine rich results ([#89](https://github.com/breachers-of-tomorrow/breacher-net/issues/89))
+- **`steam_snapshots` freshness** in status API — status page now monitors Steam data staleness ([#88](https://github.com/breachers-of-tomorrow/breacher-net/issues/88))
+
+### Changed
+
+- **Community pivot** — site rebranded from ARG-only tracker to "The Breacher Network" community hub; new homepage, restructured navigation, dedicated `/marathon` metrics page ([#75](https://github.com/breachers-of-tomorrow/breacher-net/issues/75))
+- **Chart hooks extracted** — `useKillCountData`, `useSteamPlayers`, `useChartRange` hooks in `src/hooks/` replace inline data fetching ([#81](https://github.com/breachers-of-tomorrow/breacher-net/pull/81))
+- **Centralized constants** — `MARATHON_STEAM_APP_ID` and chart theme colors defined once in `src/lib/constants.ts`; no more hardcoded hex in chart configs ([#90](https://github.com/breachers-of-tomorrow/breacher-net/issues/90), [#91](https://github.com/breachers-of-tomorrow/breacher-net/issues/91))
+- **Homepage semantic headings** — section titles changed from `<div>` to `<h2>` for SEO and accessibility ([#89](https://github.com/breachers-of-tomorrow/breacher-net/issues/89))
+- **Status page refactored** — queries database directly instead of self-fetching own API over HTTP ([#92](https://github.com/breachers-of-tomorrow/breacher-net/issues/92))
+
+### Fixed
+
+- **API docs accuracy** — corrected `/api/health` response shape, added missing `/api/steam` and `/api/steam/history` docs, updated rate limiting section to reflect actual sliding window implementation ([#87](https://github.com/breachers-of-tomorrow/breacher-net/issues/87))
+- **Removed client-side kill count dedup** — SQL `lag()` window function already handles deduplication; removed redundant JS pass ([#95](https://github.com/breachers-of-tomorrow/breacher-net/issues/95))
+- **Sitemap `lastModified`** — uses build-time date instead of `new Date()` on every request ([#95](https://github.com/breachers-of-tomorrow/breacher-net/issues/95))
+- **Poller crontab** — added missing `poll_index.py` schedule ([#94](https://github.com/breachers-of-tomorrow/breacher-net/issues/94))
+
 ## [0.5.0] - 2026-03-15
 
 ### Added
@@ -143,7 +169,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Migrated from static HTML/Python to Next.js App Router architecture
 - Replaced CSV data storage design with PostgreSQL
 
-[Unreleased]: https://github.com/breachers-of-tomorrow/breacher-net/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/breachers-of-tomorrow/breacher-net/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/breachers-of-tomorrow/breacher-net/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/breachers-of-tomorrow/breacher-net/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/breachers-of-tomorrow/breacher-net/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/breachers-of-tomorrow/breacher-net/compare/v0.3.0...v0.4.0
