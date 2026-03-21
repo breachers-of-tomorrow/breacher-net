@@ -110,38 +110,32 @@ function DesktopDropdown({
   group,
   pathname,
   openGroup,
-  setOpenGroup,
+  onOpen,
+  onClose,
+  onScheduleClose,
 }: {
   group: NavGroup;
   pathname: string;
   openGroup: string | null;
-  setOpenGroup: (g: string | null) => void;
+  onOpen: (label: string) => void;
+  onClose: () => void;
+  onScheduleClose: () => void;
 }) {
   const isOpen = openGroup === group.label;
   const active = isGroupActive(group, pathname);
-  const closeTimer = useRef<ReturnType<typeof setTimeout>>(null);
-
-  const open = useCallback(() => {
-    if (closeTimer.current) clearTimeout(closeTimer.current);
-    setOpenGroup(group.label);
-  }, [group.label, setOpenGroup]);
-
-  const scheduleClose = useCallback(() => {
-    closeTimer.current = setTimeout(() => setOpenGroup(null), 150);
-  }, [setOpenGroup]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Escape") {
-        setOpenGroup(null);
+        onClose();
         (e.currentTarget as HTMLElement).focus();
       }
       if (e.key === "ArrowDown" && !isOpen) {
         e.preventDefault();
-        open();
+        onOpen(group.label);
       }
     },
-    [isOpen, open, setOpenGroup],
+    [isOpen, group.label, onOpen, onClose],
   );
 
   const tabClasses = `font-[var(--font-display)] text-[0.65rem] tracking-[3px] uppercase no-underline px-3 py-2.5 border border-transparent border-b-0 transition-all flex items-center gap-1.5 relative top-[2px] cursor-pointer select-none ${
@@ -153,15 +147,15 @@ function DesktopDropdown({
   return (
     <div
       className="relative"
-      onMouseEnter={open}
-      onMouseLeave={scheduleClose}
+      onMouseEnter={() => onOpen(group.label)}
+      onMouseLeave={onScheduleClose}
       onKeyDown={handleKeyDown}
     >
       <button
         className={tabClasses}
         aria-haspopup="true"
         aria-expanded={isOpen}
-        onClick={() => (isOpen ? setOpenGroup(null) : open())}
+        onClick={() => (isOpen ? onClose() : onOpen(group.label))}
       >
         {group.label}
         <ChevronIcon open={isOpen} />
@@ -189,7 +183,7 @@ function DesktopDropdown({
                   rel="noopener noreferrer"
                   className={cls}
                   role="menuitem"
-                  onClick={() => setOpenGroup(null)}
+                  onClick={onClose}
                 >
                   {link.label}
                   <ExternalIcon />
@@ -203,7 +197,7 @@ function DesktopDropdown({
                 href={link.href}
                 className={cls}
                 role="menuitem"
-                onClick={() => setOpenGroup(null)}
+                onClick={onClose}
               >
                 {link.label}
               </Link>
@@ -223,27 +217,52 @@ export function Navigation() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout>>(null);
+
+  const handleOpen = useCallback((label: string) => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+    setOpenGroup(label);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+    setOpenGroup(null);
+  }, []);
+
+  const handleScheduleClose = useCallback(() => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => {
+      closeTimer.current = null;
+      setOpenGroup(null);
+    }, 150);
+  }, []);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setOpenGroup(null);
+        handleClose();
         setMobileOpen(false);
       }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, []);
+  }, [handleClose]);
 
   useEffect(() => {
     if (!openGroup) return;
     const handler = (e: MouseEvent) => {
       const nav = document.getElementById("desktop-nav");
-      if (nav && !nav.contains(e.target as Node)) setOpenGroup(null);
+      if (nav && !nav.contains(e.target as Node)) handleClose();
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [openGroup]);
+  }, [openGroup, handleClose]);
 
   return (
     <>
@@ -300,7 +319,9 @@ export function Navigation() {
               group={group}
               pathname={pathname}
               openGroup={openGroup}
-              setOpenGroup={setOpenGroup}
+              onOpen={handleOpen}
+              onClose={handleClose}
+              onScheduleClose={handleScheduleClose}
             />
           );
         })}

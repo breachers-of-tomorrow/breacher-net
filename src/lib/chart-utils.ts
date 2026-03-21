@@ -141,8 +141,12 @@ export function gaussianSmooth<T extends BaseDataPoint>(
 }
 
 /**
- * Filter data points to a time range and compute which ranges have
- * enough data to be meaningful.
+ * Filter data points to a time range.
+ *
+ * Returns only the points within the requested window — never falls
+ * back to all data silently. If the range yields fewer than 2 points
+ * the caller should treat it as "insufficient data" (range button
+ * disabled via `computeAvailableRanges`).
  */
 export function filterToRange<T extends BaseDataPoint>(
   allData: T[],
@@ -151,20 +155,26 @@ export function filterToRange<T extends BaseDataPoint>(
   const cfg = RANGES.find((r) => r.label === range)!;
   if (cfg.hours === 0) return allData;
   const cutoff = Date.now() - cfg.hours * 3_600_000;
-  const filtered = allData.filter((d) => d.ts >= cutoff);
-  // Fall back to all data if the range is too narrow
-  return filtered.length < 2 ? allData : filtered;
+  return allData.filter((d) => d.ts >= cutoff);
 }
 
-/** Determine which range buttons should be enabled. */
+/**
+ * Determine which range buttons should be enabled.
+ *
+ * Actually counts points in each window so we never enable a range
+ * that would produce an empty or single-point chart.
+ */
 export function computeAvailableRanges(
   allData: BaseDataPoint[],
 ): Set<RangeLabel> {
   if (allData.length === 0) return new Set<RangeLabel>();
-  const hoursAvail = (Date.now() - allData[0].ts) / 3_600_000;
+  const now = Date.now();
   const set = new Set<RangeLabel>(["ALL"]);
   for (const r of RANGES) {
-    if (r.hours === 0 || hoursAvail >= r.hours * 0.5) set.add(r.label);
+    if (r.hours === 0) continue;
+    const cutoff = now - r.hours * 3_600_000;
+    const count = allData.filter((d) => d.ts >= cutoff).length;
+    if (count >= 2) set.add(r.label);
   }
   return set;
 }
