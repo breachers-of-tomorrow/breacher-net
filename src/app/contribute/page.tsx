@@ -186,60 +186,20 @@ export default function ContributePage() {
         </div>
       </section>
 
-      {/* Tech Stack (for developers) */}
+      {/* Developer note */}
       <section className="mb-12">
-        <div className="section-title">FOR DEVELOPERS</div>
-        <div className="cryo-panel p-6 sm:p-8">
-          <p className="text-dim text-sm leading-relaxed mb-4">
-            breacher.net is fully open source. Here&apos;s the stack:
-          </p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
-            {[
-              { label: "Framework", value: "Next.js 16" },
-              { label: "UI", value: "React 19" },
-              { label: "Language", value: "TypeScript 5" },
-              { label: "Styling", value: "Tailwind CSS 4" },
-              { label: "Database", value: "PostgreSQL" },
-              { label: "Poller", value: "Python" },
-            ].map((item) => (
-              <div key={item.label} className="bg-background/50 border border-border/50 px-3 py-2">
-                <div className="font-[var(--font-display)] text-[0.55rem] tracking-[2px] text-dim mb-0.5">
-                  {item.label.toUpperCase()}
-                </div>
-                <div className="text-accent2 text-xs">{item.value}</div>
-              </div>
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-4">
-            <a
-              href={URLS.breacherNetRepo}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-[var(--font-display)] text-[0.6rem] tracking-[2px] uppercase px-4 py-2.5 bg-accent/10 border border-accent text-accent hover:bg-accent/20 transition-colors no-underline inline-flex items-center gap-2"
-            >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  fillRule="evenodd"
-                  d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              VIEW SOURCE
-            </a>
-            <a
-              href={`${URLS.breacherNetRepo}/issues`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-[var(--font-display)] text-[0.6rem] tracking-[2px] uppercase px-4 py-2.5 bg-panel border border-border text-dim hover:text-foreground hover:border-accent transition-colors no-underline"
-            >
-              OPEN ISSUES
-            </a>
-            <Link
-              href="/api-docs"
-              className="font-[var(--font-display)] text-[0.6rem] tracking-[2px] uppercase px-4 py-2.5 bg-panel border border-border text-dim hover:text-foreground hover:border-accent transition-colors no-underline"
-            >
-              API DOCS
-            </Link>
+        <div className="cryo-panel p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="text-2xl shrink-0" aria-hidden="true">💻</div>
+          <div className="flex-1">
+            <p className="text-dim text-sm leading-relaxed">
+              <strong className="text-accent">Developers</strong> — breacher.net is fully
+              open source (Next.js 16, React 19, TypeScript 5, Tailwind 4, PostgreSQL).
+              Check out the{" "}
+              <Link href="/community" className="text-accent2 hover:glow-accent2">
+                Community Resources
+              </Link>{" "}
+              page for source code, open issues, and the full tech stack.
+            </p>
           </div>
         </div>
       </section>

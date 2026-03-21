@@ -54,12 +54,22 @@ export function useKillCountData() {
             new Date(b.captured_at).getTime(),
         );
 
-        // Server-side SQL already deduplicates via lag() window function,
-        // so sorted data is ready to use directly.
+        // Enforce monotonic increase: kill count is a cumulative counter
+        // and should never decrease.  Stale upstream data can cause dips
+        // that the SQL filter normally catches; this is a client safety net.
+        const monotonic: KillCountRow[] = [];
+        let maxKc = -Infinity;
+        for (const row of sorted) {
+          const kc = Number(row.kill_count);
+          if (kc >= maxKc) {
+            monotonic.push(row);
+            maxKc = kc;
+          }
+        }
 
         if (!cancelled) {
-          setRows(sorted);
-          setDeduped(sorted);
+          setRows(monotonic);
+          setDeduped(monotonic);
         }
       } catch (err) {
         if (!cancelled) {
