@@ -21,7 +21,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# Create buffer directory for local data safety net
+RUN mkdir -p /data/buffer
+
 RUN useradd --system --uid 1001 poller
+RUN chown -R poller:poller /data/buffer
 USER poller
 
 CMD ["supercronic", "crontab"]

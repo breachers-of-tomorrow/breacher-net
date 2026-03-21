@@ -17,9 +17,8 @@ import os
 import re
 import sys
 
-import psycopg2
-
 from browser import CryoBrowser
+from db_writer import get_db, insert_row, record_heartbeat
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,18 +27,11 @@ logging.basicConfig(
 )
 log = logging.getLogger("poll_build")
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://breacher:mycomplexpassword@db:5432/breacher")
-
 # Regex patterns for deployment fingerprinting
 DPL_PATTERN = re.compile(r"dpl=(dpl_[a-zA-Z0-9]+)")
 CHUNK_PATTERN = re.compile(r'/_next/static/chunks/([a-f0-9]{12,}\.js)')
 CSS_PATTERN = re.compile(r'/_next/static/chunks/([a-f0-9]{12,}\.css)')
 BUILD_ID_PATTERN = re.compile(r'/_next/static/([a-zA-Z0-9_-]{20,})/')
-
-
-def get_db():
-    """Get a database connection."""
-    return psycopg2.connect(DATABASE_URL)
 
 
 def get_last_build_hash() -> str | None:
@@ -160,49 +152,35 @@ def poll_build():
         summary_parts.append(f"build {build_id[:12]}")
     summary = f"Build change detected: {', '.join(summary_parts) or current_hash[:12]}"
 
-    try:
-        conn = get_db()
-        with conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    INSERT INTO build_events
-                        (build_hash, summary, details, headers)
-                    VALUES (%s, %s, %s, %s)
-                    ON CONFLICT (build_hash) WHERE build_hash IS NOT NULL
-                    DO NOTHING
-                    """,
-                    (
-                        current_hash,
-                        summary,
-                        json.dumps(details),
-                        json.dumps(interesting_headers),
-                    ),
-                )
-        conn.close()
+    written = insert_row(
+        table="build_events",
+        columns=["build_hash", "summary", "details", "headers"],
+        values=[
+            current_hash,
+            summary,
+            json.dumps(details),
+            json.dumps(interesting_headers),
+        ],
+        params_dict={
+            "build_hash": current_hash,
+            "summary": summary,
+            "details": details,
+            "headers": interesting_headers,
+        },
+        on_conflict="ON CONFLICT (build_hash) WHERE build_hash IS NOT NULL DO NOTHING",
+    )
+    if written:
         log.info("BUILD CHANGE DETECTED — hash=%s dpl=%s (previous=%s)",
                  current_hash[:12], dpl_id or "unknown",
                  last_hash[:12] if last_hash else "none")
-    except Exception:
-        log.exception("Failed to save build event")
+    else:
+        log.warning("BUILD CHANGE DETECTED but DB unavailable — buffered (hash=%s)",
+                    current_hash[:12])
 
 
 def heartbeat(status="ok"):
     """Record poller heartbeat."""
-    try:
-        conn = get_db()
-        with conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    INSERT INTO poller_heartbeats (poller_name, status)
-                    VALUES ('build_poller', %s)
-                    """,
-                    (status,),
-                )
-        conn.close()
-    except Exception:
-        log.exception("Failed to record heartbeat")
+    record_heartbeat("build_poller", status)
 
 
 if __name__ == "__main__":
