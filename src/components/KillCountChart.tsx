@@ -64,47 +64,32 @@ function formatKills(n: number): string {
 /* ------------------------------------------------------------------ */
 
 /**
- * Compute KPM with a simple rolling average.
+ * Apply a rolling average to the raw `kpm` field on each DataPoint,
+ * writing the result to `kpmSmooth`.
  *
- * Data arrives at 15-minute intervals directly from the poller.
- * No interpolation is needed — we just plot the raw values and
- * compute the rate between consecutive points where kill_count
- * actually changed (skipping flat segments where the game API
- * hadn't updated yet).
- *
- * The rolling average uses a centered window to smooth the rate
- * curve without introducing the overshoot artifacts that cubic
- * interpolation was causing.
+ * MUST run on the full, evenly-spaced data (before downsampling) so
+ * the window covers a consistent time span at each point.  Running
+ * it after downsample produces erratic spikes because the time gaps
+ * between downsampled points are uneven.
  */
-function computeKpm(points: DataPoint[], window: number): DataPoint[] {
-  // First pass: compute raw KPM at each point from nearest change
-  const rawKpm: (number | null)[] = points.map((p, i) => {
-    if (i === 0) return null;
-    // Walk backward to find last different value
-    let prev = i - 1;
-    while (prev >= 0 && points[prev].value === p.value) prev--;
-    if (prev < 0) return null;
-
-    const dk = p.value - points[prev].value;
-    const dt = (p.ts - points[prev].ts) / 60_000;
-    if (dt <= 0 || dk <= 0) return null;
-    return dk / dt;
-  });
-
-  // Second pass: rolling average to smooth the rate curve
+function smoothKpm(points: DataPoint[], window: number): DataPoint[] {
   return points.map((p, i) => {
     let sum = 0;
     let count = 0;
-    for (let j = Math.max(0, i - window); j <= Math.min(points.length - 1, i + window); j++) {
-      if (rawKpm[j] !== null) {
-        sum += rawKpm[j]!;
+    for (
+      let j = Math.max(0, i - window);
+      j <= Math.min(points.length - 1, i + window);
+      j++
+    ) {
+      if (points[j].kpm !== null) {
+        sum += points[j].kpm!;
         count++;
       }
     }
-    const kpm = count > 0 ? Math.round(sum / count) : null;
+    const kpmSmooth = count > 0 ? Math.round(sum / count) : null;
     return {
       ...p,
-      kpmSmooth: kpm !== null && kpm > 0 ? kpm : null,
+      kpmSmooth: kpmSmooth !== null && kpmSmooth > 0 ? kpmSmooth : null,
     };
   });
 }
@@ -124,7 +109,7 @@ export function KillCountChart({ range: externalRange, onRangeChange }: Props = 
   const [range, setRange] = useChartRange(externalRange, onRangeChange);
   const [showKpm, setShowKpm] = useState(true);
 
-  /** Map deduplicated rows to chart DataPoints. */
+  /** Map deduplicated rows to chart DataPoints with raw KPM. */
   const allData = useMemo<DataPoint[]>(() => {
     if (deduped.length === 0) return [];
     return deduped.map((r, i) => {
@@ -136,7 +121,7 @@ export function KillCountChart({ range: externalRange, onRangeChange }: Props = 
         const t2 = new Date(r.captured_at).getTime();
         const mins = (t2 - t1) / 60_000;
         if (mins > 0 && killCount > prevKc) {
-          kpm = Math.round((killCount - prevKc) / mins);
+          kpm = (killCount - prevKc) / mins; // full precision — rounded after smoothing
         }
       }
       return {
@@ -151,12 +136,18 @@ export function KillCountChart({ range: externalRange, onRangeChange }: Props = 
     });
   }, [deduped]);
 
-  /** Filter → downsample → compute KPM. No interpolation — raw 15-min data. */
+  /**
+   * Pipeline: filter → smooth KPM → downsample.
+   *
+   * KPM smoothing runs on the evenly-spaced filtered data (not after
+   * downsampling) so the rolling window covers a consistent time span.
+   */
   const chartData = useMemo(() => {
     if (allData.length === 0) return [];
     const filtered = filterToRange(allData, range);
-    const sampled = downsample(filtered, MAX_CHART_POINTS);
-    return computeKpm(sampled, kpmWindowForRange(range));
+    if (filtered.length < 2) return filtered;
+    const smoothed = smoothKpm(filtered, kpmWindowForRange(range));
+    return downsample(smoothed, MAX_CHART_POINTS);
   }, [allData, range]);
 
   /** Only enable range buttons when we actually have enough data. */
