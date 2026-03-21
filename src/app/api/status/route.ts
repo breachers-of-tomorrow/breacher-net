@@ -58,6 +58,11 @@ export async function GET() {
         sql: "SELECT MAX(captured_at) AS last_updated FROM stabilization_snapshots",
       },
       {
+        table: "steam_snapshots",
+        label: "Steam Player Count",
+        sql: "SELECT MAX(captured_at) AS last_updated FROM steam_snapshots",
+      },
+      {
         table: "build_events",
         label: "Build Tracker",
         sql: "SELECT MAX(detected_at) AS last_updated FROM build_events",
