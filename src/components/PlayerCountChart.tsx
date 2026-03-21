@@ -3,6 +3,8 @@
 import { useMemo } from "react";
 import { useSteamPlayers } from "@/hooks";
 import { THEME } from "@/lib/constants";
+import { computeStaleness } from "@/lib/staleness";
+import { StaleChip } from "@/components/DataStaleBanner";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -75,6 +77,12 @@ export function PlayerCountChart({ range, onRangeChange }: Props) {
     [allData],
   );
 
+  /** Detect stale data — Steam player data might still be fresh. */
+  const staleness = useMemo(
+    () => computeStaleness(rows),
+    [rows],
+  );
+
   /** Compute peak and trough for annotation */
   const stats = useMemo(() => {
     if (chartData.length === 0) return null;
@@ -122,6 +130,7 @@ export function PlayerCountChart({ range, onRangeChange }: Props) {
         <div className="flex items-center gap-4">
           <div className="font-[var(--font-display)] text-[0.65rem] tracking-[3px] text-dim">
             STEAM PLAYERS OVER TIME
+            <StaleChip staleness={staleness} />
           </div>
           {stats && (
             <div className="flex gap-4 text-[0.55rem]">
