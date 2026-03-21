@@ -59,7 +59,7 @@ export async function GET() {
       },
       {
         table: "steam_snapshots",
-        label: "Steam Player Data",
+        label: "Steam Player Count",
         sql: "SELECT MAX(captured_at) AS last_updated FROM steam_snapshots",
       },
       {
