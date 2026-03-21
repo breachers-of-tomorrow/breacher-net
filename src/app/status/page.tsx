@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { SITE_URL } from "@/lib/urls";
+import { getPool } from "@/lib/db";
+
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Status",
@@ -40,6 +43,7 @@ interface StatusResponse {
 const STALE_THRESHOLDS: Record<string, number> = {
   state_snapshots: 20, // 15m poll + buffer
   stabilization_snapshots: 20,
+  steam_snapshots: 20,
   build_events: 1440, // builds only when site changes — 24h is fine
   index_entries: 20,
   index_snapshots: 20,
@@ -89,21 +93,79 @@ function StatusIndicator({
   );
 }
 
-async function fetchStatus(baseUrl: string): Promise<StatusResponse | null> {
-  try {
-    const res = await fetch(`${baseUrl}/api/status`, {
-      next: { revalidate: 60 },
-    });
-    if (!res.ok) return null;
-    return (await res.json()) as StatusResponse;
-  } catch {
-    return null;
+async function getStatusData(): Promise<StatusResponse | null> {
+  const db = getPool();
+  if (!db) {
+    return {
+      status: "standalone",
+      timestamp: new Date().toISOString(),
+      database: { connected: false },
+      freshness: [],
+      pollers: [],
+    };
   }
+
+  let dbConnected = false;
+  const freshness: FreshnessEntry[] = [];
+  const pollers: PollerEntry[] = [];
+
+  try {
+    await db.query("SELECT 1");
+    dbConnected = true;
+
+    const freshnessQueries = [
+      { table: "state_snapshots", label: "State Poller", sql: "SELECT MAX(captured_at) AS last_updated FROM state_snapshots" },
+      { table: "stabilization_snapshots", label: "Stabilization Data", sql: "SELECT MAX(captured_at) AS last_updated FROM stabilization_snapshots" },
+      { table: "steam_snapshots", label: "Steam Player Data", sql: "SELECT MAX(captured_at) AS last_updated FROM steam_snapshots" },
+      { table: "build_events", label: "Build Tracker", sql: "SELECT MAX(detected_at) AS last_updated FROM build_events" },
+      { table: "index_entries", label: "Index Archive", sql: "SELECT MAX(last_updated) AS last_updated FROM index_entries" },
+      { table: "index_snapshots", label: "Index Snapshots", sql: "SELECT MAX(captured_at) AS last_updated FROM index_snapshots" },
+    ];
+
+    for (const q of freshnessQueries) {
+      try {
+        const result = await db.query(q.sql);
+        const row = result.rows[0];
+        freshness.push({
+          table: q.table,
+          label: q.label,
+          lastUpdated: row?.last_updated?.toISOString() ?? null,
+        });
+      } catch {
+        freshness.push({ table: q.table, label: q.label, lastUpdated: null });
+      }
+    }
+
+    try {
+      const heartbeatResult = await db.query(
+        "SELECT poller_name, heartbeat_at, status, details FROM poller_heartbeats ORDER BY heartbeat_at DESC LIMIT 10",
+      );
+      for (const row of heartbeatResult.rows) {
+        pollers.push({
+          pollerName: row.poller_name,
+          heartbeatAt: row.heartbeat_at?.toISOString(),
+          status: row.status,
+          details: row.details,
+        });
+      }
+    } catch {
+      // poller_heartbeats table may not exist yet
+    }
+  } catch {
+    dbConnected = false;
+  }
+
+  return {
+    status: dbConnected ? "healthy" : "degraded",
+    timestamp: new Date().toISOString(),
+    database: { connected: dbConnected },
+    freshness,
+    pollers,
+  };
 }
 
 export default async function StatusPage() {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-  const data = await fetchStatus(baseUrl);
+  const data = await getStatusData();
 
   const overallHealth = data?.status ?? "unknown";
   const overallLabel: Record<string, string> = {
