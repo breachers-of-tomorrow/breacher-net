@@ -143,36 +143,36 @@ export function gaussianSmooth<T extends BaseDataPoint>(
 /**
  * Filter data points to a time range.
  *
- * Returns only the points within the requested window — never falls
- * back to all data silently. If the range yields fewer than 2 points
- * the caller should treat it as "insufficient data" (range button
- * disabled via `computeAvailableRanges`).
+ * Anchors the window to the **latest data point**, not `Date.now()`.
+ * This makes ranges meaningful even when data is stale — "6H" means
+ * the last 6 hours of data that exists, not the last 6 clock-hours.
  */
 export function filterToRange<T extends BaseDataPoint>(
   allData: T[],
   range: RangeLabel,
 ): T[] {
   const cfg = RANGES.find((r) => r.label === range)!;
-  if (cfg.hours === 0) return allData;
-  const cutoff = Date.now() - cfg.hours * 3_600_000;
+  if (cfg.hours === 0 || allData.length === 0) return allData;
+  const latest = allData[allData.length - 1].ts;
+  const cutoff = latest - cfg.hours * 3_600_000;
   return allData.filter((d) => d.ts >= cutoff);
 }
 
 /**
  * Determine which range buttons should be enabled.
  *
- * Actually counts points in each window so we never enable a range
- * that would produce an empty or single-point chart.
+ * Anchored to the latest data point (same as `filterToRange`) so
+ * ranges remain available even when upstream data is stale.
  */
 export function computeAvailableRanges(
   allData: BaseDataPoint[],
 ): Set<RangeLabel> {
   if (allData.length === 0) return new Set<RangeLabel>();
-  const now = Date.now();
+  const latest = allData[allData.length - 1].ts;
   const set = new Set<RangeLabel>(["ALL"]);
   for (const r of RANGES) {
     if (r.hours === 0) continue;
-    const cutoff = now - r.hours * 3_600_000;
+    const cutoff = latest - r.hours * 3_600_000;
     const count = allData.filter((d) => d.ts >= cutoff).length;
     if (count >= 2) set.add(r.label);
   }
