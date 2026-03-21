@@ -9,10 +9,10 @@ import logging
 import os
 import sys
 
-import psycopg2
 import requests
 
 from browser import CryoBrowser
+from db_writer import insert_row, record_heartbeat
 
 logging.basicConfig(
     level=logging.INFO,
@@ -21,18 +21,11 @@ logging.basicConfig(
 )
 log = logging.getLogger("poll_state")
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://breacher:mycomplexpassword@db:5432/breacher")
-
 MARATHON_STEAM_APP_ID = 3065800
 STEAM_API_URL = (
     f"https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/"
     f"?appid={MARATHON_STEAM_APP_ID}"
 )
-
-
-def get_db():
-    """Get a database connection."""
-    return psycopg2.connect(DATABASE_URL)
 
 
 def poll_state(cryo: CryoBrowser):
@@ -55,29 +48,30 @@ def poll_state(cryo: CryoBrowser):
     # Flatten pages into sector states for storage
     sectors = {name: info for name, info in pages.items()}
 
-    try:
-        conn = get_db()
-        with conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    INSERT INTO state_snapshots
-                        (kill_count, ship_date, next_update, sectors, memory_flags, raw_response)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                    """,
-                    (
-                        kill_count,
-                        ship_date,
-                        next_update,
-                        json.dumps(sectors),
-                        json.dumps(memory_flags),
-                        json.dumps(data),
-                    ),
-                )
-        conn.close()
+    written = insert_row(
+        table="state_snapshots",
+        columns=["kill_count", "ship_date", "next_update", "sectors", "memory_flags", "raw_response"],
+        values=[
+            kill_count,
+            ship_date,
+            next_update,
+            json.dumps(sectors),
+            json.dumps(memory_flags),
+            json.dumps(data),
+        ],
+        params_dict={
+            "kill_count": kill_count,
+            "ship_date": ship_date,
+            "next_update": next_update,
+            "sectors": sectors,
+            "memory_flags": memory_flags,
+            "raw_response": data,
+        },
+    )
+    if written:
         log.info("State snapshot saved (kill_count=%s)", kill_count)
-    except Exception:
-        log.exception("Failed to save state snapshot")
+    else:
+        log.warning("State snapshot buffered locally (kill_count=%s)", kill_count)
 
 
 def poll_stabilization(cryo: CryoBrowser):
@@ -97,44 +91,29 @@ def poll_stabilization(cryo: CryoBrowser):
     ]
     next_stab = min(next_stab_times) if next_stab_times else None
 
-    try:
-        conn = get_db()
-        with conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    INSERT INTO stabilization_snapshots
-                        (cameras, next_stabilization, raw_response)
-                    VALUES (%s, %s, %s)
-                    """,
-                    (
-                        json.dumps(cameras),
-                        next_stab,
-                        json.dumps(data),
-                    ),
-                )
-        conn.close()
+    written = insert_row(
+        table="stabilization_snapshots",
+        columns=["cameras", "next_stabilization", "raw_response"],
+        values=[
+            json.dumps(cameras),
+            next_stab,
+            json.dumps(data),
+        ],
+        params_dict={
+            "cameras": cameras,
+            "next_stabilization": next_stab,
+            "raw_response": data,
+        },
+    )
+    if written:
         log.info("Stabilization snapshot saved (%d cameras)", len(cameras))
-    except Exception:
-        log.exception("Failed to save stabilization snapshot")
+    else:
+        log.warning("Stabilization snapshot buffered locally (%d cameras)", len(cameras))
 
 
 def heartbeat(status="ok", details=None):
     """Record poller heartbeat."""
-    try:
-        conn = get_db()
-        with conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    INSERT INTO poller_heartbeats (poller_name, status, details)
-                    VALUES ('state_poller', %s, %s)
-                    """,
-                    (status, json.dumps(details) if details else None),
-                )
-        conn.close()
-    except Exception:
-        log.exception("Failed to record heartbeat")
+    record_heartbeat("state_poller", status, details)
 
 
 def poll_steam():
@@ -161,21 +140,19 @@ def poll_steam():
         log.exception("Failed to fetch Steam player count")
         return
 
-    try:
-        conn = get_db()
-        with conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    INSERT INTO steam_snapshots (player_count, app_id)
-                    VALUES (%s, %s)
-                    """,
-                    (player_count, MARATHON_STEAM_APP_ID),
-                )
-        conn.close()
+    written = insert_row(
+        table="steam_snapshots",
+        columns=["player_count", "app_id"],
+        values=[player_count, MARATHON_STEAM_APP_ID],
+        params_dict={
+            "player_count": player_count,
+            "app_id": MARATHON_STEAM_APP_ID,
+        },
+    )
+    if written:
         log.info("Steam snapshot saved (player_count=%s)", player_count)
-    except Exception:
-        log.exception("Failed to save Steam snapshot")
+    else:
+        log.warning("Steam snapshot buffered locally (player_count=%s)", player_count)
 
 
 if __name__ == "__main__":
