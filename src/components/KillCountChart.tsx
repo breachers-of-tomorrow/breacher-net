@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { useKillCountData, useChartRange } from "@/hooks";
 import { URLS } from "@/lib/urls";
 import { THEME, CHART_EXTENDED } from "@/lib/constants";
+import { computeStaleness } from "@/lib/staleness";
+import { StaleChip } from "@/components/DataStaleBanner";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -156,6 +158,12 @@ export function KillCountChart({ range: externalRange, onRangeChange }: Props = 
     [allData],
   );
 
+  /** Detect stale data — latest data point too old. */
+  const staleness = useMemo(
+    () => computeStaleness(deduped),
+    [deduped],
+  );
+
   /* ---- Loading / error states ---- */
 
   if (loading) {
@@ -202,6 +210,7 @@ export function KillCountChart({ range: externalRange, onRangeChange }: Props = 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div className="font-[var(--font-display)] text-[0.65rem] tracking-[3px] text-dim">
           KILL COUNT OVER TIME
+          <StaleChip staleness={staleness} />
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           {/* KPM toggle */}

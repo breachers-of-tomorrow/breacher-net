@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useKillCountData } from "@/hooks";
 import type { KillCountRow } from "@/hooks";
 import { formatNumber } from "@/lib/format";
+import { computeStaleness } from "@/lib/staleness";
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
@@ -190,6 +191,12 @@ export function KillCountEta({
     return () => clearInterval(id);
   }, []);
 
+  // Detect stale data
+  const staleness = useMemo(
+    () => computeStaleness(rows),
+    [rows],
+  );
+
   // Build projection
   const projection = useMemo((): Projection | null => {
     if (rows.length < 10) return null;
@@ -265,6 +272,82 @@ export function KillCountEta({
   }
 
   const { eta, remaining, currentKpm, avgKpm, dataSpanDays } = projection;
+
+  // When data is stale, show paused state instead of ticking countdown
+  if (staleness?.isStale) {
+    // Progress bar (still valid — uses currentKills which is the high-water mark)
+    const progress = Math.min(100, (currentKills / TARGET) * 100);
+
+    return (
+      <div className="cryo-panel p-5 mb-8">
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-warn to-transparent" />
+
+        {/* Header row */}
+        <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
+          <div>
+            <div className="font-[var(--font-display)] text-[0.65rem] tracking-[3px] text-dim mb-1">
+              ETA TO 500M KILLS
+            </div>
+            <div className="font-[var(--font-display)] text-xl font-bold text-warn/70 tracking-wider">
+              PROJECTION PAUSED
+            </div>
+            <div className="text-[0.6rem] text-dim mt-1">
+              Data collection paused — ETA will resume when fresh data arrives
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="font-[var(--font-display)] text-[0.55rem] tracking-[2px] text-dim mb-1">
+              LAST ESTIMATE
+            </div>
+            <div className="font-[var(--font-display)] text-sm font-bold text-dim tracking-wider">
+              {eta.toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="mb-4">
+          <div className="flex justify-between text-[0.6rem] text-dim mb-1">
+            <span>{formatNumber(currentKills)}</span>
+            <span>{formatNumber(TARGET)}</span>
+          </div>
+          <div className="h-2 bg-border overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-danger to-warn transition-[width] duration-1000"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <div className="text-[0.6rem] text-dim mt-1">
+            {progress.toFixed(1)}% — {formatNumber(remaining)} remaining
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div className="flex gap-6 flex-wrap text-[0.6rem]">
+          <div>
+            <span className="font-[var(--font-display)] tracking-[2px] text-dim">
+              AVG RATE{" "}
+            </span>
+            <span className="text-text-body font-bold">
+              {formatNumber(avgKpm)} KPM
+            </span>
+          </div>
+          <div>
+            <span className="font-[var(--font-display)] tracking-[2px] text-dim">
+              MODEL{" "}
+            </span>
+            <span className="text-text-body">
+              diurnal-weighted ({dataSpanDays.toFixed(1)}d of data)
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Live countdown
   const msLeft = Math.max(0, eta.getTime() - now);

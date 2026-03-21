@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useKillCountData, useSteamPlayers } from "@/hooks";
 import type { KillCountRow, SteamPlayerRow } from "@/hooks";
 import { formatNumber } from "@/lib/format";
+import { computeStaleness } from "@/lib/staleness";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -253,6 +254,12 @@ export function KillAnalytics() {
     [stateRows, steamRows],
   );
 
+  /** Detect stale kill data independently of steam data. */
+  const killDataStale = useMemo(
+    () => computeStaleness(stateRows),
+    [stateRows],
+  );
+
   if (loading) {
     return (
       <div className="cryo-panel p-5 h-[120px] flex items-center justify-center">
@@ -388,6 +395,17 @@ export function KillAnalytics() {
           <span className="text-dim ml-1">(kills per min per 1K players)</span>
         </div>
       </div>
+
+      {/* Stale data notice */}
+      {killDataStale?.isStale && (
+        <div className="cryo-panel p-3 border-warn/20 bg-warn/5 text-[0.6rem] text-dim">
+          <span className="text-warn font-[var(--font-display)] tracking-[2px]">
+            ⚠ DATA PAUSED
+          </span>
+          {" — "}
+          Kill rate analytics are based on the last period of active data collection.
+        </div>
+      )}
     </div>
   );
 }

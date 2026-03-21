@@ -4,6 +4,8 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { formatNumber, timeAgo } from "@/lib/format";
 import { URLS } from "@/lib/urls";
+import { computeStalenessFromTimestamp } from "@/lib/staleness";
+import { DataStaleBanner } from "@/components/DataStaleBanner";
 import type { RangeLabel } from "@/lib/chart-utils";
 
 /* ------------------------------------------------------------------ */
@@ -73,6 +75,8 @@ const KillAnalytics = dynamic(
 
 interface Props {
   initialKillCount: number | null;
+  /** ISO timestamp of the initial data (for staleness detection) */
+  initialCapturedAt: string | null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -81,14 +85,18 @@ interface Props {
 
 const STATE_API = "/api/state/latest";
 
-export function MarathonClient({ initialKillCount }: Props) {
+export function MarathonClient({ initialKillCount, initialCapturedAt }: Props) {
   const [killCount, setKillCount] = useState<number | null>(initialKillCount);
+  const [capturedAt, setCapturedAt] = useState<string | null>(initialCapturedAt);
   const [lastFetch, setLastFetch] = useState<Date | null>(
     initialKillCount !== null ? new Date() : null,
   );
 
   // Shared chart time range — syncs kill chart and player chart
   const [chartRange, setChartRange] = useState<RangeLabel>("24H");
+
+  // Staleness detection for kill count data
+  const staleness = computeStalenessFromTimestamp(capturedAt);
 
   // Refresh kill count from API (lightweight — just the latest state)
   const refreshKillCount = async () => {
@@ -99,10 +107,12 @@ export function MarathonClient({ initialKillCount }: Props) {
       if (!res.ok) return;
       const json = await res.json();
       const kc = json?.data?.killCount;
+      const ca = json?.data?.capturedAt;
       if (typeof kc === "number") {
         setKillCount(kc);
         setLastFetch(new Date());
       }
+      if (ca) setCapturedAt(ca);
     } catch {
       // Silently fail — charts have their own data sources
     }
@@ -119,6 +129,14 @@ export function MarathonClient({ initialKillCount }: Props) {
           KILL COUNTS, PLAYER DATA, ANALYTICS, AND PROJECTIONS
         </p>
       </div>
+
+      {/* Stale data warning */}
+      {staleness?.isStale && (
+        <DataStaleBanner
+          staleness={staleness}
+          detail="The upstream cryoarchive API is returning cached data. Values below reflect the last known good snapshot."
+        />
+      )}
 
       {/* Quick links */}
       <div className="flex items-center justify-center gap-4 flex-wrap mb-10">
@@ -162,11 +180,18 @@ export function MarathonClient({ initialKillCount }: Props) {
           </div>
         </div>
         <div className="ml-auto text-right">
-          {lastFetch && (
+          {staleness?.isStale ? (
+            <div className="text-[0.65rem] text-warn">
+              Data from {new Date(staleness.lastUpdated).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })}
+            </div>
+          ) : lastFetch ? (
             <div className="text-[0.65rem] text-dim">
               Updated {timeAgo(lastFetch)}
             </div>
-          )}
+          ) : null}
           <div className="text-[0.55rem] text-dim mt-1">
             Click to refresh
           </div>
