@@ -5,8 +5,12 @@ import { withCache } from "@/lib/cache";
 /**
  * GET /api/state/latest
  *
- * Returns the latest state snapshot from the database.
- * Data is populated by the Python poller every 5 minutes — no live fallback.
+ * Returns the high-water-mark state snapshot from the database.
+ * Uses ORDER BY kill_count DESC instead of captured_at DESC because
+ * the upstream API may return stale/regressed data, causing the most
+ * recent row to have a LOWER kill count than older rows.
+ *
+ * Data is populated by the Python poller every 15 minutes — no live fallback.
  */
 export async function GET() {
     // Try database first
@@ -16,7 +20,7 @@ export async function GET() {
             const result = await db.query(
                 `SELECT captured_at, kill_count, ship_date, next_update, sectors, memory_flags
          FROM state_snapshots
-         ORDER BY captured_at DESC
+         ORDER BY kill_count DESC
          LIMIT 1`
             );
 

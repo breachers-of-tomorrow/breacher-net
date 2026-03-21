@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { fetchState } from "@/lib/api";
+import { fetchState, fetchHighWaterCapturedAt } from "@/lib/api";
 import { SITE_URL } from "@/lib/urls";
 import { MarathonClient } from "./MarathonClient";
 
@@ -23,9 +23,15 @@ export default async function MarathonPage() {
   // Pass initial kill count for SSR hydration
   const initialKillCount = state?.uescKillCount ?? null;
 
+  // Get the captured_at timestamp of the high-water row for staleness detection
+  const initialCapturedAt = await fetchHighWaterCapturedAt();
+
   return (
     <main className="px-4 sm:px-8 max-w-[1200px] mx-auto py-8 sm:py-16">
-      <MarathonClient initialKillCount={initialKillCount} />
+      <MarathonClient
+        initialKillCount={initialKillCount}
+        initialCapturedAt={initialCapturedAt}
+      />
     </main>
   );
 }

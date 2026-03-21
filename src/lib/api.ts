@@ -25,11 +25,33 @@ export async function fetchState(): Promise<CryoarchiveState | null> {
   const pool = getPool();
   if (!pool) return null;
   try {
+    // Use high-water mark (highest kill_count) instead of latest captured_at.
+    // Upstream API may return stale/regressed data, so the most recent row
+    // can have a LOWER kill_count than older rows.
     const result = await pool.query(
-      "SELECT raw_response FROM state_snapshots ORDER BY captured_at DESC LIMIT 1",
+      "SELECT raw_response FROM state_snapshots ORDER BY kill_count DESC LIMIT 1",
     );
     if (!result.rows.length) return null;
     return result.rows[0].raw_response?.state ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Get the `captured_at` timestamp of the high-water-mark row
+ * (highest kill_count).  Used for staleness detection on the
+ * marathon page — if this timestamp is >1h old, data is stale.
+ */
+export async function fetchHighWaterCapturedAt(): Promise<string | null> {
+  const pool = getPool();
+  if (!pool) return null;
+  try {
+    const result = await pool.query(
+      "SELECT captured_at FROM state_snapshots ORDER BY kill_count DESC LIMIT 1",
+    );
+    if (!result.rows.length) return null;
+    return result.rows[0].captured_at?.toISOString?.() ?? String(result.rows[0].captured_at);
   } catch {
     return null;
   }
