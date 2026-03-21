@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useSteamPlayers } from "@/hooks";
+import { THEME } from "@/lib/constants";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -169,8 +170,8 @@ export function PlayerCountChart({ range, onRangeChange }: Props) {
           >
             <defs>
               <linearGradient id="playerGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#00FF9D" stopOpacity={0.25} />
-                <stop offset="100%" stopColor="#00FF9D" stopOpacity={0.02} />
+                <stop offset="0%" stopColor={THEME.mint} stopOpacity={0.25} />
+                <stop offset="100%" stopColor={THEME.mint} stopOpacity={0.02} />
               </linearGradient>
             </defs>
             <CartesianGrid {...GRID_STYLE} />
@@ -199,14 +200,14 @@ export function PlayerCountChart({ range, onRangeChange }: Props) {
               type="monotone"
               dataKey="valueSmooth"
               name="Players"
-              stroke="#00FF9D"
+              stroke={THEME.mint}
               strokeWidth={2}
               fill="url(#playerGradient)"
               dot={false}
               activeDot={{
                 r: 4,
-                fill: "#00FF9D",
-                stroke: "#00FF9D",
+                fill: THEME.mint,
+                stroke: THEME.mint,
                 strokeWidth: 2,
               }}
             />
