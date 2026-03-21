@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { withCache } from "@/lib/cache";
-
-const MARATHON_STEAM_APP_ID = 3065800;
+import { MARATHON_STEAM_APP_ID } from "@/lib/constants";
 
 interface SteamResponse {
   response: {

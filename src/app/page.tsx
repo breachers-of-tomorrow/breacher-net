@@ -1,9 +1,22 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { fetchSteamPlayerCount } from "@/lib/api";
-import { URLS } from "@/lib/urls";
+import { SITE_URL, URLS } from "@/lib/urls";
 
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  title: "The Breacher Network — Marathon Community Hub",
+  description:
+    "The Breacher Network — Marathon community hub by Breachers of Tomorrow. Game metrics, ARG archive, wiki, weapons database, and 1,500+ members. Join us.",
+  openGraph: {
+    title: "BREACHER.NET // The Breacher Network",
+    description:
+      "Marathon community hub — game metrics, ARG archive, wiki, weapons database, and 1,500+ Breachers.",
+    url: SITE_URL,
+  },
+};
 
 export default async function HomePage() {
   const steamPlayers = await fetchSteamPlayerCount();
@@ -65,8 +78,29 @@ export default async function HomePage() {
         </div>
       </div>
 
+      {/* JSON-LD Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: "BREACHER.NET",
+            alternateName: "The Breacher Network",
+            url: SITE_URL,
+            description:
+              "Marathon community hub by Breachers of Tomorrow — game metrics, ARG archive, wiki, and community tools.",
+            publisher: {
+              "@type": "Organization",
+              name: "Breachers of Tomorrow",
+              url: SITE_URL,
+            },
+          }),
+        }}
+      />
+
       {/* ── BREACHER NET — Community ── */}
-      <div className="section-title">BREACHER NET</div>
+      <h2 className="section-title">BREACHER NET</h2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12">
         <ExternalCard
           href={URLS.discord}
@@ -97,7 +131,7 @@ export default async function HomePage() {
       </div>
 
       {/* ── MARATHON — Game Content ── */}
-      <div className="section-title">MARATHON</div>
+      <h2 className="section-title">MARATHON</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12">
         <NavCard
           href="/marathon"
@@ -123,7 +157,7 @@ export default async function HomePage() {
       </div>
 
       {/* ── CRYOARCHIVE — ARG Achievement ── */}
-      <div className="section-title">CRYOARCHIVE</div>
+      <h2 className="section-title">CRYOARCHIVE</h2>
       <div className="mb-12">
         <Link
           href="/cryoarchive"

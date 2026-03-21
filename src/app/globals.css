@@ -179,6 +179,7 @@ body {
 
 .section-title {
   font-family: var(--font-display);
+  font-weight: normal;
   font-size: 0.7rem;
   letter-spacing: 6px;
   color: var(--color-cryo-dim);

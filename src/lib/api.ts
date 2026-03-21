@@ -56,8 +56,7 @@ export async function fetchStabilization(): Promise<Record<
 }
 
 // ---- Steam ----
-
-const MARATHON_STEAM_APP_ID = 3065800;
+import { MARATHON_STEAM_APP_ID } from "@/lib/constants";
 
 interface SteamPlayerResponse {
   response: {
