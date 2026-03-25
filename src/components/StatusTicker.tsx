@@ -15,68 +15,68 @@ import { fetchTickerMessages, type TickerMessage } from "@/lib/ticker-data";
 
 /** Static fallback shown while async ticker data loads */
 export function TickerSkeleton() {
-  return (
-    <div
-      className="w-full overflow-hidden border-b border-border/30 bg-bg/80 backdrop-blur-sm"
-      aria-hidden="true"
-    >
-      <div className="relative h-6 flex items-center">
-        <div className="ticker-scroll whitespace-nowrap flex items-center gap-8">
-          {[
-            "SYS.KERNEL — INITIALIZING DATA FEEDS",
-            "UPLINK — BREACHER RELAY ACTIVE",
-            "SEC.STATUS — PERIMETER INTEGRITY 100%",
-            "TRANSIT — JUMP CORRIDOR ALIGNED",
-          ]
-            .flatMap((msg) => [msg, msg])
-            .map((msg, i) => (
-              <span
-                key={`skel-${i}`}
-                className="text-[0.6rem] tracking-[3px] text-dim font-[var(--font-display)] shrink-0 flex items-center gap-8"
-              >
-                {msg}
-                <span className="text-accent2/40">{"///"}</span>
-              </span>
-            ))}
+    return (
+        <div
+            className="w-full overflow-hidden border-b border-border/30 bg-bg/80 backdrop-blur-sm"
+            aria-hidden="true"
+        >
+            <div className="relative h-6 flex items-center">
+                <div className="ticker-scroll whitespace-nowrap flex items-center gap-8">
+                    {[
+                        "SYS.KERNEL — INITIALIZING DATA FEEDS",
+                        "UPLINK — BREACHER RELAY ACTIVE",
+                        "SEC.STATUS — PERIMETER INTEGRITY 100%",
+                        "TRANSIT — JUMP CORRIDOR ALIGNED",
+                    ]
+                        .flatMap((msg) => [msg, msg])
+                        .map((msg, i) => (
+                            <span
+                                key={`skel-${i}`}
+                                className="text-[0.6rem] tracking-[3px] text-dim font-[var(--font-display)] shrink-0 flex items-center gap-8"
+                            >
+                                {msg}
+                                <span className="text-accent2/40">{"///"}</span>
+                            </span>
+                        ))}
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }
 
 function MessageSpan({ msg, idx }: { msg: TickerMessage; idx: number }) {
-  return (
-    <span
-      key={`ticker-${idx}`}
-      className="text-[0.6rem] tracking-[3px] text-dim font-[var(--font-display)] shrink-0 flex items-center gap-8"
-    >
-      {msg.kind === "live" && (
-        <span className="inline-block w-1.5 h-1.5 rounded-full bg-mint/70 shadow-[0_0_4px_var(--color-mint)] mr-1" />
-      )}
-      {msg.text}
-      <span className="text-accent2/40">{"///"}</span>
-    </span>
-  );
+    return (
+        <span
+            key={`ticker-${idx}`}
+            className="text-[0.6rem] tracking-[3px] text-dim font-[var(--font-display)] shrink-0 flex items-center gap-8"
+        >
+            {msg.kind === "live" && (
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-mint/70 shadow-[0_0_4px_var(--color-mint)] mr-1" />
+            )}
+            {msg.text}
+            <span className="text-accent2/40">{"///"}</span>
+        </span>
+    );
 }
 
 export default async function StatusTicker() {
-  const messages = await fetchTickerMessages();
+    const messages = await fetchTickerMessages();
 
-  // Duplicate for seamless CSS loop (translateX(-50%) reset)
-  const doubled = [...messages, ...messages];
+    // Duplicate for seamless CSS loop (translateX(-50%) reset)
+    const doubled = [...messages, ...messages];
 
-  return (
-    <div
-      className="w-full overflow-hidden border-b border-border/30 bg-bg/80 backdrop-blur-sm"
-      aria-hidden="true"
-    >
-      <div className="relative h-6 flex items-center">
-        <div className="ticker-scroll whitespace-nowrap flex items-center gap-8">
-          {doubled.map((msg, i) => (
-            <MessageSpan key={`ticker-${i}`} msg={msg} idx={i} />
-          ))}
+    return (
+        <div
+            className="w-full overflow-hidden border-b border-border/30 bg-bg/80 backdrop-blur-sm"
+            aria-hidden="true"
+        >
+            <div className="relative h-6 flex items-center">
+                <div className="ticker-scroll whitespace-nowrap flex items-center gap-8">
+                    {doubled.map((msg, i) => (
+                        <MessageSpan key={`ticker-${i}`} msg={msg} idx={i} />
+                    ))}
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }
