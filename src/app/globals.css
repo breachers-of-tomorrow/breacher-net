@@ -74,6 +74,29 @@ body {
   overflow-x: hidden;
 }
 
+/* ---- Ambient CRT scanline overlay ---- */
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::after {
+    display: none;
+  }
+}
+
 /* ---- Animations ---- */
 
 @keyframes fadeIn {
@@ -116,6 +139,60 @@ body {
 
 .animate-blink {
   animation: blink 1s infinite;
+}
+
+/* Blinking cursor element */
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.cursor-blink {
+  animation: cursor-blink 1s step-end infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cursor-blink {
+    animation: none;
+  }
+}
+
+/* Page transition glitch */
+@keyframes page-glitch {
+  0% { opacity: 1; transform: translateX(0); }
+  25% { opacity: 0.7; transform: translateX(-1px); }
+  50% { opacity: 0.85; transform: translateX(1px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+.page-glitch {
+  animation: page-glitch 150ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-glitch {
+    animation: none;
+  }
+}
+
+/* Status ticker scroll */
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-scroll {
+  animation: ticker-scroll 30s linear infinite;
+}
+
+.ticker-scroll:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-scroll {
+    animation: none;
+  }
 }
 
 /* ---- Glow effects ---- */

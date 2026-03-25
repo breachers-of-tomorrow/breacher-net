@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Navigation } from "@/components/Navigation";
+import StatusTicker from "@/components/StatusTicker";
+import PageTransition from "@/components/PageTransition";
 import { SITE_URL } from "@/lib/urls";
 
 const jetbrainsMono = JetBrains_Mono({
@@ -90,8 +92,11 @@ export default function RootLayout({
           Skip to content
         </a>
         <Navigation />
+        <StatusTicker />
         <div id="main-content">
-          {children}
+          <PageTransition>
+            {children}
+          </PageTransition>
         </div>
       </body>
     </html>

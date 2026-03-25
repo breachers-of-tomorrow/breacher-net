@@ -37,6 +37,7 @@ export default async function HomePage() {
         </div>
         <h1 className="font-[var(--font-display)] text-3xl sm:text-5xl font-black text-accent glow-accent tracking-[6px] mb-3">
           BREACHER<span className="text-accent2">{"//"}</span>NET
+          <span className="cursor-blink text-mint ml-1" aria-hidden="true">▊</span>
         </h1>
         <p className="font-[var(--font-display)] text-base sm:text-xl font-bold text-text-heading tracking-[4px] mb-2">
           THE BREACHER NETWORK
