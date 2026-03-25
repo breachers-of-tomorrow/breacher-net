@@ -82,20 +82,15 @@ body::after {
   inset: 0;
   pointer-events: none;
   z-index: 9998;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.03) 2px,
-    rgba(0, 0, 0, 0.03) 4px
-  );
+  background: repeating-linear-gradient(0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.03) 4px);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  body::after {
-    display: none;
-  }
-}
+/* Scanlines are a static overlay — no motion, no vestibular risk.
+   Do NOT disable under prefers-reduced-motion. */
 
 /* ---- Animations ---- */
 
@@ -143,8 +138,15 @@ body::after {
 
 /* Blinking cursor element */
 @keyframes cursor-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
 }
 
 .cursor-blink {
@@ -160,10 +162,25 @@ body::after {
 
 /* Page transition glitch */
 @keyframes page-glitch {
-  0% { opacity: 1; transform: translateX(0); }
-  25% { opacity: 0.7; transform: translateX(-1px); }
-  50% { opacity: 0.85; transform: translateX(1px); }
-  100% { opacity: 1; transform: translateX(0); }
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  25% {
+    opacity: 0.7;
+    transform: translateX(-1px);
+  }
+
+  50% {
+    opacity: 0.85;
+    transform: translateX(1px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .page-glitch {
@@ -178,8 +195,13 @@ body::after {
 
 /* Status ticker scroll */
 @keyframes ticker-scroll {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 .ticker-scroll {

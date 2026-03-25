@@ -45,7 +45,7 @@ const SESSION_KEY = "breacher-net-boot-seen";
 
 /** Subscribe to external store — no-op since boot eligibility doesn't change */
 function subscribe() {
-  return () => {};
+  return () => { };
 }
 
 /** Client snapshot: check whether boot should play */
@@ -138,9 +138,8 @@ export default function BootOverlay() {
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] bg-bg flex flex-col transition-opacity duration-500 ${
-        fadingOut ? "opacity-0" : "opacity-100"
-      }`}
+      className={`fixed inset-0 z-[9999] bg-bg flex flex-col transition-opacity duration-500 ${fadingOut ? "opacity-0" : "opacity-100"
+        }`}
       role="status"
     >
       {/* Screen reader alternative */}
