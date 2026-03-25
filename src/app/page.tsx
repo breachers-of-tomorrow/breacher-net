@@ -52,6 +52,17 @@ export default async function HomePage() {
           <span className="text-border mx-1">{"//"}
           </span>{" "}RUN
         </p>
+
+        {/* Drop to Shell — link to ssh.breacher.net */}
+        <a
+          href="https://ssh.breacher.net"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Open interactive terminal session at ssh.breacher.net"
+          className="inline-block mt-5 font-[var(--font-mono)] text-[0.65rem] sm:text-xs tracking-[3px] text-mint/70 hover:text-mint hover:glow-mint transition-all no-underline"
+        >
+          {">_"} DROP TO SHELL
+        </a>
       </div>
 
       {/* ── Live Status Strip ── */}

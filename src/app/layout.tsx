@@ -4,6 +4,7 @@ import "./globals.css";
 import { Navigation } from "@/components/Navigation";
 import StatusTicker from "@/components/StatusTicker";
 import PageTransition from "@/components/PageTransition";
+import BootOverlay from "@/components/BootOverlay";
 import { SITE_URL } from "@/lib/urls";
 
 const jetbrainsMono = JetBrains_Mono({
@@ -91,6 +92,7 @@ export default function RootLayout({
         >
           Skip to content
         </a>
+        <BootOverlay />
         <Navigation />
         <StatusTicker />
         <div id="main-content">

@@ -2,40 +2,58 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "404 — Signal Lost",
-  description: "The requested page could not be found.",
+  title: "ERROR 0x00000404 — Sector Not Found",
+  description: "The requested data sector could not be located.",
 };
 
 export default function NotFound() {
   return (
-    <main className="max-w-3xl mx-auto px-4 sm:px-8 py-16 text-center">
-      <div className="cryo-panel p-8 sm:p-12">
-        <div className="font-[var(--font-display)] text-[0.6rem] tracking-[4px] text-warn mb-4 animate-pulse-slow">
-          ⚠ SECTOR NOT FOUND
+    <main className="max-w-3xl mx-auto px-4 sm:px-8 py-16">
+      <div className="cryo-panel p-8 sm:p-12 font-[var(--font-mono)]">
+        {/* Error code header */}
+        <div className="text-warn text-xs tracking-[4px] mb-1 animate-pulse">
+          ERROR 0x00000404
         </div>
-        <h1 className="font-[var(--font-display)] text-4xl sm:text-6xl font-black text-warn glow-warn tracking-[6px] mb-4">
-          404
+        <div className="border-b border-warn/30 mb-6" />
+
+        <h1 className="font-[var(--font-display)] text-3xl sm:text-5xl font-black text-warn glow-warn tracking-[6px] mb-4">
+          SECTOR NOT FOUND
         </h1>
-        <p className="font-[var(--font-display)] text-sm tracking-[3px] text-text-heading mb-2">
-          SIGNAL LOST
+
+        <p className="text-dim text-sm leading-relaxed mb-6 max-w-lg">
+          The requested data sector could not be located.
+          It may have been purged, corrupted, or classified.
         </p>
-        <p className="text-dim text-sm mb-8 max-w-md mx-auto">
-          The requested sector could not be located in the cryoarchive.
-          It may have been purged or never existed.
-        </p>
-        <div className="flex gap-4 justify-center flex-wrap">
-          <Link
-            href="/"
-            className="font-[var(--font-display)] text-xs tracking-[3px] uppercase px-6 py-3 bg-accent/10 border border-accent text-accent hover:bg-accent/20 transition-colors no-underline"
-          >
-            RETURN HOME
-          </Link>
-          <Link
-            href="/cryoarchive"
-            className="font-[var(--font-display)] text-xs tracking-[3px] uppercase px-6 py-3 bg-panel border border-border text-dim hover:text-foreground hover:border-accent transition-colors no-underline"
-          >
-            OPEN DASHBOARD
-          </Link>
+
+        {/* Terminal-style recommendations */}
+        <div className="text-sm leading-relaxed mb-8 space-y-1">
+          <p className="text-foreground">
+            <span className="text-accent2">{">"}&#32;</span>
+            Recommended: Return to{" "}
+            <Link
+              href="/"
+              className="text-accent hover:glow-accent transition-all underline underline-offset-4"
+            >
+              BREACHER//NET
+            </Link>
+          </p>
+          <p className="text-foreground">
+            <span className="text-accent2">{">"}&#32;</span>
+            Or try: access{" "}
+            <Link
+              href="/cryoarchive"
+              className="text-accent hover:glow-accent transition-all underline underline-offset-4"
+            >
+              CRYOARCHIVE
+            </Link>
+          </p>
+        </div>
+
+        {/* System note */}
+        <div className="border-t border-border/30 pt-4">
+          <p className="text-dim text-[0.65rem] tracking-[2px]">
+            SYSTEM NOTE: This access attempt has been logged.
+          </p>
         </div>
       </div>
     </main>
