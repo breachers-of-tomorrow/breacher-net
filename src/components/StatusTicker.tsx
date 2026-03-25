@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect } from "react";
+
 /**
  * Ambient status ticker — a thin scrolling strip of in-universe
  * status messages below the navigation bar.
@@ -8,6 +10,10 @@
  * - Pauses on hover for readability
  * - Static fallback under prefers-reduced-motion
  * - aria-hidden since content is decorative / duplicated elsewhere
+ *
+ * Uses useState + useEffect for motion detection to avoid hydration
+ * mismatch (RDP sessions often set prefers-reduced-motion: reduce,
+ * which the server can't know about).
  */
 
 const MESSAGES = [
@@ -21,13 +27,14 @@ const MESSAGES = [
   "TRANSIT — JUMP CORRIDOR ALIGNED",
 ];
 
-function useReducedMotionFallback(): boolean {
-  if (typeof window === "undefined") return false;
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
 export default function StatusTicker() {
-  const reducedMotion = useReducedMotionFallback();
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    setReducedMotion(
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    );
+  }, []);
 
   // Duplicate messages so the scroll loops seamlessly
   // (CSS translateX(-50%) resets when the first copy scrolls out)

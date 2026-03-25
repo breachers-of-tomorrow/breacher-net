@@ -148,6 +148,7 @@ body::after {
 }
 
 .cursor-blink {
+  display: inline-block;
   animation: cursor-blink 1s step-end infinite;
 }
 
