@@ -14,6 +14,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Cache-bust: 2026-03-25T14:30
 # Ensure public dir exists (may be empty in fresh checkouts)
 RUN mkdir -p /app/public
 
