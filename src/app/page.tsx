@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { fetchSteamPlayerCount } from "@/lib/api";
+import { fetchDiscordPresence } from "@/lib/discord";
 import { SITE_URL, URLS } from "@/lib/urls";
 
 export const revalidate = 60;
@@ -19,7 +20,10 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const steamPlayers = await fetchSteamPlayerCount();
+  const [steamPlayers, discord] = await Promise.all([
+    fetchSteamPlayerCount(),
+    fetchDiscordPresence(),
+  ]);
 
   return (
     <main className="max-w-5xl mx-auto px-4 sm:px-8 py-8 sm:py-16">
@@ -75,6 +79,20 @@ export default async function HomePage() {
           <span className="font-[var(--font-display)] text-sm font-bold text-mint glow-mint tracking-wider">
             {steamPlayers !== null ? steamPlayers.toLocaleString() : "—"}
           </span>
+        </div>
+        <div className="flex items-center gap-2.5">
+          <div className="w-2 h-2 rounded-full bg-[#5865F2] animate-pulse" />
+          <span className="font-[var(--font-display)] text-[0.6rem] tracking-[3px] text-dim">
+            BREACHERS ONLINE
+          </span>
+          <a
+            href={URLS.discord}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-[var(--font-display)] text-sm font-bold text-[#5865F2] hover:text-[#7289DA] transition-colors tracking-wider no-underline"
+          >
+            {discord ? discord.online.toLocaleString() : "—"}
+          </a>
         </div>
         <div className="flex items-center gap-2.5">
           <div className="w-2 h-2 rounded-full bg-accent2 animate-pulse" />

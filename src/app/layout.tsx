@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Navigation } from "@/components/Navigation";
-import StatusTicker from "@/components/StatusTicker";
+import StatusTicker, { TickerSkeleton } from "@/components/StatusTicker";
 import PageTransition from "@/components/PageTransition";
 import BootOverlay from "@/components/BootOverlay";
 import { SITE_URL } from "@/lib/urls";
@@ -94,7 +95,9 @@ export default function RootLayout({
         </a>
         <BootOverlay />
         <Navigation />
-        <StatusTicker />
+        <Suspense fallback={<TickerSkeleton />}>
+          <StatusTicker />
+        </Suspense>
         <div id="main-content">
           <PageTransition>
             {children}
