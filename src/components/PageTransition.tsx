@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 /**
  * Wraps page content and triggers a brief visual glitch on route changes.
@@ -9,18 +9,22 @@ import { useEffect, useState, type ReactNode } from "react";
  * - 150ms CSS animation (page-glitch in globals.css)
  * - Disabled under prefers-reduced-motion (handled by CSS)
  * - No layout shift — only opacity + micro-translate
+ * - Uses ref + classList to avoid setState-in-effect lint violations
  */
 export default function PageTransition({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const [glitching, setGlitching] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setGlitching(true);
-    const timeout = setTimeout(() => setGlitching(false), 150);
-    return () => clearTimeout(timeout);
+    const el = ref.current;
+    if (!el) return;
+    el.classList.add("page-glitch");
+    const timeout = setTimeout(() => el.classList.remove("page-glitch"), 150);
+    return () => {
+      clearTimeout(timeout);
+      el.classList.remove("page-glitch");
+    };
   }, [pathname]);
 
-  return (
-    <div className={glitching ? "page-glitch" : undefined}>{children}</div>
-  );
+  return <div ref={ref}>{children}</div>;
 }

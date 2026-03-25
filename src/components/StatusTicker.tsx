@@ -1,19 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-
 /**
  * Ambient status ticker — a thin scrolling strip of in-universe
  * status messages below the navigation bar.
  *
  * - Scrolls continuously via CSS animation (ticker-scroll in globals.css)
  * - Pauses on hover for readability
- * - Static fallback under prefers-reduced-motion
+ * - CSS handles prefers-reduced-motion (animation: none) — no JS branching
  * - aria-hidden since content is decorative / duplicated elsewhere
- *
- * Uses useState + useEffect for motion detection to avoid hydration
- * mismatch (RDP sessions often set prefers-reduced-motion: reduce,
- * which the server can't know about).
  */
 
 const MESSAGES = [
@@ -28,14 +22,6 @@ const MESSAGES = [
 ];
 
 export default function StatusTicker() {
-  const [reducedMotion, setReducedMotion] = useState(false);
-
-  useEffect(() => {
-    setReducedMotion(
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-    );
-  }, []);
-
   // Duplicate messages so the scroll loops seamlessly
   // (CSS translateX(-50%) resets when the first copy scrolls out)
   const doubled = [...MESSAGES, ...MESSAGES];
@@ -46,24 +32,17 @@ export default function StatusTicker() {
       aria-hidden="true"
     >
       <div className="relative h-6 flex items-center">
-        {reducedMotion ? (
-          /* Static: show one message centered */
-          <span className="mx-auto text-[0.6rem] tracking-[3px] text-dim font-[var(--font-display)]">
-            {MESSAGES[0]}
-          </span>
-        ) : (
-          <div className="ticker-scroll whitespace-nowrap flex items-center gap-8">
-            {doubled.map((msg, i) => (
-              <span
-                key={`${msg}-${i}`}
-                className="text-[0.6rem] tracking-[3px] text-dim font-[var(--font-display)] shrink-0 flex items-center gap-8"
-              >
-                {msg}
-                <span className="text-accent2/40">{"///"}</span>
-              </span>
-            ))}
-          </div>
-        )}
+        <div className="ticker-scroll whitespace-nowrap flex items-center gap-8">
+          {doubled.map((msg, i) => (
+            <span
+              key={`${msg}-${i}`}
+              className="text-[0.6rem] tracking-[3px] text-dim font-[var(--font-display)] shrink-0 flex items-center gap-8"
+            >
+              {msg}
+              <span className="text-accent2/40">{"///"}</span>
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   );

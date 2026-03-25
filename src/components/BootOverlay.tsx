@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from "react";
 
 /**
  * Optional first-visit boot sequence overlay for breacher.net.
@@ -43,25 +43,36 @@ const BOOT_LINES: BootLine[] = [
 
 const SESSION_KEY = "breacher-net-boot-seen";
 
+/** Subscribe to external store — no-op since boot eligibility doesn't change */
+function subscribe() {
+  return () => {};
+}
+
+/** Client snapshot: check whether boot should play */
+function getBootNeeded(): boolean {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
+  return !sessionStorage.getItem(SESSION_KEY);
+}
+
+/** Server snapshot: never show boot overlay during SSR */
+function getBootNeededServer(): boolean {
+  return false;
+}
+
 export default function BootOverlay() {
-  const [shouldShow, setShouldShow] = useState(false);
+  const shouldShow = useSyncExternalStore(subscribe, getBootNeeded, getBootNeededServer);
   const [visibleLines, setVisibleLines] = useState(0);
   const [fadingOut, setFadingOut] = useState(false);
   const [hidden, setHidden] = useState(false);
   const skipBtnRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Determine on mount whether to show
+  // Mark as seen once we've committed to showing
   useEffect(() => {
-    // Skip for reduced motion
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    // Skip if already seen this session
-    if (sessionStorage.getItem(SESSION_KEY)) return;
-
-    setShouldShow(true);
-    // Mark as seen
-    sessionStorage.setItem(SESSION_KEY, "1");
-  }, []);
+    if (shouldShow) {
+      sessionStorage.setItem(SESSION_KEY, "1");
+    }
+  }, [shouldShow]);
 
   // Auto-focus skip button
   useEffect(() => {
